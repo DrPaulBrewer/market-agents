@@ -100,37 +100,51 @@ ziAgent = function(options){
     };
     Agent.call(this, Object.assign({}, defaults, options));
     this.on('wake', function(){
-	var names = Object.keys(this.markets);
-	var i,l;
-	var vals, costs;
-	var unitValue, unitCost;
-	var good;
-	var myPrice;
-	for(i=0,l=names.length;i<l;++i){
-	    good = names[i];
-	    vals = this.values[good];
-	    costs = this.costs[good];
-	    if (vals && (vals.length>0) && (this.inventory[good]>=0)){
-		unitValue = vals[this.inventory[good]];
-		if (unitValue>0){
-		    myPrice = ProbJS.uniform(this.minPrice, unitValue);
-		    if (this.integer) myPrice = Math.floor(myPrice); 
-		    this.bid(good, myPrice);
-		}
-	    }
-	    else if (costs && (costs.length>0) && (this.inventory[good]<=0)){
-		unitCost = costs[-this.inventory[good]];
-		if (unitCost>0){
-		    myPrice = ProbJS.uniform(unitCost, this.maxPrice);
-		    if (this.integer) myPrice = Math.floor(myPrice);
-		    this.ask(good, myPrice);
-		}
-	    }
-	}
+	this.sendBidsAndAsks();
     });
 }; 
 
 util.inherits(ziAgent, Agent);
+
+ziAgent.prototype.sendBidsAndAsks = function(){
+    var names = Object.keys(this.markets);
+    var i,l;
+    var vals, costs;
+    var unitValue, unitCost;
+    var good;
+    var myPrice;
+    for(i=0,l=names.length;i<l;++i){
+	good = names[i];
+	vals = this.values[good];
+	costs = this.costs[good];
+	if (vals && (vals.length>0) && (this.inventory[good]>=0)){
+	    unitValue = vals[this.inventory[good]];
+	    if (unitValue>0){
+		myPrice = this.bidPrice(unitValue);
+		this.bid(good, myPrice);
+	    }
+	}
+	else if (costs && (costs.length>0) && (this.inventory[good]<=0)){
+	    unitCost = costs[-this.inventory[good]];
+	    if (unitCost>0){
+		myPrice = this.askPrice(unitCost);
+		this.ask(good, myPrice);
+	    }
+	}
+    }
+};
+
+ziAgent.prototype.bidPrice = function(value){
+    var p = ProbJS.uniform(this.minPrice, value)();
+    if (this.integer) p = Math.floor(p);
+    return p;
+};
+
+ziAgent.prototype.askPrice = function(cost){
+    var p = ProbJS.uniform(cost, this.maxPrice)();
+    if (this.integer) p = Math.floor(p);
+    return p;
+};
 
 Pool = function(){
     this.agents = [];
