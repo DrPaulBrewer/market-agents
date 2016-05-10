@@ -141,5 +141,32 @@ describe('new Agent', function(){
 
     });
     
+describe('new ziAgent', function(){
+    it('should have properties id, description, inventory, endowment, wakeTime, rate, nextWake, period with proper types',
+       function(){ 
+	   var myAgent = new ziAgent();
+	   myAgent.should.be.type('object');
+	   myAgent.should.have.properties('id','description','inventory','endowment','wakeTime','rate','nextWake','period');
+	   myAgent.id.should.be.type('number');
+	   myAgent.description.should.be.type('string');
+	   myAgent.inventory.should.be.type('object');
+	   myAgent.endowment.should.be.type('object');
+	   myAgent.wakeTime.should.be.type('number');
+	   myAgent.rate.should.be.type('number');
+	   myAgent.nextWake.should.be.type('function');
+	   myAgent.period.should.be.type('number');
+       });
+    
+    it('should have properties markets, values, costs, minPrice, maxPrice with proper types', function(){
+	var zi = new ziAgent();
+	zi.should.have.properties('markets','values','costs','minPrice','maxPrice');
+	zi.markets.should.be.type('object');
+	zi.values.should.be.type('object');
+	zi.costs.should.be.type('object');
+	zi.minPrice.should.be.type('number');
+	zi.maxPrice.should.be.type('number');
+    });
+    
+});
     
 });

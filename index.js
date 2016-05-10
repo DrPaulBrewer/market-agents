@@ -99,7 +99,7 @@ ziAgent = function(options){
 	maxPrice: 1000
     };
     Agent.call(this, Object.assign({}, defaults, options));
-    ziAgent.on('wake', function(){
+    this.on('wake', function(){
 	var names = Object.keys(this.markets);
 	var i,l;
 	var vals, costs;
@@ -122,6 +122,7 @@ ziAgent = function(options){
 		unitCost = costs[-this.inventory[good]];
 		if (unitCost>0){
 		    myPrice = ProbJS.uniform(unitCost, this.maxPrice);
+		    if (this.integer) myPrice = Math.floor(myPrice);
 		    this.ask(good, myPrice);
 		}
 	    }
