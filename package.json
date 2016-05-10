@@ -1,0 +1,36 @@
+{
+  "name": "market-agents",
+  "version": "0.0.0",
+  "description": "pool of heterogeneous robot trading agents for economic or financial simulations",
+  "main": "index.js",
+  "scripts": {
+    "test": "node_modules/.bin/mocha --reporter spec --slow 50 --timeout 2000",
+    "cover": "node_modules/istanbul/lib/cli.js cover node_modules/mocha/bin/_mocha -- -R spec test/*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/drpaulbrewer/market-agents.git"
+  },
+  "keywords": [
+    "robot-trading",
+    "hft",
+    "market-simulation",
+    "financial-simulation"
+  ],
+  "author": "drpaulbrewer@eaftc.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/drpaulbrewer/market-agents/issues"
+  },
+  "homepage": "https://github.com/drpaulbrewer/market-agents#readme",
+  "devDependencies": {
+    "coveralls": "^2.11.9",
+    "istanbul": "^0.4.3",
+    "mocha": "^2.4.5",
+    "should": "^8.3.1"
+  },
+  "dependencies": {
+    "prob.js": "^1.0.6",
+    "random-js": "^1.0.8"
+  }
+}
