@@ -169,7 +169,7 @@ Pool.prototype.next = function(){
 Pool.prototype.run = function(untilTime, cb){
     var that = this;
     if (typeof(cb)!=='function')
-	throw new Error("Pool.period: Callback function undefined")
+	throw new Error("Pool.run: Callback function undefined")
     var loop = function(){
 	var nextAgent = that.next();
 	if (!nextAgent) cb(true);
