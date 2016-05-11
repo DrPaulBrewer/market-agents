@@ -124,7 +124,7 @@ ziAgent.prototype.sendBidsAndAsks = function(){
 		this.bid(good, myPrice);
 	    }
 	}
-	else if (Array.isArray(costs) && (costs.length>0) && (this.inventory[good]<=0)){
+	if (Array.isArray(costs) && (costs.length>0) && (this.inventory[good]<=0)){
 	    unitCost = costs[-this.inventory[good]];
 	    if (unitCost>0){
 		myPrice = this.askPrice(unitCost);
