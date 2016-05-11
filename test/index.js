@@ -110,6 +110,13 @@ describe('new Agent', function(){
 	    assert.ok(agents[1].inventory.X===0);
 	    assert.ok(agents[1].inventory.money===1000);
 	});
+	it('agents should emit endPeriod when .endPeriod is called', function(){
+	    var agents = setup();
+	    var ended = [0,0];
+	    agents.forEach(function(a,i){ a.on('endPeriod', function(){ ended[i]=1; }); });
+	    agents.forEach(function(a){ a.endPeriod(); });
+	    ended.should.deepEqual([1,1]);
+	});
 	it('agents should indicate period 1 when set', function(){
 	    var agents = setup();
 	    var buyOneXFor500 = {money: -500, X:1 };
@@ -328,6 +335,38 @@ describe('new Pool', function(){
 	var myPool = new Pool();
 	myPool.agents.should.deepEqual([]);
     });
+
+    it('pool.initPeriod with 2 agents in pool calls .initPeriod on each agent', function(){
+	var myPool = new Pool();
+	var agent0 = new Agent();
+	var agent1 = new Agent();
+	agent0.period.should.equal(0);
+	agent1.period.should.equal(0);
+	myPool.push(agent0);
+	myPool.push(agent1);
+	myPool.agents[0].period.should.equal(0);
+	myPool.agents[1].period.should.equal(0);
+	myPool.initPeriod(1234);
+	myPool.agents[0].period.should.equal(1234);
+	myPool.agents[1].period.should.equal(1234);
+    });
+
+    it('pool.endPeriod with 2 agents in pool calls .endPeriod on each agent', function(){
+	var myPool = new Pool();
+	var agent0 = new Agent();
+	var agent1 = new Agent();
+	myPool.push(agent0);
+	myPool.push(agent1);
+	var ended = [0,0];
+	var handler = function(i){ return function(){ ended[i]=1; }; };
+	agent0.on('endPeriod', handler(0));
+	agent1.on('endPeriod', handler(1));
+	myPool.endPeriod();
+	ended.should.deepEqual([1,1]);
+    });
+
+    
+	
 
     var poolAgentRateTest = function(rates, agentFunc, done){
 	var async = (typeof(done)==='function');

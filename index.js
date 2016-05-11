@@ -148,6 +148,8 @@ ziAgent.prototype.askPrice = function(cost){
     return p;
 };
 
+
+
 Pool = function(){
     this.agents = [];
 };
@@ -199,7 +201,18 @@ Pool.prototype.syncRun = function(untilTime){
 	nextAgent = this.next();
     }
 };
-    
+
+Pool.prototype.initPeriod = function(period, info){
+    var i,l;
+    for(i=0,l=this.agents.length; i<l; i++)
+	this.agents[i].initPeriod(period, info);
+};
+
+Pool.prototype.endPeriod = function(info){
+    var i,l;
+    for(i=0,l=this.agents.length;i<l;i++)
+	this.agents[i].endPeriod(info);
+};
 
 module.exports = {
     Agent: Agent,
