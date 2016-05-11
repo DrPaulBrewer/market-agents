@@ -351,6 +351,22 @@ describe('new Pool', function(){
 	myPool.agents[1].period.should.equal(1234);
     });
 
+    it('pool.initPeriod({number:5, startTime:50000}) sets all period numbers to 5, all wakeTime>50000', function(){
+	var myPool = new Pool();
+	var agent0 = new Agent();
+	var agent1 = new Agent();
+	agent0.period.should.equal(0);
+	agent1.period.should.equal(0);
+	myPool.push(agent0);
+	myPool.push(agent1);
+	myPool.initPeriod({number:5, startTime:50000});
+	myPool.agents.length.should.equal(2);
+	myPool.agents.forEach(function(A){
+	    A.getPeriodNumber().should.equal(5);
+	    A.wakeTime.should.be.above(50000);
+	});
+    });
+
     it('pool.endPeriod with 2 agents in pool calls .endPeriod on each agent', function(){
 	var myPool = new Pool();
 	var agent0 = new Agent();
@@ -364,9 +380,6 @@ describe('new Pool', function(){
 	myPool.endPeriod();
 	ended.should.deepEqual([1,1]);
     });
-
-    
-	
 
     var poolAgentRateTest = function(rates, agentFunc, done){
 	var async = (typeof(done)==='function');
@@ -401,9 +414,6 @@ describe('new Pool', function(){
 	    checkWakes();
 	}
     };
-
-    
-
     
     it('pool with one agent, rate 1, wakes about 1000 times with .syncRun(1000) ', function(){
 	poolAgentRateTest([1],Agent);
