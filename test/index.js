@@ -328,56 +328,58 @@ describe('new Pool', function(){
 	var myPool = new Pool();
 	myPool.agents.should.deepEqual([]);
     });
+
+    var poolAgentRateTest = function(rates, agentFunc, done){
+	var async = (typeof(done)==='function');
+	var numberOfAgents = rates.length;
+	var i;
+	var cb;
+	var wakes = new Array(numberOfAgents).fill(0);
+	var expected = rates.map(function(r){ return 1000*r; });
+	var checkWakes = function(){
+	    wakes.forEach(function(wakeCount, i){
+		wakeCount.should.be.within(expected[i]-5*Math.sqrt(expected[i]), expected[i]+5*Math.sqrt(expected[i]));
+	    });
+	};
+	var incWakeFunc = function(i){ return function(){ wakes[i]++; }; };
+	var myAgent;
+	var myPool = new Pool();
+	for(i=0;i<numberOfAgents;++i){
+	    myAgent = new agentFunc({rate: rates[i]});
+	    myAgent.on('wake', incWakeFunc(i));
+	    myPool.push(myAgent);
+	}
+	if (async){
+	    cb = function(exhausted){
+		if (exhausted)
+		    throw new Error("should not exhaust pool");
+		checkWakes();
+		done();
+	    };
+	    myPool.run(1000, cb);
+	} else {
+	    myPool.syncRun(1000);
+	    checkWakes();
+	}
+    };
+
+    
+
     
     it('pool with one agent, rate 1, wakes about 1000 times with .syncRun(1000) ', function(){
-	var myPool = new Pool();
-	var myAgent = new Agent();
-	var wakes = 0;
-	myAgent.on('wake', function(){ wakes++; });
-	myPool.push(myAgent);
-	myPool.syncRun(1000);
-	wakes.should.be.within(1000-5.0*Math.sqrt(1000),1000+5.0*Math.sqrt(1000));
+	poolAgentRateTest([1],Agent);
     });
 
     it('pool with one agent, rate 1, wakes about 1000 times with .Run(1000) ', function(done){
-	var myPool = new Pool();
-	var myAgent = new Agent();
-	var wakes = 0;
-	var cb = function(exhausted){
-	    if (exhausted)
-		throw new Error("should not exhaust pool");
-	    wakes.should.be.within(1000-5.0*Math.sqrt(1000),1000+5.0*Math.sqrt(1000));
-	    done();
-	};
-	myAgent.on('wake', function(){ wakes++; });
-	myPool.push(myAgent);
-	myPool.run(1000, cb);
+	poolAgentRateTest([1],Agent,done);
     });
 
     it('pool with one zi Agent, rate 2, wakes about 2000 times with .syncRun(1000) ', function(){
-	var myPool = new Pool();
-	var myAgent = new ziAgent({rate:2});
-	var wakes = 0;
-	myAgent.on('wake', function(){ wakes++; });
-	myPool.push(myAgent);
-	myPool.syncRun(1000);
-	wakes.should.be.within(2000-5.0*Math.sqrt(2000),2000+5.0*Math.sqrt(2000));
+	poolAgentRateTest([2],ziAgent);
     });
 
     it('pool with one zi agent, rate 2, wakes about 2000 times with .Run(1000) ', function(done){
-	var myPool = new Pool();
-	var myAgent = new ziAgent({rate:2});
-	var wakes = 0;
-	var cb = function(exhausted){
-	    if (exhausted)
-		throw new Error("should not exhaust pool");
-	    wakes.should.be.within(2000-5.0*Math.sqrt(2000),2000+5.0*Math.sqrt(2000));
-	    done();
-	};
-	myAgent.on('wake', function(){ wakes++; });
-	myPool.push(myAgent);
-	myPool.run(1000, cb);
+	poolAgentRateTest([2],ziAgent,done);
     });
-
     
 });

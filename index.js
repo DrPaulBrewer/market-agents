@@ -178,10 +178,10 @@ Pool.prototype.run = function(untilTime, cb){
 	throw new Error("Pool.run: Callback function undefined");
     var loop = function(){
 	var nextAgent = that.next();
-	if (!nextAgent) return cb(true);
+	if (!nextAgent) return cb.call(that, true);
 	var tNow = nextAgent.wakeTime;
 	if (tNow > untilTime){
-	    return cb(false);
+	    return cb.call(that, false);
 	} else {
 	    nextAgent.wake();
 	    if (hasSetImmediate) setImmediate(loop);
