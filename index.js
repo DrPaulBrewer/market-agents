@@ -200,8 +200,6 @@ Pool.prototype.syncRun = function(untilTime){
     }
 };
     
-Pool.prototype.settleTrades = function(tradeSpec){
-};
 
 module.exports = {
     Agent: Agent,

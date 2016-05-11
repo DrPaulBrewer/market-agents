@@ -374,6 +374,22 @@ describe('new Pool', function(){
 	poolAgentRateTest([1],Agent,done);
     });
 
+    it('pool with ten agents, rate 1, wakes about 1000 times each with .syncRun(1000) ', function(){
+	poolAgentRateTest(new Array(10).fill(1), Agent);
+    });
+
+    it('pool with ten agents, rate 1, wakes about 1000 times each with .Run(1000) ', function(done){
+	poolAgentRateTest(new Array(10).fill(1), Agent, done);
+    });
+
+    it('pool with ten agents, rates [1,2,3,4,5,6,7,8,9,10] wakes about [1000,2000,...,10000] times each with .syncRun(1000) ', function(){
+	poolAgentRateTest([1,2,3,4,5,6,7,8,9,10], Agent);
+    });
+
+    it('pool with ten agents, rates [1,2,3,4,5,6,7,8,9,10], wakes about [1000,2000,...,10000] times each with .Run(1000) ', function(done){
+	poolAgentRateTest([1,2,3,4,5,6,7,8,9,10], Agent, done);
+    });
+
     it('pool with one zi Agent, rate 2, wakes about 2000 times with .syncRun(1000) ', function(){
 	poolAgentRateTest([2],ziAgent);
     });
@@ -381,5 +397,15 @@ describe('new Pool', function(){
     it('pool with one zi agent, rate 2, wakes about 2000 times with .Run(1000) ', function(done){
 	poolAgentRateTest([2],ziAgent,done);
     });
+
+    it('pool with 100 zi agents, rates [0.01,...,1], wakes about [10,20,...,1000] times each with .syncRun(1000)', function(){
+	var i,l
+	var rates=[];
+	for(i=0,l=100; i<l; ++i)
+	    rates[i] = (1+i)/100;
+	poolAgentRateTest(rates, ziAgent);
+    });
+
+
     
 });
