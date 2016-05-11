@@ -1,3 +1,5 @@
+/* jshint esnext:true */
+
 const util = require('util');
 const EventEmitter = require('events').EventEmitter;
 const RandomJS = require('random-js');
@@ -68,7 +70,7 @@ Agent.prototype.initPeriod = function(period, info){
 
 Agent.prototype.endPeriod = function(info){
     this.emit('endPeriod', info);
-}
+};
 
 Agent.prototype.wake = function(info){
     this.emit('wake', info);
@@ -81,7 +83,7 @@ Agent.prototype.transfer = function(myTransfers){
 	goods = Object.keys(myTransfers);
 	for(i=0,l=goods.length; i<l; ++i){
 	    if (this.inventory[goods[i]])
-		this.inventory[goods[i]] += myTransfers[goods[i]]
+		this.inventory[goods[i]] += myTransfers[goods[i]];
 	    else
 		this.inventory[goods[i]] = myTransfers[goods[i]];
 	}
@@ -164,24 +166,30 @@ Pool.prototype.next = function(){
 	}
     }
     return result;
-}
+};
+
+var hasSetImmediate = false;
+try { setImmediate(function(){ hasSetImmediate=true; }); } catch(e){}
 
 Pool.prototype.run = function(untilTime, cb){
+    /* note: setTimeout slows this down significnatly if setImmediate is not available */
     var that = this;
     if (typeof(cb)!=='function')
-	throw new Error("Pool.run: Callback function undefined")
+	throw new Error("Pool.run: Callback function undefined");
     var loop = function(){
 	var nextAgent = that.next();
-	if (!nextAgent) cb(true);
+	if (!nextAgent) return cb(true);
 	var tNow = nextAgent.wakeTime;
 	if (tNow > untilTime){
-	    cb(false);
+	    return cb(false);
 	} else {
 	    nextAgent.wake();
-	    setTimeout(loop,0);
+	    if (hasSetImmediate) setImmediate(loop);
+	    else setTimeout(loop,0);
 	}
     };
-    setTimeout(loop, 0);
+    if (hasSetImmediate) setImmediate(loop);
+    else setTimeout(loop,0);
 };
 
 Pool.prototype.syncRun = function(untilTime){

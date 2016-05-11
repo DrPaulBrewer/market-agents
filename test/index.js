@@ -1,3 +1,5 @@
+/* jshint esnext:true */
+
 var assert = require('assert');
 var should = require('should');
 const MarketAgents = require("../index.js");
@@ -112,7 +114,7 @@ describe('new Agent', function(){
 	    var agents = setup();
 	    var buyOneXFor500 = {money: -500, X:1 };
 	    agents[0].transfer(buyOneXFor500);
-	    agents.forEach(function(a){ a.initPeriod(1) });
+	    agents.forEach(function(a){ a.initPeriod(1); });
 	    assert.ok(agents[0].getPeriodNumber()===1);
 	    assert.ok(agents[1].getPeriodNumber()===1);
 	});
@@ -120,7 +122,7 @@ describe('new Agent', function(){
 	    var agents = setup();
 	    var buyOneXFor500 = {money: -500, X:1 };
 	    agents[0].transfer(buyOneXFor500);
-	    agents.forEach(function(a){ a.initPeriod(1) });
+	    agents.forEach(function(a){ a.initPeriod(1); });
 	    assert.ok(agents[0].inventory.X===0);
 	    assert.ok(agents[0].inventory.money===1000);
 	    assert.ok(agents[1].inventory.X===0);
@@ -131,7 +133,7 @@ describe('new Agent', function(){
 	    var give1Y = {Y:1};
 	    agents[0].transfer(give1Y);
 	    assert.ok(agents[0].inventory.Y===1);
-	    agents.forEach(function(a){a.initPeriod(1) });
+	    agents.forEach(function(a){a.initPeriod(1); });
 	    assert.ok(agents[0].inventory.X===0);
 	    assert.ok(agents[0].inventory.money===1000);
 	    assert.ok(agents[0].inventory.Y===1);
