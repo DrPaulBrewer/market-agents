@@ -140,6 +140,8 @@ describe('new Agent', function(){
 	});
 
     });
+
+});
     
 describe('new ziAgent', function(){
     it('should have properties id, description, inventory, endowment, wakeTime, rate, nextWake, period with proper types',
@@ -273,7 +275,7 @@ describe('new ziAgent', function(){
 	}
     });
 
-    it('sample of 10000 this.bidPrice(v) chi-square test for uniformity on [0,100) ', function(){
+    it('sample of 10000 this.bidPrice(v=100) chi-square test for uniformity on [0,100) ', function(){
 	var zi = new ziAgent({integer: true});
 	var i,l,p;
 	var bins = new Array(100).fill(0);
@@ -295,7 +297,7 @@ describe('new ziAgent', function(){
 	norm.should.be.within(-5,5);
     });
 
-    it('sample of 10000 this.askPrice(v) chi-square test for uniformity on [50,150) ', function(){
+    it('sample of 10000 this.askPrice(c=50) chi-square test for uniformity on [50,maxPrice=150) ', function(){
 	var zi = new ziAgent({integer: true, maxPrice:150});
 	var i,l,p;
 	var bins = new Array(100).fill(0);
@@ -316,7 +318,33 @@ describe('new ziAgent', function(){
 	norm = (chisq100-100)/Math.sqrt(2*100);
 	norm.should.be.within(-5,5);
     });
-	
+    
 });
+    
+describe('new Pool', function(){
+    it('new Pool() initially has no agents', function(){
+	var myPool = new Pool();
+	myPool.agents.should.deepEqual([]);
+    });
+    
+    it('pool with one agent, rate 1, wakes about 1000 times with .syncRun(1000) ', function(){
+	var myPool = new Pool();
+	var myAgent = new Agent();
+	var wakes = 0;
+	myAgent.on('wake', function(){ wakes++; });
+	myPool.push(myAgent);
+	myPool.syncRun(1000);
+	wakes.should.be.within(1000-5.0*Math.sqrt(1000),1000+5.0*Math.sqrt(1000));
+    });
+
+    it('pool with one zi Agent, rate 2, wakes about 2000 times with .syncRun(1000) ', function(){
+	var myPool = new Pool();
+	var myAgent = new ziAgent({rate:2});
+	var wakes = 0;
+	myAgent.on('wake', function(){ wakes++; });
+	myPool.push(myAgent);
+	myPool.syncRun(1000);
+	wakes.should.be.within(2000-5.0*Math.sqrt(2000),2000+5.0*Math.sqrt(2000));
+    });
     
 });

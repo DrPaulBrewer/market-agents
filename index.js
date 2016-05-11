@@ -166,13 +166,13 @@ Pool.prototype.next = function(){
     return result;
 }
 
-Pool.prototype.period = function(untilTime, cb){
+Pool.prototype.run = function(untilTime, cb){
     var that = this;
     if (typeof(cb)!=='function')
 	throw new Error("Pool.period: Callback function undefined")
     var loop = function(){
 	var nextAgent = that.next();
-	if (!nextAgent) cb('Error: Pool.next() undefined');
+	if (!nextAgent) cb(true);
 	var tNow = nextAgent.wakeTime;
 	if (tNow > untilTime){
 	    cb(false);
@@ -184,7 +184,7 @@ Pool.prototype.period = function(untilTime, cb){
     setTimeout(loop, 0);
 };
 
-Pool.prototype.syncPeriod = function(untilTime){
+Pool.prototype.syncRun = function(untilTime){
     var nextAgent = this.next();
     while (nextAgent.wakeTime < untilTime){
 	nextAgent.wake();
