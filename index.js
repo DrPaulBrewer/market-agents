@@ -117,14 +117,14 @@ ziAgent.prototype.sendBidsAndAsks = function(){
 	good = names[i];
 	vals = this.values[good];
 	costs = this.costs[good];
-	if (vals && (vals.length>0) && (this.inventory[good]>=0)){
+	if (Array.isArray(vals) && (vals.length>0) && (this.inventory[good]>=0)){
 	    unitValue = vals[this.inventory[good]];
 	    if (unitValue>0){
 		myPrice = this.bidPrice(unitValue);
 		this.bid(good, myPrice);
 	    }
 	}
-	else if (costs && (costs.length>0) && (this.inventory[good]<=0)){
+	else if (Array.isArray(costs) && (costs.length>0) && (this.inventory[good]<=0)){
 	    unitCost = costs[-this.inventory[good]];
 	    if (unitCost>0){
 		myPrice = this.askPrice(unitCost);

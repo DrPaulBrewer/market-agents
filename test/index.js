@@ -166,7 +166,157 @@ describe('new ziAgent', function(){
 	zi.minPrice.should.be.type('number');
 	zi.maxPrice.should.be.type('number');
     });
-    
+
+    it('should not call this.bid() or this.ask() on this.wake() if values and costs not configured', function(){
+	var zi = new ziAgent();
+	var wakes=0,bids=0,asks=0;
+	zi.on('wake', function(){ wakes++; });
+	zi.bid = function(){ bids++; };
+	zi.ask = function(){ asks++; };
+	zi.wake();
+	wakes.should.equal(1);
+	bids.should.equal(0);
+	asks.should.equal(0);
+    });
+
+    it('should call this.bid() on this.wake() if values configured', function(){
+	var zi = new ziAgent({markets: {X:1}, endowment: {coins:0, X:0, Y:0}, values: {X: [100]}});
+	var wakes=0,bids=0,asks=0;
+	zi.on('wake', function(){ wakes++; });
+	zi.bid = function(good, p){ 
+	    assert.ok(good==='X');
+	    p.should.be.within(0,100);
+	    bids++; 
+	};
+	zi.ask = function(){ asks++; };
+	zi.wake();
+	wakes.should.equal(1);
+	bids.should.equal(1);
+	asks.should.equal(0);	
+    });
+
+    it('should call this.ask() on this.wake() if costs configured', function(){
+	var zi = new ziAgent({markets: {X:1}, endowment: {coins:0, X:0, Y:0}, costs: {X: [100]}, maxPrice:1000});
+	var wakes=0,bids=0,asks=0;
+	zi.on('wake', function(){ wakes++; });
+	zi.bid = function(good, p){ 
+	    bids++; 
+	};
+	zi.ask = function(good,p){ 
+	    good.should.equal('X');
+	    p.should.be.within(100,1000);
+	    asks++; 
+	};
+	zi.wake();
+	wakes.should.equal(1);
+	bids.should.equal(0);
+	asks.should.equal(1);	
+    });
+
+    it('should call this.bid() and this.ask() on this.wake() if both values and  costs configured', function(){
+	var zi = new ziAgent({
+	    endowment: {coins:0, X:0, Y:0},
+	    markets: {X:1,Y:1}, 
+	    costs: {X: [100]}, 
+	    values: {Y: [50]},
+	    maxPrice:1000
+	});
+	var wakes=0,bids=0,asks=0;
+	zi.on('wake', function(){ wakes++; });
+	zi.bid = function(good, p){ 
+	    bids++; 
+	    good.should.equal('Y');
+	    p.should.be.within(0,100);
+	};
+	zi.ask = function(good,p){ 
+	    good.should.equal('X');
+	    p.should.be.within(50,1000);
+	    asks++; 
+	};
+	zi.wake();
+	wakes.should.equal(1);
+	bids.should.equal(1);
+	asks.should.equal(1);	
+    });    
+
+    it('10000 tests this.bidPrice(v) should return number  between minPrice and v', function(){
+	var zi = new ziAgent();
+	var i,l,p;
+	for(i=1,l=10000; i<l; i++){
+	    p = zi.bidPrice(i);
+	    p.should.be.within(0,i);
+	    Math.floor(p).should.not.equal(p);
+	}
+	zi.integer = true;
+	zi.minPrice = 1;
+	for(i=1,l=10000; i<l; i++){
+	    p = zi.bidPrice(i);
+	    p.should.be.within(1,i);
+	    Math.floor(p).should.equal(p);
+	}
+    });
+
+    it('10000 tests this.askPrice(c) should return number between c and maxPrice', function(){
+	var zi = new ziAgent({maxPrice: 12345});
+	var i,l,p;
+	for(i=1,l=10000;i<l;i++){
+	    p = zi.askPrice(i);
+	    p.should.be.within(i,12345);
+	    Math.floor(p).should.not.equal(p);
+	}
+	zi.integer=true;
+	zi.maxPrice = 11111;
+	for(i=1,l=10000;i<l;++i){
+	    p = zi.askPrice(i);
+	    p.should.be.within(i,11111);
+	    Math.floor(p).should.equal(p);
+	}
+    });
+
+    it('sample of 10000 this.bidPrice(v) chi-square test for uniformity on [0,100) ', function(){
+	var zi = new ziAgent({integer: true});
+	var i,l,p;
+	var bins = new Array(100).fill(0);
+	var sumsq = 0;
+	var chisq100 = 0;
+	var e = 0;
+	var norm = 0;
+	for(i=1,l=10000; i<l; i++){
+	    p = zi.bidPrice(100);
+	    p.should.be.within(0,100);
+	    bins[p]++;
+	}
+	for(i=0,l=100;i<l;++i){
+	    e = bins[i]-100;
+	    sumsq += e*e;
+	}
+	chisq100=sumsq/100.0;
+	norm = (chisq100-100)/Math.sqrt(2*100);
+	norm.should.be.within(-5,5);
+    });
+
+    it('sample of 10000 this.askPrice(v) chi-square test for uniformity on [50,150) ', function(){
+	var zi = new ziAgent({integer: true, maxPrice:150});
+	var i,l,p;
+	var bins = new Array(100).fill(0);
+	var sumsq = 0;
+	var chisq100 = 0;
+	var e = 0;
+	var norm = 0;
+	for(i=1,l=10000; i<l; i++){
+	    p = zi.askPrice(50);
+	    p.should.be.within(50,150);
+	    bins[p-50]++;
+	}
+	for(i=0,l=100;i<l;++i){
+	    e = bins[i]-100;
+	    sumsq += e*e;
+	}
+	chisq100=sumsq/100.0;
+	norm = (chisq100-100)/Math.sqrt(2*100);
+	norm.should.be.within(-5,5);
+    });
+	
 });
     
 });
