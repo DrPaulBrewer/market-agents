@@ -80,6 +80,7 @@ Agent.prototype.wake = function(info){
 Agent.prototype.transfer = function(myTransfers){
     var goods, i, l;
     if (myTransfers){
+	this.emit('pre-transfer', myTransfers);
 	goods = Object.keys(myTransfers);
 	for(i=0,l=goods.length; i<l; ++i){
 	    if (this.inventory[goods[i]])
@@ -87,6 +88,7 @@ Agent.prototype.transfer = function(myTransfers){
 	    else
 		this.inventory[goods[i]] = myTransfers[goods[i]];
 	}
+	this.emit('post-transfer', myTransfers);
     }
 };
 
@@ -148,14 +150,16 @@ ziAgent.prototype.askPrice = function(cost){
     return p;
 };
 
-
-
 Pool = function(){
     this.agents = [];
+    this.agentsById = {};
 };
 
 Pool.prototype.push = function(agent){
-    this.agents.push(agent);
+    if (!this.agentsById[agent.id]){
+	this.agents.push(agent);
+	this.agentsById[agent.id] = agent;
+    }
 };
 
 Pool.prototype.next = function(){
@@ -212,6 +216,69 @@ Pool.prototype.endPeriod = function(info){
     var i,l;
     for(i=0,l=this.agents.length;i<l;i++)
 	this.agents[i].endPeriod(info);
+};
+
+var sum = function(a){
+    var i,l,total=0;
+    for(i=0,l=a.length;i<l;++i)
+	total += a[i];
+    return total;
+};
+
+var dot = function(a,b){
+    var i,l,total=0;
+    if (a.length!==b.length)
+	throw new Error("vector dimensions do not match in dot(a,b)");
+    for(i=0,l=a.length;i<l;++i)
+	if (b[i])
+	    total += a[i]*b[i];
+    return total;
+};
+
+Pool.prototype.trade = function(tradeSpec){
+    var i,l,buyerTransfer,sellerTransfer,total;
+    if (typeof(tradeSpec)!=='object') return;
+    if ( (tradeSpec.bs) &&
+	 (tradeSpec.goods) &&
+	 (tradeSpec.money) &&
+	 (Array.isArray(tradeSpec.prices)) && 
+	 (Array.isArray(tradeSpec.buyQ)) &&
+	 (Array.isArray(tradeSpec.sellQ)) &&
+	 (Array.isArray(tradeSpec.buyId)) &&
+	 (Array.isArray(tradeSpec.sellId)) ){	
+	if (tradeSpec.bs==='b'){
+	    if (tradeSpec.buyId.length!==1)
+		throw new Error("Pool.trade expected tradeSpec.buyId.length===1, got:"+tradeSpec.buyId.length);
+	    if (tradeSpec.buyQ[0] !== sum(tradeSpec.sellQ))
+		throw new Error("Pool.trade invalid buy -- tradeSpec buyQ[0] != sum(sellQ)");
+	    buyerTransfer = {};
+	    buyerTransfer[tradeSpec.goods] = tradeSpec.buyQ[0];
+	    buyerTransfer[tradeSpec.money] = -dot(tradeSpec.sellQ,tradeSpec.prices);
+	    Pool.agentsById[tradeSpec.buyId[0]].transfer(buyerTransfer);
+	    for(i=0,l=tradeSpec.prices.length;i<l;++i){
+		sellerTransfer = {};
+		sellerTransfer[tradeSpec.goods] = -tradeSpec.sellQ[i];
+		sellerTransfer[tradeSpec.money] = tradeSpec.prices[i]*tradeSpec.sellQ[i];
+		Pool.agentsById[tradeSpec.sellId[i]].transfer(sellerTransfer);
+	    }
+	} else if (tradeSpec.bs==='s'){
+	    if (tradeSpec.sellId.length!==1)
+		throw new Error("Pool.trade expected tradeSpec.sellId.length===1. got:"+tradeSpec.sellId.length);
+	    if (tradeSpec.sellQ[0] !== sum(tradeSpec.buyQ))
+		throw new Error("Pool.trade invalid sell -- tradeSpec sellQ[0] != sum(buyQ)");
+	    sellerTransfer = {};
+	    sellerTransfer[tradeSpec.goods] = -tradeSpec.sellQ[0];
+	    sellerTransfer[tradeSpec.money] = dot(tradeSpec.buyQ,tradeSpec.prices);
+	    Pool.agentsById[tradeSpec.sellId[0]].transfer(sellerTransfer);
+	    for(i=0,l=tradeSpec.prices.length;i<l;++i){
+		buyerTransfer = {};
+		buyerTransfer[tradeSpec.goods] = tradeSpec.buyQ[i];
+		buyerTransfer[tradeSpec.money] = -tradeSpec.prices[i]*tradeSpec.buyQ[i];
+		Pool.agentsById[tradeSpec.buyId[i]].transfer(buyerTransfer);
+	    }
+	}
+	
+    }
 };
 
 module.exports = {
