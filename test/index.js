@@ -336,6 +336,15 @@ describe('new Pool', function(){
 	myPool.agents.should.deepEqual([]);
     });
 
+    it('pool.run(1000) with omitted callback function should throw an error', function(){
+	var myPool = new Pool();
+	myPool.push(new Agent());
+	var do_not_do_this = function(){
+	    myPool.run(1000); // callback function intentionally omitted
+	}
+	do_not_do_this.should.throw();
+    });
+
     it('pool.initPeriod with 2 agents in pool calls .initPeriod on each agent', function(){
 	var myPool = new Pool();
 	var agent0 = new Agent();
