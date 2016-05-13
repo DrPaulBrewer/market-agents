@@ -22,6 +22,8 @@ market-agents
     var myAgent = new MarketAgents.Agent();
     var myZIAgent = new MarketAgents.ziAgent();
     myAgent.on('some-event', function(...){...});
+    var myPool = new MarketAgents.Pool();
+    for(var i=0,l=100;i<l;++i) myPool.push(new MarketAgents.ziAgent());
 
 ##Events
 
