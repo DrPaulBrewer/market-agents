@@ -23,6 +23,8 @@ var Agent = function(options){
 	description: 'default do nothing agent',
 	inventory: {},
 	endowment: {},
+	values: {},
+	costs: {},
 	wakeTime: 0,
 	rate: 1,
 	period: 0,
@@ -92,13 +94,29 @@ Agent.prototype.transfer = function(myTransfers){
     }
 };
 
+Agent.prototype.unitCostFunction = function(good, hypotheticalInventory){
+    var result;
+    var costs = this.costs[good];
+    if ((Array.isArray(costs)) && (hypotheticalInventory[good] <= 0)){
+	result = costs[-hypotheticalInventory[good]];
+    }
+    return result;
+};
+
+Agent.prototype.unitValueFunction = function(good, hypotheticalInventory){
+    var result;
+    var vals = this.values[good];
+    if ((Array.isArray(vals)) && (hypotheticalInventory[good] >= 0)){
+	result = vals[hypotheticalInventory[good]];
+    }
+    return result;
+};
+
 ziAgent = function(options){
     // from an idea developed by Gode and Sunder in a series of economics papers
     var defaults = {
 	description: 'Gode and Sunder style ZI Agent',
 	markets: {},
-	values: {},
-	costs: {},
 	minPrice: 0,
 	maxPrice: 1000
     };
@@ -113,27 +131,20 @@ util.inherits(ziAgent, Agent);
 ziAgent.prototype.sendBidsAndAsks = function(){
     var names = Object.keys(this.markets);
     var i,l;
-    var vals, costs;
     var unitValue, unitCost;
     var good;
     var myPrice;
     for(i=0,l=names.length;i<l;++i){
 	good = names[i];
-	vals = this.values[good];
-	costs = this.costs[good];
-	if (Array.isArray(vals) && (vals.length>0) && (this.inventory[good]>=0)){
-	    unitValue = vals[this.inventory[good]];
-	    if (unitValue>0){
-		myPrice = this.bidPrice(unitValue);
-		this.bid(good, myPrice);
-	    }
+	unitValue = this.unitValueFunction(good, this.inventory);
+	if (unitValue>0){
+	    myPrice = this.bidPrice(unitValue);
+	    this.bid(good, myPrice);
 	}
-	if (Array.isArray(costs) && (costs.length>0) && (this.inventory[good]<=0)){
-	    unitCost = costs[-this.inventory[good]];
-	    if (unitCost>0){
-		myPrice = this.askPrice(unitCost);
-		this.ask(good, myPrice);
-	    }
+	unitCost = this.unitCostFunction(good, this.inventory);
+	if (unitCost>0){
+	    myPrice = this.askPrice(unitCost);
+	    this.ask(good, myPrice);
 	}
     }
 };
