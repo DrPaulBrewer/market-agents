@@ -265,12 +265,12 @@ Pool.prototype.trade = function(tradeSpec){
 	    buyerTransfer = {};
 	    buyerTransfer[tradeSpec.goods] = tradeSpec.buyQ[0];
 	    buyerTransfer[tradeSpec.money] = -dot(tradeSpec.sellQ,tradeSpec.prices);
-	    Pool.agentsById[tradeSpec.buyId[0]].transfer(buyerTransfer);
+	    this.agentsById[tradeSpec.buyId[0]].transfer(buyerTransfer);
 	    for(i=0,l=tradeSpec.prices.length;i<l;++i){
 		sellerTransfer = {};
 		sellerTransfer[tradeSpec.goods] = -tradeSpec.sellQ[i];
 		sellerTransfer[tradeSpec.money] = tradeSpec.prices[i]*tradeSpec.sellQ[i];
-		Pool.agentsById[tradeSpec.sellId[i]].transfer(sellerTransfer);
+		this.agentsById[tradeSpec.sellId[i]].transfer(sellerTransfer);
 	    }
 	} else if (tradeSpec.bs==='s'){
 	    if (tradeSpec.sellId.length!==1)
@@ -280,12 +280,12 @@ Pool.prototype.trade = function(tradeSpec){
 	    sellerTransfer = {};
 	    sellerTransfer[tradeSpec.goods] = -tradeSpec.sellQ[0];
 	    sellerTransfer[tradeSpec.money] = dot(tradeSpec.buyQ,tradeSpec.prices);
-	    Pool.agentsById[tradeSpec.sellId[0]].transfer(sellerTransfer);
+	    this.agentsById[tradeSpec.sellId[0]].transfer(sellerTransfer);
 	    for(i=0,l=tradeSpec.prices.length;i<l;++i){
 		buyerTransfer = {};
 		buyerTransfer[tradeSpec.goods] = tradeSpec.buyQ[i];
 		buyerTransfer[tradeSpec.money] = -tradeSpec.prices[i]*tradeSpec.buyQ[i];
-		Pool.agentsById[tradeSpec.buyId[i]].transfer(buyerTransfer);
+		this.agentsById[tradeSpec.buyId[i]].transfer(buyerTransfer);
 	    }
 	}
 	

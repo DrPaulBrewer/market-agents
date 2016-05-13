@@ -336,6 +336,17 @@ describe('new Pool', function(){
 	myPool.agents.should.deepEqual([]);
     });
 
+    it('pool.agentsById has entry for each id from pool.agents', function(){
+	var pool = new Pool();
+	var i,l;
+	for(i=0,l=10;i<l;i++)
+	    pool.push(new Agent());
+	pool.agents.length.should.equal(10);
+	pool.agents.forEach(function(A){
+	    assert.ok(pool.agentsById[A.id]===A);
+	});
+    });
+
     it('pool.run(1000) with omitted callback function should throw an error', function(){
 	var myPool = new Pool();
 	myPool.push(new Agent());
@@ -464,6 +475,72 @@ describe('new Pool', function(){
 	poolAgentRateTest(rates, ziAgent);
     });
 
+    it('pool with 10 agents, pool.Trade agent 0 buys 1 X@400 from agent 5, correct inventories',
+       function(){
+	   var i,l;
+	   var pool = new Pool();
+	   for(i=0,l=10;i<l;++i)
+	       pool.push(new Agent({endowment:{'X':0, 'money':1000}}));
+	   pool.agents.forEach(function(A){
+	       A.inventory.X.should.equal(0);
+	       A.inventory.money.should.equal(1000);
+	   });
+	   var tradeSpec = {
+	       bs: 'b',
+	       goods: 'X',
+	       money: 'money',
+	       buyQ: [1],
+	       sellQ: [1],
+	       buyId: [pool.agents[0].id],
+	       sellId: [pool.agents[5].id],
+	       prices: [400]
+	   };
+	   pool.trade(tradeSpec);
+	   pool.agents.forEach(function(A,i){ 
+	       if (i===0){
+		   A.inventory.X.should.equal(1);
+		   A.inventory.money.should.equal(600);
+	       } else if (i===5){
+		   A.inventory.X.should.equal(-1);
+		   A.inventory.money.should.equal(1400);
+	       } else {
+		   A.inventory.X.should.equal(0);
+		   A.inventory.money.should.equal(1000);
+	       }
+	   });
+       });;
 
-    
+    it('pool with 10 agents, no initial endowment, pool.Trade agent 2 sells 1 X@175 to agent 6, correct inventories',
+       function(){
+	   var i,l;
+	   var pool = new Pool();
+	   for(i=0,l=10;i<l;++i)
+	       pool.push(new Agent());
+	   pool.agents.forEach(function(A){
+	       A.inventory.should.deepEqual({});
+	   });
+	   var tradeSpec = {
+	       bs: 's',
+	       goods: 'X',
+	       money: 'money',
+	       buyQ: [1],
+	       sellQ: [1],
+	       buyId: [pool.agents[6].id],
+	       sellId: [pool.agents[2].id],
+	       prices: [175]
+	   };
+	   pool.trade(tradeSpec);
+	   pool.agents.forEach(function(A,i){ 
+	       if (i===2){
+		   A.inventory.X.should.equal(-1);
+		   A.inventory.money.should.equal(175);
+	       } else if (i===6){
+		   A.inventory.X.should.equal(1);
+		   A.inventory.money.should.equal(-175);
+	       } else {
+		   A.inventory.should.deepEqual({});
+	       }
+	   });
+       });;
+
 });
