@@ -229,7 +229,8 @@ Pool.prototype.next = function(){
 };
 
 var hasSetImmediate = false;
-try { setImmediate(function(){ hasSetImmediate=true; }); } catch(e){}
+/* istanbul ignore next */
+try { setImmediate(function(){ hasSetImmediate=true; }); } catch(e){};
 
 Pool.prototype.run = function(untilTime, cb){
     /* note: setTimeout slows this down significnatly if setImmediate is not available */
@@ -244,11 +245,15 @@ Pool.prototype.run = function(untilTime, cb){
 	    return cb.call(that, false);
 	} else {
 	    nextAgent.wake();
+	    /* istanbul ignore next */
 	    if (hasSetImmediate) setImmediate(loop);
+	    /* istanbul ignore next */
 	    else setTimeout(loop,0);
 	}
     };
+    /* istanbul ignore next */
     if (hasSetImmediate) setImmediate(loop);
+    /* istanbul ignore next */
     else setTimeout(loop,0);
 };
 
@@ -287,8 +292,9 @@ var sum = function(a){
 
 var dot = function(a,b){
     var i,l,total=0;
+    /* istanbul ignore next */
     if (a.length!==b.length)
-	throw new Error("vector dimensions do not match in dot(a,b)");
+	throw new Error("market-agents: vector dimensions do not match in dot(a,b)");
     for(i=0,l=a.length;i<l;++i)
 	if (b[i])
 	    total += a[i]*b[i];
