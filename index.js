@@ -9,8 +9,6 @@ const ProbJS = require('prob.js');
 var _nextId = 1;
 function nextId(){ return _nextId++; }
 
-function neverWake(){ return 0; }
-
 function poissonWake(){
     var delta = ProbJS.exponential(this.rate)();
     return this.wakeTime+delta;
@@ -20,58 +18,61 @@ var Agent = function(options){
     EventEmitter.call(this);
     var defaults = {
 	id: nextId(),
-	description: 'default do nothing agent',
+	description: 'blank agent',
 	inventory: {},
-	endowment: {},
+	money: 'money',
 	values: {},
 	costs: {},
 	wakeTime: 0,
 	rate: 1,
-	period: 0,
+	period: {number:0, startTime:0},
 	nextWake: poissonWake
     };
-    Object.assign(this, defaults, options);
+    Object.assign(this, defaults, JSON.parse(JSON.stringify(options || {})));
     this.init();
 };
 
 util.inherits(Agent, EventEmitter);
 
-Agent.prototype.getPeriodNumber = function(){
-    if (typeof(this.period)==='number') return this.period;
-    if (typeof(this.period)==='object') return this.period.number;
-};
-    
-Agent.prototype.resetInventory = function(newInventory){
-    var amounts = newInventory || this.endowment;
-    var goods;
-    var i,l,g;
-    if (Array.isArray(amounts))
-	amounts = amounts[this.getPeriodNumber()];
-    if (typeof(amounts)==='function')
-	amounts = amounts.call(this);
-    if (typeof(amounts)==='object'){
-	goods = Object.keys(amounts);
-	for(i=0,l=goods.length;i<l;++i){
-	    g = goods[i];
-	    this.inventory[g] = amounts[g];
-	}
+Agent.prototype.init = function(newSettings){
+    var i,l;
+    var mySettings = {};
+    if (typeof(newSettings)==='object'){
+	// work with a shallow copy of the newSettings so
+	// the code can delete the inventory setting without side effects
+	mySettings = Object.assign({}, newSettings);
+	// copy new values to inventory.  do not reset other inventory values
+	Object.assign(this.inventory, mySettings.inventory);
+	// reset non-inventory as specified, completely overwriting previous 
+	// to execute this reset, first: delete the inventory settings, then apply the remainder
+	delete mySettings.inventory; 
+	Object.assign(this, mySettings);
     }
-};
-
-Agent.prototype.init = function(){
-    this.resetInventory();
+    // if this.money is defined but is not in inventory, zero the inventory of this.money
+    if (this.money && !(this.inventory[this.money]))
+	this.inventory[this.money] = 0;
     this.wakeTime = this.nextWake();
 };
 
-Agent.prototype.initPeriod = function(period, info){
-    this.period = period;
-    this.wakeTime = (typeof(period)==='object')? (period.startTime): 0;
-    this.init();
-    this.emit('initPeriod', info);
+Agent.prototype.initPeriod = function(unsafePeriod){
+    // period might look like this
+    // period = {number:5, startTime:50000, init: {inventory:{X:0, Y:0}, values:{X:[300,200,100,0,0,0,0]}}}
+    // first do a deep copy, then it is safe to make assignments
+    var period = JSON.parse(JSON.stringify(unsafePeriod));
+    if (typeof(period)==='object')
+	this.period = period;
+    else if (typeof(period)==='number')
+	this.period.number = period;
+    if (typeof(this.period.startTime)==='number')
+	this.wakeTime = this.period.startTime;
+    this.init(this.period.init);
+    this.emit('pre-period');
 };
 
-Agent.prototype.endPeriod = function(info){
-    this.emit('endPeriod', info);
+Agent.prototype.endPeriod = function(){
+    if (typeof(this.produce)==='function') this.produce();
+    if (typeof(this.redeem)==='function') this.redeem();
+    this.emit('post-period');
 };
 
 Agent.prototype.wake = function(info){
@@ -79,10 +80,10 @@ Agent.prototype.wake = function(info){
     this.wakeTime = this.nextWake();
 };
 
-Agent.prototype.transfer = function(myTransfers){
+Agent.prototype.transfer = function(myTransfers, memo){
     var goods, i, l;
     if (myTransfers){
-	this.emit('pre-transfer', myTransfers);
+	this.emit('pre-transfer', myTransfers, memo);
 	goods = Object.keys(myTransfers);
 	for(i=0,l=goods.length; i<l; ++i){
 	    if (this.inventory[goods[i]])
@@ -90,7 +91,7 @@ Agent.prototype.transfer = function(myTransfers){
 	    else
 		this.inventory[goods[i]] = myTransfers[goods[i]];
 	}
-	this.emit('post-transfer', myTransfers);
+	this.emit('post-transfer', myTransfers, memo);
     }
 };
 
@@ -110,6 +111,46 @@ Agent.prototype.unitValueFunction = function(good, hypotheticalInventory){
 	result = vals[hypotheticalInventory[good]];
     }
     return result;
+};
+
+Agent.prototype.redeem = function(){
+    var i,l,g;
+    var trans = {};
+    var goods;
+    if (this.values){
+	goods = Object.keys(this.values);
+	trans[this.money] = 0;
+	for(i=0,l=goods.length;i<l;++i){
+	    g = goods[i];
+	    if (this.inventory[g]>0){
+		trans[g] = -this.inventory[g];
+		trans[this.money] += sum(this.values[g].slice(0,this.inventory[g]));
+	    }
+	}
+	this.emit('pre-redeem', trans);
+	this.transfer(trans, {isRedeem:1});
+	this.emit('post-redeem',trans);
+    }
+};
+
+Agent.prototype.produce = function(){
+    var i,l,g;
+    var trans = {};
+    var goods;
+    if (this.costs){ 
+	goods = Object.keys(this.costs);
+	trans[this.money] = 0;
+	for(i=0,l=goods.length;i<l;++i){
+	    g = goods[i];
+	    if (this.inventory[g]<0){
+		trans[this.money] -= sum(this.costs[g].slice(0,-this.inventory[g]));
+		trans[g] = -this.inventory[g];
+	    }
+	}
+	this.emit('pre-produce', trans);
+	this.transfer(trans, {isProduce:1});
+	this.emit('post-produce', trans);
+    }
 };
 
 ziAgent = function(options){
@@ -167,6 +208,8 @@ Pool = function(){
 };
 
 Pool.prototype.push = function(agent){
+    if (!(agent instanceof Agent))
+	throw new Error("Pool.push(agent), agent is not an instance of Agent or descendents");
     if (!this.agentsById[agent.id]){
 	this.agents.push(agent);
 	this.agentsById[agent.id] = agent;
@@ -217,16 +260,22 @@ Pool.prototype.syncRun = function(untilTime){
     }
 };
 
-Pool.prototype.initPeriod = function(period, info){
+Pool.prototype.initPeriod = function(param){
     var i,l;
-    for(i=0,l=this.agents.length; i<l; i++)
-	this.agents[i].initPeriod(period, info);
+    if (Array.isArray(param) && (param.length>0)){
+	// this is safe because Agent.initPeriod does a deepcopy 
+	for(i=0,l=this.agents.length; i<l; i++)
+	    this.agents[i].initPeriod(param[i%(param.length)]);
+    } else {
+	for(i=0,l=this.agents.length; i<l; i++)
+	    this.agents[i].initPeriod(param);
+    }
 };
 
-Pool.prototype.endPeriod = function(info){
+Pool.prototype.endPeriod = function(){
     var i,l;
     for(i=0,l=this.agents.length;i<l;i++)
-	this.agents[i].endPeriod(info);
+	this.agents[i].endPeriod();
 };
 
 var sum = function(a){
@@ -265,12 +314,12 @@ Pool.prototype.trade = function(tradeSpec){
 	    buyerTransfer = {};
 	    buyerTransfer[tradeSpec.goods] = tradeSpec.buyQ[0];
 	    buyerTransfer[tradeSpec.money] = -dot(tradeSpec.sellQ,tradeSpec.prices);
-	    this.agentsById[tradeSpec.buyId[0]].transfer(buyerTransfer);
+	    this.agentsById[tradeSpec.buyId[0]].transfer(buyerTransfer, {isTrade:1, isBuy:1});
 	    for(i=0,l=tradeSpec.prices.length;i<l;++i){
 		sellerTransfer = {};
 		sellerTransfer[tradeSpec.goods] = -tradeSpec.sellQ[i];
 		sellerTransfer[tradeSpec.money] = tradeSpec.prices[i]*tradeSpec.sellQ[i];
-		this.agentsById[tradeSpec.sellId[i]].transfer(sellerTransfer);
+		this.agentsById[tradeSpec.sellId[i]].transfer(sellerTransfer, {isTrade:1, isSellAccepted:1});
 	    }
 	} else if (tradeSpec.bs==='s'){
 	    if (tradeSpec.sellId.length!==1)
@@ -280,12 +329,12 @@ Pool.prototype.trade = function(tradeSpec){
 	    sellerTransfer = {};
 	    sellerTransfer[tradeSpec.goods] = -tradeSpec.sellQ[0];
 	    sellerTransfer[tradeSpec.money] = dot(tradeSpec.buyQ,tradeSpec.prices);
-	    this.agentsById[tradeSpec.sellId[0]].transfer(sellerTransfer);
+	    this.agentsById[tradeSpec.sellId[0]].transfer(sellerTransfer, {isTrade:1, isSell:1});
 	    for(i=0,l=tradeSpec.prices.length;i<l;++i){
 		buyerTransfer = {};
 		buyerTransfer[tradeSpec.goods] = tradeSpec.buyQ[i];
 		buyerTransfer[tradeSpec.money] = -tradeSpec.prices[i]*tradeSpec.buyQ[i];
-		this.agentsById[tradeSpec.buyId[i]].transfer(buyerTransfer);
+		this.agentsById[tradeSpec.buyId[i]].transfer(buyerTransfer, {isTrade:1, isBuyAccepted:1});
 	    }
 	}
 	

@@ -20,19 +20,18 @@ describe('MarketAgents', function(){
 });
 
 describe('new Agent', function(){
-    it('should have properties id, description, inventory, endowment, wakeTime, rate, nextWake, period with proper types',
+    it('should have properties id, description, inventory, wakeTime, rate, nextWake, period with proper types',
        function(){ 
 	   var myAgent = new Agent();
 	   myAgent.should.be.type('object');
-	   myAgent.should.have.properties('id','description','inventory','endowment','wakeTime','rate','nextWake','period');
+	   myAgent.should.have.properties('id','description','inventory','wakeTime','rate','nextWake','period');
 	   myAgent.id.should.be.type('number');
 	   myAgent.description.should.be.type('string');
 	   myAgent.inventory.should.be.type('object');
-	   myAgent.endowment.should.be.type('object');
 	   myAgent.wakeTime.should.be.type('number');
 	   myAgent.rate.should.be.type('number');
 	   myAgent.nextWake.should.be.type('function');
-	   myAgent.period.should.be.type('number');
+	   myAgent.period.should.be.type('object');
        });
     
     it('should have ascending default id number', function(){
@@ -75,22 +74,20 @@ describe('new Agent', function(){
 	assert.ok(agent2.wakeTime<(0.67*agent1.wakeTime));	
     });
 
-    it('agent.getPeriodNumber() should initially return 0', function(){
-	var agent = new Agent();
-	agent.getPeriodNumber().should.equal(0);
-    });
-    
-    describe('agent-period cycle interactions with numeric period', function(){
+    describe('agent-period cycle interactions', function(){
 	function setup(){
 	    var someMoneyNoX = {money: 1000, X:0};
-	    var agent0 = new Agent({endowment: someMoneyNoX});
-	    var agent1 = new Agent({endowment: someMoneyNoX});
+	    var period = {number:0, startTime:0, init:{inventory: someMoneyNoX}};
+	    var agent0 = new Agent();
+	    var agent1 = new Agent();
+	    agent0.initPeriod(period);
+	    agent1.initPeriod(period);
 	    return [agent0, agent1];
 	}
 	it('should initially be at period 0', function(){
 	    var agents = setup();
-	    agents[0].getPeriodNumber().should.equal(0);
-	    agents[1].getPeriodNumber().should.equal(0);
+	    agents[0].period.number.should.equal(0);
+	    agents[1].period.number.should.equal(0);
 	});
 	it('agents 1,2  should show initial inventory 0 X 1000 Money', function(){
 	    var agents = setup();
@@ -105,67 +102,125 @@ describe('new Agent', function(){
 	    agents[0].transfer(buyOneXFor500);
 	    assert.ok(agents[0].inventory.X===1);
 	    assert.ok(agents[0].inventory.money===500);
-	    assert.ok(agents[0].endowment.X===0);
-	    assert.ok(agents[0].endowment.money===1000);
 	    assert.ok(agents[1].inventory.X===0);
 	    assert.ok(agents[1].inventory.money===1000);
 	});
-	it('agents should emit endPeriod when .endPeriod is called', function(){
+	it('agents should emit post-period when .endPeriod is called', function(){
 	    var agents = setup();
 	    var ended = [0,0];
-	    agents.forEach(function(a,i){ a.on('endPeriod', function(){ ended[i]=1; }); });
+	    agents.forEach(function(a,i){ a.on('post-period', function(){ ended[i]=1; }); });
 	    agents.forEach(function(a){ a.endPeriod(); });
 	    ended.should.deepEqual([1,1]);
 	});
-	it('agents should indicate period 1 when set', function(){
+	it('agents should indicate period 1 after set with .initPeriod({number:1, ... })', function(){
+	    var agents = setup();
+	    var buyOneXFor500 = {money: -500, X:1 };
+	    agents[0].transfer(buyOneXFor500);
+	    agents.forEach(function(a){ a.initPeriod(Object.assign({},a.period,{number:1})); });
+	    assert.ok(agents[0].period.number===1);
+	    assert.ok(agents[1].period.number===1);
+	});
+	it('agents should indicate period 1 after set with .initPeriod(1)', function(){
 	    var agents = setup();
 	    var buyOneXFor500 = {money: -500, X:1 };
 	    agents[0].transfer(buyOneXFor500);
 	    agents.forEach(function(a){ a.initPeriod(1); });
-	    assert.ok(agents[0].getPeriodNumber()===1);
-	    assert.ok(agents[1].getPeriodNumber()===1);
+	    assert.ok(agents[0].period.number===1);
+	    assert.ok(agents[1].period.number===1);
 	});
 	it('agents 1,2, should show initial inventory 0 X, 1000 Money for Period 1', function(){
 	    var agents = setup();
 	    var buyOneXFor500 = {money: -500, X:1 };
 	    agents[0].transfer(buyOneXFor500);
-	    agents.forEach(function(a){ a.initPeriod(1); });
+	    agents.forEach(function(a){ a.initPeriod(Object.assign({},a.period,{number:1}))});
 	    assert.ok(agents[0].inventory.X===0);
 	    assert.ok(agents[0].inventory.money===1000);
 	    assert.ok(agents[1].inventory.X===0);
 	    assert.ok(agents[1].inventory.money===1000);
 	});
-	it('agent 1 given 2Y should still have 2Y after period reset as Y amount unspecified in endowment', function(){
+	it('agent 1 given 2Y should still have 2Y after period reset as Y amount unspecified in period.init.inventory', function(){
 	    var agents = setup();
 	    var give1Y = {Y:1};
 	    agents[0].transfer(give1Y);
 	    assert.ok(agents[0].inventory.Y===1);
-	    agents.forEach(function(a){a.initPeriod(1); });
+	    agents.forEach(function(a){a.initPeriod(Object.assign({},a.period,{number:1}))});
 	    assert.ok(agents[0].inventory.X===0);
 	    assert.ok(agents[0].inventory.money===1000);
 	    assert.ok(agents[0].inventory.Y===1);
 	    assert.ok(agents[1].inventory.X===0);
 	    assert.ok(agents[1].inventory.money===1000);
 	});
+
+	it('agent end of period redemption, zeroed X and correct end-of-period money balance', function(){
+	    var period1 = { 
+		number: 1,
+		init: {
+		    inventory: {'money': 1000, 'X':0, 'Y':1},
+		    values: {'X': [500,400,300,200,100,1,1,1,1,1,1,1]}
+		}
+	    };
+	    var agents = setup();
+	    agents[0].initPeriod(period1);
+	    agents[1].initPeriod(period1);
+	    agents[0].transfer({'X':5});
+	    agents[1].transfer({'X':2});
+	    agents[0].endPeriod();
+	    agents[1].endPeriod();
+	    // X inventory should be zero from redemption
+	    agents[0].inventory.X.should.equal(0);
+	    agents[1].inventory.X.should.equal(0);
+	    // Y inventory is unchanged because no values or costs
+	    agents[0].inventory.Y.should.equal(1);
+	    agents[1].inventory.Y.should.equal(1);
+	    agents[0].inventory.money.should.equal(2500);
+	    agents[1].inventory.money.should.equal(1900);
+	});
+
+
+	it('agent end of period production, zeroed X and correct end-of-period money balance', function(){
+	    var period1 = { 
+		number: 1,
+		init: {
+		    inventory: {'money': 1000, 'X':0, 'Y':1},
+		    costs: {'X': [100,200,300,400,500,600,700,800,900,1000]}
+		}
+	    };
+	    var agents = setup();
+	    agents[0].initPeriod(period1);
+	    agents[1].initPeriod(period1);
+	    agents[0].transfer({'X':-5});
+	    agents[1].transfer({'X':-2});
+	    agents[0].endPeriod();
+	    agents[1].endPeriod();
+	    // X inventory should be zero from cost
+	    agents[0].inventory.X.should.equal(0);
+	    agents[1].inventory.X.should.equal(0);
+	    // Y inventory is unchanged because no values or costs
+	    agents[0].inventory.Y.should.equal(1);
+	    agents[1].inventory.Y.should.equal(1);
+	    agents[0].inventory.money.should.equal(-500);
+	    agents[1].inventory.money.should.equal(700);
+	});
+
+
 
     });
 
 });
     
 describe('new ziAgent', function(){
-    it('should have properties id, description, inventory, endowment, wakeTime, rate, nextWake, period with proper types',
+    it('should have properties id, description, inventory, wakeTime, rate, nextWake, period with proper types',
        function(){ 
 	   var myAgent = new ziAgent();
 	   myAgent.should.be.type('object');
-	   myAgent.should.have.properties('id','description','inventory','endowment','wakeTime','rate','nextWake','period');
+	   myAgent.should.have.properties('id','description','inventory','wakeTime','rate','nextWake','period');
 	   myAgent.id.should.be.type('number');
 	   myAgent.description.should.be.type('string');
 	   myAgent.inventory.should.be.type('object');
-	   myAgent.endowment.should.be.type('object');
 	   myAgent.wakeTime.should.be.type('number');
 	   myAgent.rate.should.be.type('number');
 	   myAgent.nextWake.should.be.type('function');
-	   myAgent.period.should.be.type('number');
+	   myAgent.period.should.be.type('object');
        });
     
     it('should have properties markets, values, costs, minPrice, maxPrice with proper types', function(){
@@ -191,7 +246,8 @@ describe('new ziAgent', function(){
     });
 
     it('should call this.bid() on this.wake() if values configured', function(){
-	var zi = new ziAgent({markets: {X:1}, endowment: {coins:0, X:0, Y:0}, values: {X: [100]}});
+	var zi = new ziAgent({markets: {X:1}});
+	zi.initPeriod({number:0, startTime:0, init: {inventory: {coins:0, X:0, Y:0 }, values: {X: [100,1,1]}}});
 	var wakes=0,bids=0,asks=0;
 	zi.on('wake', function(){ wakes++; });
 	zi.bid = function(good, p){ 
@@ -207,7 +263,8 @@ describe('new ziAgent', function(){
     });
 
     it('should call this.ask() on this.wake() if costs configured', function(){
-	var zi = new ziAgent({markets: {X:1}, endowment: {coins:0, X:0, Y:0}, costs: {X: [100]}, maxPrice:1000});
+	var zi = new ziAgent({markets: {X:1}});
+	zi.initPeriod({number:0, startTime:0, init: {inventory: {coins:0, X:0, Y:0 }, costs: {X: [100,1000,1000]}}});
 	var wakes=0,bids=0,asks=0;
 	zi.on('wake', function(){ wakes++; });
 	zi.bid = function(good, p){ 
@@ -226,7 +283,7 @@ describe('new ziAgent', function(){
 
     it('should call this.bid() and this.ask() on this.wake() if both values and  costs configured', function(){
 	var zi = new ziAgent({
-	    endowment: {coins:0, X:0, Y:0},
+	    inventory: {coins:0, X:0, Y:0},
 	    markets: {X:1,Y:1}, 
 	    costs: {X: [100]}, 
 	    values: {Y: [50]},
@@ -360,32 +417,62 @@ describe('new Pool', function(){
 	var myPool = new Pool();
 	var agent0 = new Agent();
 	var agent1 = new Agent();
-	agent0.period.should.equal(0);
-	agent1.period.should.equal(0);
+	agent0.period.number.should.equal(0);
+	agent1.period.number.should.equal(0);
 	myPool.push(agent0);
 	myPool.push(agent1);
-	myPool.agents[0].period.should.equal(0);
-	myPool.agents[1].period.should.equal(0);
-	myPool.initPeriod(1234);
-	myPool.agents[0].period.should.equal(1234);
-	myPool.agents[1].period.should.equal(1234);
+	myPool.agents[0].period.number.should.equal(0);
+	myPool.agents[1].period.number.should.equal(0);
+	myPool.initPeriod({number:1234, startTime:10000});
+	myPool.agents[0].period.number.should.equal(1234);
+	myPool.agents[1].period.number.should.equal(1234);
     });
 
     it('pool.initPeriod({number:5, startTime:50000}) sets all period numbers to 5, all wakeTime>50000', function(){
 	var myPool = new Pool();
 	var agent0 = new Agent();
 	var agent1 = new Agent();
-	agent0.period.should.equal(0);
-	agent1.period.should.equal(0);
+	agent0.period.number.should.equal(0);
+	agent1.period.number.should.equal(0);
 	myPool.push(agent0);
 	myPool.push(agent1);
 	myPool.initPeriod({number:5, startTime:50000});
 	myPool.agents.length.should.equal(2);
 	myPool.agents.forEach(function(A){
-	    A.getPeriodNumber().should.equal(5);
+	    A.period.number.should.equal(5);
 	    A.wakeTime.should.be.above(50000);
 	});
     });
+
+    it('pool.initPeriod(5) sets all period numbers to 5', function(){
+	var myPool = new Pool();
+	var agent0 = new Agent();
+	var agent1 = new Agent();
+	agent0.period.number.should.equal(0);
+	agent1.period.number.should.equal(0);
+	myPool.push(agent0);
+	myPool.push(agent1);
+	myPool.initPeriod(5);
+	myPool.agents.length.should.equal(2);
+	myPool.agents.forEach(function(A){
+	    A.period.number.should.equal(5);
+	});
+    });
+
+    it("pool.initPeriod([{number:1, init:{color:'blue'}},{number:1, init:{color:'red'}}]) with 3 agents in pool sets agents colors to blue, red, blue and all period numbers to 1", function(){
+	var myPool = new Pool();
+	[1,2,3].forEach(function(){ myPool.push( new Agent() ); });
+	myPool.initPeriod([
+	    {number:1, init: {color:'blue'}},
+	    {number:1, init: {color:'red'}}
+	]);
+	myPool.agents[0].period.number.should.equal(1);
+	myPool.agents[1].period.number.should.equal(1);
+	myPool.agents[2].period.number.should.equal(1);
+	myPool.agents[0].color.should.equal('blue');
+	myPool.agents[1].color.should.equal('red');
+	myPool.agents[2].color.should.equal('blue');
+    }); 
 
     it('pool.endPeriod with 2 agents in pool calls .endPeriod on each agent', function(){
 	var myPool = new Pool();
@@ -395,8 +482,8 @@ describe('new Pool', function(){
 	myPool.push(agent1);
 	var ended = [0,0];
 	var handler = function(i){ return function(){ ended[i]=1; }; };
-	agent0.on('endPeriod', handler(0));
-	agent1.on('endPeriod', handler(1));
+	agent0.on('post-period', handler(0));
+	agent1.on('post-period', handler(1));
 	myPool.endPeriod();
 	ended.should.deepEqual([1,1]);
     });
@@ -480,7 +567,7 @@ describe('new Pool', function(){
 	   var i,l;
 	   var pool = new Pool();
 	   for(i=0,l=10;i<l;++i)
-	       pool.push(new Agent({endowment:{'X':0, 'money':1000}}));
+	       pool.push(new Agent({inventory:{'X':0, 'money':1000}}));
 	   pool.agents.forEach(function(A){
 	       A.inventory.X.should.equal(0);
 	       A.inventory.money.should.equal(1000);
@@ -510,14 +597,52 @@ describe('new Pool', function(){
 	   });
        });;
 
-    it('pool with 10 agents, no initial endowment, pool.Trade agent 2 sells 1 X@175 to agent 6, correct inventories',
+    it('pool with 10 agents, pool.Trade agent 0 buys 1 X@400 from agent 5, 1 X@450 from agent 6, correct inventories',
+       function(){
+	   var i,l;
+	   var pool = new Pool();
+	   for(i=0,l=10;i<l;++i)
+	       pool.push(new Agent({inventory:{'X':0, 'money':1000}}));
+	   pool.agents.forEach(function(A){
+	       A.inventory.X.should.equal(0);
+	       A.inventory.money.should.equal(1000);
+	   });
+	   var tradeSpec = {
+	       bs: 'b',
+	       goods: 'X',
+	       money: 'money',
+	       buyQ: [2],
+	       sellQ: [1,1],
+	       buyId: [pool.agents[0].id],
+	       sellId: [pool.agents[5].id,pool.agents[6].id],
+	       prices: [400,450]
+	   };
+	   pool.trade(tradeSpec);
+	   pool.agents.forEach(function(A,i){ 
+	       if (i===0){
+		   A.inventory.X.should.equal(2);
+		   A.inventory.money.should.equal(150);
+	       } else if (i===5){
+		   A.inventory.X.should.equal(-1);
+		   A.inventory.money.should.equal(1400);
+	       } else if (i===6){
+		   A.inventory.X.should.equal(-1);
+		   A.inventory.money.should.equal(1450);
+	       } else {
+		   A.inventory.X.should.equal(0);
+		   A.inventory.money.should.equal(1000);
+	       }
+	   });
+       });;
+
+    it('pool with 10 agents, pool.Trade agent 2 sells 1 X@175 to agent 6, correct inventories',
        function(){
 	   var i,l;
 	   var pool = new Pool();
 	   for(i=0,l=10;i<l;++i)
 	       pool.push(new Agent());
 	   pool.agents.forEach(function(A){
-	       A.inventory.should.deepEqual({});
+	       A.inventory.should.deepEqual({'money':0});
 	   });
 	   var tradeSpec = {
 	       bs: 's',
@@ -538,7 +663,43 @@ describe('new Pool', function(){
 		   A.inventory.X.should.equal(1);
 		   A.inventory.money.should.equal(-175);
 	       } else {
-		   A.inventory.should.deepEqual({});
+		   A.inventory.should.deepEqual({money:0});
+	       }
+	   });
+       });;
+
+    it('pool with 10 agents, pool.Trade agent 2 sells 1 X@175 to agent 6, 2 X@150 to agent 4, correct inventories',
+       function(){
+	   var i,l;
+	   var pool = new Pool();
+	   for(i=0,l=10;i<l;++i)
+	       pool.push(new Agent());
+	   pool.agents.forEach(function(A){
+	       A.inventory.should.deepEqual({money:0});
+	   });
+	   var tradeSpec = {
+	       bs: 's',
+	       goods: 'X',
+	       money: 'money',
+	       buyQ: [1,2],
+	       sellQ: [3],
+	       buyId: [pool.agents[6].id, pool.agents[4].id],
+	       sellId: [pool.agents[2].id],
+	       prices: [175, 150]
+	   };
+	   pool.trade(tradeSpec);
+	   pool.agents.forEach(function(A,i){ 
+	       if (i===2){
+		   A.inventory.X.should.equal(-3);
+		   A.inventory.money.should.equal(475);
+	       } else if (i===4){
+		   A.inventory.X.should.equal(2);
+		   A.inventory.money.should.equal(-300);
+	       } else if (i===6){
+		   A.inventory.X.should.equal(1);
+		   A.inventory.money.should.equal(-175);
+	       } else {
+		   A.inventory.should.deepEqual({money:0});
 	       }
 	   });
        });;
