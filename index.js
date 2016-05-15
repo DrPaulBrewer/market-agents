@@ -4,7 +4,7 @@ const util = require('util');
 const EventEmitter = require('events').EventEmitter;
 const RandomJS = require('random-js');
 const ProbJS = require('prob.js');
-
+const clone = require('clone');
 
 var _nextId = 1;
 function nextId(){ return _nextId++; }
@@ -28,7 +28,7 @@ var Agent = function(options){
 	period: {number:0, startTime:0},
 	nextWake: poissonWake
     };
-    Object.assign(this, defaults, JSON.parse(JSON.stringify(options || {})));
+    Object.assign(this, defaults, clone(options, false));
     this.init();
 };
 
@@ -54,13 +54,11 @@ Agent.prototype.init = function(newSettings){
     this.wakeTime = this.nextWake();
 };
 
-Agent.prototype.initPeriod = function(unsafePeriod){
+Agent.prototype.initPeriod = function(period){
     // period might look like this
     // period = {number:5, startTime:50000, init: {inventory:{X:0, Y:0}, values:{X:[300,200,100,0,0,0,0]}}}
-    // first do a deep copy, then it is safe to make assignments
-    var period = JSON.parse(JSON.stringify(unsafePeriod));
     if (typeof(period)==='object')
-	this.period = period;
+	this.period = clone(period, false);
     else if (typeof(period)==='number')
 	this.period.number = period;
     if (typeof(this.period.startTime)==='number')
@@ -272,7 +270,7 @@ Pool.prototype.syncRun = function(untilTime){
 Pool.prototype.initPeriod = function(param){
     var i,l;
     if (Array.isArray(param) && (param.length>0)){
-	// this is safe because Agent.initPeriod does a deepcopy 
+	// this is safe because Agent.initPeriod does a deep clone
 	for(i=0,l=this.agents.length; i<l; i++)
 	    this.agents[i].initPeriod(param[i%(param.length)]);
     } else {
