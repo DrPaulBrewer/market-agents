@@ -160,9 +160,7 @@ ziAgent = function(options){
 	maxPrice: 1000
     };
     Agent.call(this, Object.assign({}, defaults, options));
-    this.on('wake', function(){
-	this.sendBidsAndAsks();
-    });
+    this.on('wake', ziAgent.prototype.sendBidsAndAsks);
 }; 
 
 util.inherits(ziAgent, Agent);

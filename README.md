@@ -16,20 +16,117 @@ market-agents
 ##Initialization
 
     var MarketAgents = require('market-agents');
+    const Agent = MarketAgents.Agent;
+    const ziAgent = MarketAgents.Agent;
+    const Pool = MarketAgents.Pool;
  
-##Usage
+##Blurb
 
-    var myAgent = new MarketAgents.Agent();
-    var myZIAgent = new MarketAgents.ziAgent();
+    var myAgent = new Agent({inventory: {money:1000, X:5}});
+    var myZIAgent = new ziAgent();
     myAgent.on('some-event', function(...){...});
-    var myPool = new MarketAgents.Pool();
+    var myPool = new Pool();
     for(var i=0,l=100;i<l;++i) myPool.push(new MarketAgents.ziAgent());
+    myPool.initPeriod([type1Params,type2Params,...,typeNParams]);
+    myPool.runSync(10000); 
+    myPool.endPeriod();
 
-##Events
+##Agent Construction
+    
+    var myAgent = new Agent({option1:value1, option2:value2, ... });
 
-TBA
+### Agent constructor options
 
-##Functions     
+`id` default: an ascending number
 
-TBA
+`description` default: `'blank agent'`
+
+`inventory`  default: `{}`
+
+`money` default: `'money'`
+
+`values` default: `{}`
+
+`costs` default: `{}`
+
+`wakeTime` default: `0`
+
+`rate` default: `1`
+
+`period` default: `{number:0, startTime: 0}`
+
+`nextWake` default: `poissonWake` function
+
+
+##Agent Events
+
+*wake*
+Parameters: info
+Emitted-By: Agent.prototype.wake
+When: when Agent.wake(info) is called.  
+Note: this.wakeTime contains the current official agent time.  The event is triggered before calculating the new wakeTime.
+Use this for: agent strategy (placing bids, asks, responding to others bids/asks)
+
+*pre-transfer*
+Parameters: myTransfers, memo
+Emitted-By: Agent.prototype.transfer
+When: before modifying the agent's inventory
+Use this for: altering or removing transfers before they occur
+
+*post-transfer*
+Parameters: myTransfers, memo
+Emitted-By: Agent.prototype.transfer
+When: after modifying the agent's inventory
+Use this for: logging transfers, taking other actions after the transfer
+
+*pre-period*
+Parameters: None
+Emitted-By: Agent.prototype.initPeriod
+When: after new period information has been copied to agent
+Use this for:  additional agent set up at the beginning of every period
+
+*post-period*
+Parameters: None
+Emitted-By: Agent.prototype.endPeriod
+When: after all period activities, produce and redeem, have completed
+Use this for: any final agent accounting, profit capture, cleanup, etc. before ending the period
+
+*pre-redeem*
+Parameters: trans
+Emitted-By: Agent.prototype.redeem
+When: Typically at end of a period, after a redemption transfer has been calculated, but before the transfer takes place
+Use this for: modifying the redemption transfer
+
+*post-redeem*
+Parameters: trans
+Emitter-By: Agent.prototype.redeem
+When: after a redemption transfer has been processed and added to the agent's inventory
+Use this for: logging redemption amounts, taking other actions after a redemption
+
+*pre-produce*
+Parameters: trans
+Emtited-By: Agent.prototype.produce
+When: Typically at the end of a period, after a production transaction has been calculated, but before the transfer
+Use this for: modifying the production transfer 
+
+*post-produce*
+Parameters: trans
+Emitted-By:Agent.prototype.produce
+When: after a production transfer has been processed and added to the agent's inventory
+Use this for: logging production amounts, taking other actions after production
+
+##ZiAgent Events
+
+ziAgent inherits all event behavior from Agent and adds no unique events to Agent.
+
+ziAgent registers ziAgent.Prototype.sendBidsAndAsks as the first responder to the Agent *Wake* event.
+
+
+##Pool Events
+
+Pool is not an EventEmitter of its own.  
+
+Instead, several Pool methods call methods on all agents in the Pool, triggering related Agent events.
+
+
 
