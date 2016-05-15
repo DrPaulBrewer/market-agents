@@ -731,10 +731,13 @@ describe('new Pool', function(){
 	    prices: [175, 150]
 	};
 	if (invalidSum){
-	    if (bs==='b')
+	    if (bs==='b'){
+		tradeSpec.buyId = tradeSpec.buyId.slice(0,1);
 		tradeSpec.buyQ = [3];
-	    else
+	    } else {
+		tradeSpec.sellId = tradeSpec.sellId.slice(0,1);
 		tradeSpec.sellQ = [3];
+	    }
 	}
 	var do_not_do_this = function(){
 	    pool.trade(tradeSpec);
