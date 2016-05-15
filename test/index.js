@@ -393,6 +393,14 @@ describe('new Pool', function(){
 	myPool.agents.should.deepEqual([]);
     });
 
+    it('should not accept invalid agents:  pool.push(a) should throw an error if a is not Agent-related', function(){
+	var myPool = new Pool();
+	var do_not_do_this = function(){
+	    myPool.push({});
+	};
+	do_not_do_this.should.throw();
+    });
+
     it('pool.agentsById has entry for each id from pool.agents', function(){
 	var pool = new Pool();
 	var i,l;
@@ -703,5 +711,60 @@ describe('new Pool', function(){
 	       }
 	   });
        });;
+
+    var badTradeTest = function(bs, invalidSum){
+	var i,l;
+	var pool = new Pool();
+	for(i=0,l=10;i<l;++i)
+	    pool.push(new Agent());
+	pool.agents.forEach(function(A){
+	    A.inventory.should.deepEqual({money:0});
+	});
+	var tradeSpec = {
+	    bs: bs,
+	    goods: 'X',
+	    money: 'money',
+	    buyQ: [2,2],
+	    sellQ: [2,2],
+	    buyId: [pool.agents[6].id, pool.agents[4].id],
+	    sellId: [pool.agents[2].id, pool.agents[3].id],
+	    prices: [175, 150]
+	};
+	if (invalidSum){
+	    if (bs==='b')
+		tradeSpec.buyQ = [3];
+	    else
+		tradeSpec.sellQ = [3];
+	}
+	var do_not_do_this = function(){
+	    pool.trade(tradeSpec);
+	};
+	do_not_do_this.should.throw();
+	pool.agents.forEach(function(A){
+	    A.inventory.should.deepEqual({money:0});
+	});
+    };
+
+    it('pool.Trade throws error on bad buy trade with multiple tradeSpec.buyId entries, inventories unchanged',
+       function(){
+	   badTradeTest('b');
+       });
+
+    it('pool.Trade throws error on bad buy trade with buyQ[0] sum not equal to sum over i of sellQ[i], inventories unchanged',
+       function(){
+	   badTradeTest('b',true);
+       });
+
+    it('pool.Trade throws error on bad sell trade with multiple tradeSpec.sellId entries, inventories unchanged',
+       function(){
+	   badTradeTest('s');
+       });
+
+    it('pool.Trade throws error on bad sell trade with sellQ[0] sum not equal to sum over i of buyQ[i], inventories unchanged',
+       function(){
+	   badTradeTest('s',true);
+       });
+
+    
 
 });
