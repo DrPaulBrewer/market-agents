@@ -191,12 +191,16 @@ ziAgent.prototype.sendBidsAndAsks = function(){
 };
 
 ziAgent.prototype.bidPrice = function(value){
+    if (value===this.minPrice) return value;
+    if (value<this.minPrice) return undefined;
     var p = ProbJS.uniform(this.minPrice, value)();
     if (this.integer) p = Math.floor(p);
     return p;
 };
 
 ziAgent.prototype.askPrice = function(cost){
+    if (cost===this.maxPrice) return cost;
+    if (cost>this.maxPrice) return undefined;
     var p = ProbJS.uniform(cost, this.maxPrice)();
     if (this.integer) p = Math.floor(p);
     return p;

@@ -315,8 +315,10 @@ describe('new ziAgent', function(){
 	    p.should.be.within(0,i);
 	    Math.floor(p).should.not.equal(p);
 	}
-	zi.integer = true;
 	zi.minPrice = 1;
+	assert.ok(typeof(zi.bidPrice(0.5))==='undefined');
+	zi.bidPrice(zi.minPrice).should.equal(zi.minPrice);
+	zi.integer = true;
 	for(i=1,l=10000; i<l; i++){
 	    p = zi.bidPrice(i);
 	    p.should.be.within(1,i);
@@ -332,13 +334,15 @@ describe('new ziAgent', function(){
 	    p.should.be.within(i,12345);
 	    Math.floor(p).should.not.equal(p);
 	}
-	zi.integer=true;
 	zi.maxPrice = 11111;
+	assert.ok(typeof(zi.askPrice(22222))==='undefined');
+	zi.integer=true;
 	for(i=1,l=10000;i<l;++i){
 	    p = zi.askPrice(i);
 	    p.should.be.within(i,11111);
 	    Math.floor(p).should.equal(p);
 	}
+	zi.askPrice(zi.maxPrice).should.equal(zi.maxPrice);	
     });
 
     it('sample of 10000 this.bidPrice(v=100) chi-square test for uniformity on [0,100) ', function(){
