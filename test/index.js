@@ -252,6 +252,7 @@ describe('new ziAgent', function(){
 	zi.on('wake', function(){ wakes++; });
 	zi.bid = function(good, p){ 
 	    assert.ok(good==='X');
+	    p.should.be.type('number');
 	    p.should.be.within(0,100);
 	    bids++; 
 	};
@@ -272,6 +273,7 @@ describe('new ziAgent', function(){
 	};
 	zi.ask = function(good,p){ 
 	    good.should.equal('X');
+	    p.should.be.type('number');
 	    p.should.be.within(100,1000);
 	    asks++; 
 	};
@@ -294,10 +296,12 @@ describe('new ziAgent', function(){
 	zi.bid = function(good, p){ 
 	    bids++; 
 	    good.should.equal('Y');
+	    p.should.be.type('number');
 	    p.should.be.within(0,100);
 	};
 	zi.ask = function(good,p){ 
 	    good.should.equal('X');
+	    p.should.be.type('number');
 	    p.should.be.within(50,1000);
 	    asks++; 
 	};
