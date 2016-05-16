@@ -772,8 +772,30 @@ describe('new Pool', function(){
 	   badTradeTest('s',true);
        });
 
+    it("pool.distribute('values','X',[100,80,60,50,40,30,20,10]) over 5 agents",function(){
+	var myPool = new Pool();
+	[1,2,3,4,5].forEach(function(){myPool.push(new Agent); });
+	myPool.distribute('values','X',[100,80,60,50,40,30,20,10]);
+	myPool.agents[0].values.X.should.deepEqual([100,30]);
+	myPool.agents[1].values.X.should.deepEqual([80,20]);
+	myPool.agents[2].values.X.should.deepEqual([60,10]);
+	myPool.agents[3].values.X.should.deepEqual([50]);
+	myPool.agents[4].values.X.should.deepEqual([40]);	
+    });
 
-
-    
-
+    it("pool.distribute('values','X',[100,80,60,50,40,30,20,10]) over 10 agents",function(){
+	var myPool = new Pool();
+	[1,2,3,4,5,6,7,8,9,10].forEach(function(){myPool.push(new Agent); });
+	myPool.distribute('values','X',[100,80,60,50,40,30,20,10]);
+	myPool.agents[0].values.X.should.deepEqual([100]);
+	myPool.agents[1].values.X.should.deepEqual([80]);
+	myPool.agents[2].values.X.should.deepEqual([60]);
+	myPool.agents[3].values.X.should.deepEqual([50]);
+	myPool.agents[4].values.X.should.deepEqual([40]);
+	myPool.agents[5].values.X.should.deepEqual([30]);
+	myPool.agents[6].values.X.should.deepEqual([20]);
+	myPool.agents[7].values.X.should.deepEqual([10]);
+	myPool.agents[8].values.X.should.deepEqual([]);
+	myPool.agents[9].values.X.should.deepEqual([]);
+    });
 });

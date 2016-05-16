@@ -347,6 +347,24 @@ Pool.prototype.trade = function(tradeSpec){
     }
 };
 
+Pool.prototype.distribute = function(field, good, aggregateArray){
+    var i,l;
+    var myCopy = aggregateArray.slice();
+    if ((field!=='values') && (field!=='costs'))
+	throw new Error("Pool.distribute(field,good,aggArray) field should be 'values' or 'costs', got:"+field);
+    for(i=0,l=this.agents.length;i<l;++i){
+	if (typeof(this.agents[i][field])==='undefined')
+	    this.agents[i][field] = {};
+	this.agents[i][field][good] = [];
+    }
+    i = 0;
+    l = this.agents.length;
+    while(myCopy.length>0){
+	this.agents[i][field][good].push(myCopy.shift());
+	i = (i+1) % l;
+    };
+};
+
 module.exports = {
     Agent: Agent,
     ziAgent: ziAgent,
