@@ -752,25 +752,27 @@ describe('new Pool', function(){
 	});
     };
 
-    it('pool.Trade throws error on bad buy trade with multiple tradeSpec.buyId entries, inventories unchanged',
+    it('pool.trade throws error on bad buy trade with multiple tradeSpec.buyId entries, inventories unchanged',
        function(){
 	   badTradeTest('b');
        });
 
-    it('pool.Trade throws error on bad buy trade with buyQ[0] sum not equal to sum over i of sellQ[i], inventories unchanged',
+    it('pool.trade throws error on bad buy trade with buyQ[0] sum not equal to sum over i of sellQ[i], inventories unchanged',
        function(){
 	   badTradeTest('b',true);
        });
 
-    it('pool.Trade throws error on bad sell trade with multiple tradeSpec.sellId entries, inventories unchanged',
+    it('pool.trade throws error on bad sell trade with multiple tradeSpec.sellId entries, inventories unchanged',
        function(){
 	   badTradeTest('s');
        });
 
-    it('pool.Trade throws error on bad sell trade with sellQ[0] sum not equal to sum over i of buyQ[i], inventories unchanged',
+    it('pool.trade throws error on bad sell trade with sellQ[0] sum not equal to sum over i of buyQ[i], inventories unchanged',
        function(){
 	   badTradeTest('s',true);
        });
+
+
 
     
 
