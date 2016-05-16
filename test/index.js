@@ -307,6 +307,30 @@ describe('new ziAgent', function(){
 	asks.should.equal(1);	
     });    
 
+    it('should not call this.bid() or this.ask() on this.wake() if this.bidPrice or this.askPrice returns falsey',function(){
+	var zi = new ziAgent({
+	    inventory: {coins:0, X:0, Y:0},
+	    markets: {X:1,Y:1}, 
+	    costs: {X: [100]}, 
+	    values: {Y: [50]},
+	    maxPrice:1000
+	});
+	zi.bidPrice = function(v){ };
+	zi.askPrice = function(c){ return 0; };
+	var wakes=0,bids=0,asks=0;
+	zi.on('wake', function(){ wakes++; });
+	zi.bid = function(good, p){ 
+	    bids++; 
+	};
+	zi.ask = function(good,p){ 
+	    asks++; 
+	};
+	zi.wake();
+	wakes.should.equal(1);
+	bids.should.equal(0);
+	asks.should.equal(0);	
+    });
+
     it('10000 tests this.bidPrice(v) should return number  between minPrice and v', function(){
 	var zi = new ziAgent();
 	var i,l,p;

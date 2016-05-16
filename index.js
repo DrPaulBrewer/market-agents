@@ -176,12 +176,14 @@ ziAgent.prototype.sendBidsAndAsks = function(){
 	unitValue = this.unitValueFunction(good, this.inventory);
 	if (unitValue>0){
 	    myPrice = this.bidPrice(unitValue);
-	    this.bid(good, myPrice);
+	    if (myPrice)
+		this.bid(good, myPrice);
 	}
 	unitCost = this.unitCostFunction(good, this.inventory);
 	if (unitCost>0){
 	    myPrice = this.askPrice(unitCost);
-	    this.ask(good, myPrice);
+	    if (myPrice)
+		this.ask(good, myPrice);
 	}
     }
 };
