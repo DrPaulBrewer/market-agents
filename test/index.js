@@ -425,6 +425,20 @@ describe('new Pool', function(){
 	myPool.agents.should.deepEqual([]);
     });
 
+    it('pool with no agents, .syncRun returns normally, no error', function(){
+	var myPool = new Pool();
+	myPool.syncRun(1000);
+    });
+
+    it('pool with no agents, .run(1000,cb) calls cb(true) normally, no error', function(done){
+	var cb = function(exhausted){
+	    assert.ok(exhausted===true);
+	    done();
+	};
+	var myPool = new Pool();
+	myPool.run(1000,cb);
+    });
+
     it('should not accept invalid agents:  pool.push(a) should throw an error if a is not Agent-related', function(){
 	var myPool = new Pool();
 	var do_not_do_this = function(){
