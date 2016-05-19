@@ -430,9 +430,9 @@ describe('new Pool', function(){
 	myPool.syncRun(1000);
     });
 
-    it('pool with no agents, .run(1000,cb) calls cb(true) normally, no error', function(done){
-	var cb = function(exhausted){
-	    assert.ok(exhausted===true);
+    it('pool with no agents, .run(1000,cb) calls cb(false) normally, no error', function(done){
+	var cb = function(error){
+	    assert.ok(!error);
 	    done();
 	};
 	var myPool = new Pool();
@@ -563,13 +563,13 @@ describe('new Pool', function(){
 	    myPool.push(myAgent);
 	}
 	if (async){
-	    cb = function(exhausted){
-		if (exhausted)
-		    throw new Error("should not exhaust pool");
+	    cb = function(error){
+		if (error)
+		    throw new Error("pool should not throw error");
 		checkWakes();
 		done();
 	    };
-	    myPool.run(1000, cb);
+	    myPool.run(1000, cb, 53);
 	} else {
 	    myPool.syncRun(1000);
 	    checkWakes();

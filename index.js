@@ -219,6 +219,7 @@ Pool.prototype.push = function(agent){
 };
 
 Pool.prototype.next = function(){
+    if (this.nextCache) return this.nextCache;
     var tMin=1e20, i=0, l=this.agents.length, A=this.agents, t=0, result=0;
     for(; i<l; i++){
 	t = A[i].wakeTime;
@@ -227,43 +228,47 @@ Pool.prototype.next = function(){
 	    tMin = t;
 	}
     }
+    this.nextCache = result;
     return result;
 };
 
-var hasSetImmediate = false;
-/* istanbul ignore next */
-try { setImmediate(function(){ hasSetImmediate=true; }); } catch(e){};
-
-Pool.prototype.run = function(untilTime, cb){
-    /* note: setTimeout slows this down significnatly if setImmediate is not available */
-    var that = this;
-    if (typeof(cb)!=='function')
-	throw new Error("Pool.run: Callback function undefined");
-    var loop = function(){
-	var nextAgent = that.next();
-	if (!nextAgent) return cb.call(that, true);
-	var tNow = nextAgent.wakeTime;
-	if (tNow > untilTime){
-	    return cb.call(that, false);
-	} else {
-	    nextAgent.wake();
-	    /* istanbul ignore next */
-	    if (hasSetImmediate) setImmediate(loop);
-	    /* istanbul ignore next */
-	    else setTimeout(loop,0);
-	}
-    };
-    /* istanbul ignore next */
-    if (hasSetImmediate) setImmediate(loop);
-    /* istanbul ignore next */
-    else setTimeout(loop,0);
+Pool.prototype.wake = function(){
+    var A = this.next();
+    if (A){
+	A.wake();
+	/* wipe nextCache */
+	delete this.nextCache;
+    }
 };
 
-Pool.prototype.syncRun = function(untilTime){
+const async = require('async');
+
+Pool.prototype.run = function(untilTime, done, batch){
+    /* note: setTimeout slows this down significnatly if setImmediate is not available */
+    var that = this;
+    if (typeof(done)!=='function')
+	throw new Error("Pool.run: done callback function undefined");
+    async.whilst(
+	function(){ 
+	    var nextAgent = that.next();
+	    return (nextAgent && (nextAgent.wakeTime < untilTime));
+	},
+	function(cb){
+	    async.setImmediate(function(){ that.syncRun(untilTime, batch || 1); cb(false); });
+	},
+	function(e,d){
+	    done.call(that,e);
+	}
+    );
+};
+
+Pool.prototype.syncRun = function(untilTime, limitCalls){
     var nextAgent = this.next();
-    while (nextAgent.wakeTime < untilTime){
-	nextAgent.wake();
+    var calls = 0;
+    while (nextAgent && (nextAgent.wakeTime < untilTime) && (!limitCalls || (calls<limitCalls)) ){
+	this.wake();
 	nextAgent = this.next();
+	calls++;
     }
 };
 
