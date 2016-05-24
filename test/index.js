@@ -570,6 +570,8 @@ describe('new Pool', function(){
 		done();
 	    };
 	    myPool.run(1000, cb, 53);
+	    /* previous line should return immediately, before event loop runs, so wakeCounts are zero */
+	    wakes.forEach(function(wakeCount, i){ wakeCount.should.equal(0); });
 	} else {
 	    myPool.syncRun(1000);
 	    checkWakes();

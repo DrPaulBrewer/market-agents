@@ -254,7 +254,10 @@ Pool.prototype.run = function(untilTime, done, batch){
 	    return (nextAgent && (nextAgent.wakeTime < untilTime));
 	},
 	function(cb){
-	    async.setImmediate(function(){ that.syncRun(untilTime, batch || 1); cb(false); });
+	    async.setImmediate(function(){
+		that.syncRun(untilTime, batch || 1);
+		cb();
+	    });
 	},
 	function(e,d){
 	    done.call(that,e);
