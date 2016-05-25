@@ -409,6 +409,18 @@ describe('new ziAgent', function(){
 	       bins[i].should.equal(0);
        });
     
+    it('this.bidPrice and this.askPrice return undefined if input value is undefined, irregardless of integer or ignoreBudgetConstraint settings',
+       function(){
+	   var zi;
+	   var intflag, ignoreflag;
+	   var flags = [[0,0],[0,1],[1,0],[1,1]];
+	   flags.forEach(function(f){
+	       var zi = new ziAgent({minPrice:10, maxPrice:90, ignoreBudgetConstraint:f[0], integer:f[1]});
+	       assert.ok(typeof(zi.bidPrice())==='undefined');
+	       assert.ok(typeof(zi.askPrice())==='undefined');
+	   });
+       });
+ 
 
     it('sample of 101000 integer this.bidPrice(v=100) chi-square test for uniformity on [0,100] inclusive with every bin hit', function(){
 	var zi = new ziAgent({integer: true});

@@ -189,9 +189,10 @@ ziAgent.prototype.sendBidsAndAsks = function(){
 };
 
 ziAgent.prototype.bidPrice = function(marginalValue){
+    if (typeof(marginalValue)!=='number') return undefined;
     var p;
     var value = marginalValue;
-    if (this.ignoreBudgetConstraint && (typeof(marginalValue)==='number'))
+    if (this.ignoreBudgetConstraint)
 	value = this.maxPrice;
     if (value===this.minPrice) return value;
     if (value<this.minPrice) return undefined;
@@ -208,9 +209,10 @@ ziAgent.prototype.bidPrice = function(marginalValue){
 };
 
 ziAgent.prototype.askPrice = function(marginalCost){
+    if (typeof(marginalCost)!=='number') return undefined;
     var p;
     var cost = marginalCost;
-    if (this.ignoreBudgetConstraint && (typeof(marginalCost)==='number'))
+    if (this.ignoreBudgetConstraint)
 	cost = this.minPrice;
     if (cost===this.maxPrice) return cost;
     if (cost>this.maxPrice) return undefined;
