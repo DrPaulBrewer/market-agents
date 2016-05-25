@@ -338,7 +338,7 @@ describe('new ziAgent', function(){
     it('10000 tests this.bidPrice(v) should return number  between minPrice and v', function(){
 	var zi = new ziAgent();
 	var i,l,p;
-	for(i=1,l=10000; i<l; i++){
+	for(i=1,l=10001; i<l; i++){
 	    p = zi.bidPrice(i);
 	    p.should.be.within(0,i);
 	    Math.floor(p).should.not.equal(p);
@@ -357,7 +357,7 @@ describe('new ziAgent', function(){
     it('10000 tests this.askPrice(c) should return number between c and maxPrice', function(){
 	var zi = new ziAgent({maxPrice: 12345});
 	var i,l,p;
-	for(i=1,l=10000;i<l;i++){
+	for(i=1,l=10001;i<l;i++){
 	    p = zi.askPrice(i);
 	    p.should.be.within(i,12345);
 	    Math.floor(p).should.not.equal(p);
@@ -373,50 +373,88 @@ describe('new ziAgent', function(){
 	zi.askPrice(zi.maxPrice).should.equal(zi.maxPrice);	
     });
 
-    it('sample of 10000 this.bidPrice(v=100) chi-square test for uniformity on [0,100) ', function(){
+    it('10000 tests with ignoreBudgetConstraint,  integer: this.bidPrice(50) should return every number between this.minPrice and this.maxPrice inclusive',
+       function(){
+	   var zi = new ziAgent({integer:true, ignoreBudgetConstraint:true, minPrice:10, maxPrice:90 });
+	   var i,l,p;
+	   var bins = Array(100).fill(0);
+	   for(i=0,l=10000;i<l;++i){
+	       p = zi.bidPrice(50);
+	       Math.floor(p).should.equal(p);
+	       bins[p]++;
+	   }
+	   for(i=0,l=10;i<l;++i)
+	       bins[i].should.equal(0);
+	   for(i=10,l=91;i<l;++i)
+	       bins[i].should.be.above(0);
+	   for(i=91,l=100;i<l;++i)
+	       bins[i].should.equal(0);
+       });
+
+    it('10000 tests with ignoreBudgetConstraint,  integer: this.askPrice(50) should return every number between this.minPrice and this.maxPrice inclusive',
+       function(){
+	   var zi = new ziAgent({integer:true, ignoreBudgetConstraint:true, minPrice:10, maxPrice:90 });
+	   var i,l,p;
+	   var bins = Array(100).fill(0);
+	   for(i=0,l=10000;i<l;++i){
+	       p = zi.askPrice(50);
+	       Math.floor(p).should.equal(p);
+	       bins[p]++;
+	   }
+	   for(i=0,l=10;i<l;++i)
+	       bins[i].should.equal(0);
+	   for(i=10,l=91;i<l;++i)
+	       bins[i].should.be.above(0);
+	   for(i=91,l=100;i<l;++i)
+	       bins[i].should.equal(0);
+       });
+    
+
+    it('sample of 101000 integer this.bidPrice(v=100) chi-square test for uniformity on [0,100] inclusive with every bin hit', function(){
 	var zi = new ziAgent({integer: true});
 	var i,l,p;
-	var bins = new Array(100).fill(0);
+	var bins = new Array(101).fill(0);
 	var sumsq = 0;
 	var chisq100 = 0;
 	var e = 0;
 	var norm = 0;
-	for(i=1,l=10000; i<l; i++){
+	for(i=0,l=101000; i<l; i++){
 	    p = zi.bidPrice(100);
 	    p.should.be.within(0,100);
 	    bins[p]++;
 	}
-	for(i=0,l=100;i<l;++i){
-	    e = bins[i]-100;
+	for(i=0,l=101;i<l;++i){
+	    assert.ok(bins[i]>0, "bid bin "+i+" empty");
+	    e = bins[i]-1000;
 	    sumsq += e*e;
 	}
-	chisq100=sumsq/100.0;
+	chisq100=sumsq/1000.0;
 	norm = (chisq100-100)/Math.sqrt(2*100);
 	norm.should.be.within(-5,5);
     });
 
-    it('sample of 10000 this.askPrice(c=50) chi-square test for uniformity on [50,maxPrice=150) ', function(){
+    it('sample of 101000 integer this.askPrice(c=50) chi-square test for uniformity on [50,maxPrice=150] inclusive with every bin hit', function(){
 	var zi = new ziAgent({integer: true, maxPrice:150});
 	var i,l,p;
-	var bins = new Array(100).fill(0);
+	var bins = new Array(101).fill(0);
 	var sumsq = 0;
 	var chisq100 = 0;
 	var e = 0;
 	var norm = 0;
-	for(i=1,l=10000; i<l; i++){
+	for(i=0,l=101000; i<l; i++){
 	    p = zi.askPrice(50);
 	    p.should.be.within(50,150);
 	    bins[p-50]++;
 	}
-	for(i=0,l=100;i<l;++i){
-	    e = bins[i]-100;
+	for(i=0,l=101;i<l;++i){
+	    assert.ok(bins[i]>0, "ask bin "+i+" empty");
+	    e = bins[i]-1000;
 	    sumsq += e*e;
 	}
-	chisq100=sumsq/100.0;
+	chisq100=sumsq/1000.0;
 	norm = (chisq100-100)/Math.sqrt(2*100);
 	norm.should.be.within(-5,5);
-    });
-    
+    });    
 });
     
 describe('new Pool', function(){

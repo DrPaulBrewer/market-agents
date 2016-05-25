@@ -188,19 +188,41 @@ ziAgent.prototype.sendBidsAndAsks = function(){
     }
 };
 
-ziAgent.prototype.bidPrice = function(value){
+ziAgent.prototype.bidPrice = function(marginalValue){
+    var p;
+    var value = marginalValue;
+    if (this.ignoreBudgetConstraint && (typeof(marginalValue)==='number'))
+	value = this.maxPrice;
     if (value===this.minPrice) return value;
     if (value<this.minPrice) return undefined;
-    var p = ProbJS.uniform(this.minPrice, value)();
-    if (this.integer) p = Math.floor(p);
+    if (this.integer){
+	/* because Floor rounds down, add 1 to value to be in the range of possible prices */
+	/* guard against rare edge case with do/while */
+	do {
+	    p = Math.floor(ProbJS.uniform(this.minPrice,value+1)());
+	} while (p>value);
+    } else {
+	p = ProbJS.uniform(this.minPrice, value)();
+    }
     return p;
 };
 
-ziAgent.prototype.askPrice = function(cost){
+ziAgent.prototype.askPrice = function(marginalCost){
+    var p;
+    var cost = marginalCost;
+    if (this.ignoreBudgetConstraint && (typeof(marginalCost)==='number'))
+	cost = this.minPrice;
     if (cost===this.maxPrice) return cost;
     if (cost>this.maxPrice) return undefined;
-    var p = ProbJS.uniform(cost, this.maxPrice)();
-    if (this.integer) p = Math.floor(p);
+    if (this.integer){
+	/* because Floor rounds down, add 1 to value to be in the range of possible prices */
+	/* guard against rare edge case with do/while */
+	do {
+	    p = Math.floor(ProbJS.uniform(cost,this.maxPrice+1)());
+	} while (p>this.maxPrice);
+    } else {
+	p = ProbJS.uniform(cost, this.maxPrice)();
+    }
     return p;
 };
 
