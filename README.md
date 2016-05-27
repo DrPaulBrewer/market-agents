@@ -41,17 +41,16 @@ market-agents
 
 | option | type | default | description |
 |--------|------|---------|-------------|
-| `id` | number | autoincremented number | unique agent id number |
-|`description`| any | "Agent" | description of agent, unused |
-|`inventory`| object | {} | initial money and goods owned by agent |
-|`money`| string | "money" | name of goods used as money |
-|`values`| object keys:goods, values: Array of number | {} | unit values for redeeming goods in `Agent.prototype.redeem()` (usually at end-of-period) |
 |`costs`| object keys:goods, values: Array of number | {} | unit costs of goods for producing goods in `Agent.prototype.produce()` (usually at end-of-period) |  
-|`wakeTime`| number | 0 | initial wake up time for Agent's first action|
-|`rate`| number | 1 | Poisson firing rate of Agent's .wake() events |
-|`period`| object | `{number:0, startTime:0}` | initial parameters for .initPeriod |
+|`description`| any | "Agent" | description of agent, unused |
+| `id` | number | autoincremented number | unique agent id number. *Most apps should leave .id unset and let the autoincrementer set it * |
+|`inventory`| object | {} | initial money and goods owned by agent |
 |`nextWake`| function returning next wake up time, no paramters, `this` Agent context | `poissonWake` providing conjugate exponential wake time for Poisson distribution |  alternate function for determining next wake time |
-
+|`money`| string | "money" | name of goods used as money |
+|`period`| object | `{number:0, startTime:0}` | initial parameters for .initPeriod |
+|`rate`| number | 1 | Poisson firing rate of Agent's .wake() events |
+|`values`| object keys:goods, values: Array of number | {} | unit values for redeeming goods in `Agent.prototype.redeem()` (usually at end-of-period) |
+|`wakeTime`| number | 0 | initial wake up time for Agent's first action|
 
 
 
