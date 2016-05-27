@@ -16,6 +16,7 @@ market-agents
 ##Initialization
 
     var MarketAgents = require('market-agents');
+    // unpack constructors
     const Agent = MarketAgents.Agent;
     const ziAgent = MarketAgents.Agent;
     const Pool = MarketAgents.Pool;
@@ -26,7 +27,7 @@ market-agents
     var myZIAgent = new ziAgent();
     myAgent.on('some-event', function(...){...});
     var myPool = new Pool();
-    for(var i=0,l=100;i<l;++i) myPool.push(new MarketAgents.ziAgent());
+    for(var i=0,l=100;i<l;++i) myPool.push(new ziAgent());
     myPool.initPeriod([type1Params,type2Params,...,typeNParams]);
     myPool.runSync(10000); 
     myPool.endPeriod();
@@ -37,25 +38,20 @@ market-agents
 
 ### Agent constructor options
 
-`id` default: an ascending number
+-----------------------------------------
+| option | type | default | description |
+| `id` | number | autoincremented number | unique agent id number |
+|`description`| any | "Agent" | description of agent, unused |
+|`inventory`| object | {} | initial money and goods owned by agent |
+|`money`| string | "money" | name of goods used as money |
+|`values`| object keys:goods, values: Array of number | {} | unit values for redeeming goods in `Agent.prototype.redeem()` (usually at end-of-period) |
+|`costs`| object keys:goods, values: Array of number | {} | unit costs of goods for producing goods in `Agent.prototype.produce()` (usually at end-of-period) |  
+|`wakeTime`| number | 0 | initial wake up time for Agent's first action|
+|`rate`| number | 1 | Poisson firing rate of Agent's .wake() events |
+|`period`| object | `{number:0, startTime:0}` | initial parameters for .initPeriod |
+|`nextWake`| function returning next wake up time, no paramters, `this` Agent context | `poissonWake` providing conjugate exponential wake time for Poisson distribution |  alternate function for determining next wake time |
+----------------------------------------
 
-`description` default: `'blank agent'`
-
-`inventory`  default: `{}`
-
-`money` default: `'money'`
-
-`values` default: `{}`
-
-`costs` default: `{}`
-
-`wakeTime` default: `0`
-
-`rate` default: `1`
-
-`period` default: `{number:0, startTime: 0}`
-
-`nextWake` default: `poissonWake` function
 
 
 ##Agent Events
