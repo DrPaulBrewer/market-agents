@@ -38,8 +38,9 @@ market-agents
 
 ### Agent constructor options
 
+
 | option | type | default | description |
------------------------------------------
+|--------|------|---------|-------------|
 | `id` | number | autoincremented number | unique agent id number |
 |`description`| any | "Agent" | description of agent, unused |
 |`inventory`| object | {} | initial money and goods owned by agent |
@@ -50,6 +51,7 @@ market-agents
 |`rate`| number | 1 | Poisson firing rate of Agent's .wake() events |
 |`period`| object | `{number:0, startTime:0}` | initial parameters for .initPeriod |
 |`nextWake`| function returning next wake up time, no paramters, `this` Agent context | `poissonWake` providing conjugate exponential wake time for Poisson distribution |  alternate function for determining next wake time |
+
 
 
 
