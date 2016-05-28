@@ -35,8 +35,10 @@ market-agents
 ##Agent Construction
     
     var myAgent = new Agent({option1:value1, option2:value2, ... });
+    
+Creates a new `Agent` instance; internally the `Agent` class is implemented as a subclass of `EventEmitter`.
 
-### Agent constructor options
+### `new Agent(options)` constructor options
 
 
 | option | type | default | description |
@@ -52,7 +54,13 @@ market-agents
 |`values`| object keys:goods, values: Array of number | {} | unit values for redeeming goods in `Agent.prototype.redeem()` (usually at end-of-period) |
 |`wakeTime`| number | 0 | initial wake up time for Agent's first action|
 
+### `Agent.prototype` methods
 
+each Agent instance has access to these methods
+
+|Agent method| internal usage | param | type | description | 
+|------------|----------------|-------|------|-------------|
+|`Agent.prototype.init(newSettings)`| called by `Agent.prototype.initPeriod` | `newSettings` | object |  copies `newSettings.inventory` to `this.inventory` without overwriting inventory levels in `this.inventory` not in `newSettings.inventory, then copies any remaining properties of `newSettings` to `this`; If `this.money` is set and money inventory is undefined, sets money inventory to zero. sets `this.wakeTime` to next wake up time.  |
 
 
 ##Agent Events
