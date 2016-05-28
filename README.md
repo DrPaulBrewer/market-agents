@@ -70,7 +70,7 @@ each Agent instance has access to these methods
 | | | inventory | object, goods as keys, number values | a hypothetical set of inventory levels for calculating the function |
 |`.unitValueFunction(good, inventory)` | call `.unitValueFUnction('Y', {Y:0})` to return a number giving this agent's Marginal Value of redeeming the next (1st) Y unit; Called by `ziAgent.sendBidsAndAsks()` | | | returns number giving the marginal value of redeeming the next unit from `this.values`|
 | | | good | string | good identifies which good, i.e. "X' or "Y" or something else |
-| | | inventory | object, goods as keys, number values | ia hypothetical set of inventory levels for calcuating the function |
+| | | inventory | object, goods as keys, number values | a hypothetical set of inventory levels for calcuating the function |
 |`.redeem()`|
 |`.produce()`|
 
