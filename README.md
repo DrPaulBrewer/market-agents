@@ -65,6 +65,16 @@ each Agent instance has access to these methods
 |`.endPeriod()`| called by `Pool.endPeriod()` to end the period for an agent; Emits event "post-period" after any production or redemption activity. | none | n/a | Ends the period for an agent. Calls .produce() and .redeem() if they exist, to allow for end-of-period settlement of trades in certain goods against the cost or value schedule.  |
 |`.wake(info)`| called by `Pool.wake()` to wake up an agent so that it can calculate a strategy, trade, etc... ; Emits event "wake(info)" passing info | info | any | First emits the "wake(info)" event for this agent, then calculates next wake time |
 |`.transfer(myTransfer, memo)`| Call this to record a change in an agent's inventories of goods and/or money. Called by Agent's `.produce` and `.redeem`, `Pool.trade` to record changes in inventory goods and money. emits "pre-transfer(amounts, memo)" before the transfer, allowing modification, and emits "post-transfer(amounts, memo)" after the transfer | myTransfer | object with goods as keys and numbers indicating positive/negative changes (deltas) as values | records a change in agents money or inventory; the memo field can be omitted, or any type, to assist in logging or using any additional information, such as why the transfer occurred. |
+|`.unitCostFunction(good, inventory)` | call `.unitCostFunction('X', {X:-3, ... })` to return a number giving this agent's Marginal Cost of producing the next (4th) X unit; Called by `ziAgent.sendBidsAndAsks()` | | | returns number giving the marginal cost of producing the next unit from `this.costs`|
+| | | good | string | good identifies which good, i.e. "X" or "Y" or something else |
+| | | inventory | object, goods as keys, number values | a hypothetical set of inventory levels for calculating the function |
+|`.unitValueFunction(good, inventory)` | call `.unitValueFUnction('Y', {Y:0})` to return a number giving this agent's Marginal Value of redeeming the next (1st) Y unit; Called by `ziAgent.sendBidsAndAsks()` | | | returns number giving the marginal value of redeeming the next unit from `this.values`|
+| | | good | string | good identifies which good, i.e. "X' or "Y" or something else |
+| | | inventory | object, goods as keys, number values | ia hypothetical set of inventory levels for calcuating the function |
+|`.redeem()`|
+|`.produce()`|
+
+
 
 
 
