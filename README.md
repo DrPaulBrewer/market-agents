@@ -61,7 +61,7 @@ each Agent instance has access to these methods
 |Agent method| usage | param | type | description | 
 |------------|-------|-------|------|-------------|
 |`.init(newSettings)`| called by `Agent.prototype.initPeriod`; external applications should probably call .initPeriod instead | `newSettings` | object |  copies `newSettings.inventory` to `this.inventory` without overwriting inventory levels in `this.inventory` not in `newSettings.inventory, then copies any remaining properties of `newSettings` to `this`; If `this.money` is set and money inventory is undefined, sets money inventory to zero. sets `this.wakeTime` to next wake up time.  |
-|`
+|`.initPeriod(newPeriod)`| called by `Pool.initPeriod()` to start a new period for this agent; Emits event "pre-period" after performing initialization tasks in the description | period | number or object | Starts a new period for this agent.  If period is a number, retains all of the properties of previous period and changes only period.numnber.  If `period` is an object, `this.period` is set to a deep copy of `period`, `period.startTime` sets the agent's wake up time, and `.init(this.period.init)` is called to set inventory or other agent properties. |
 
 
 ##Agent Events
