@@ -66,58 +66,94 @@ each Agent instance has access to these methods
 ##Agent Events
 
 *wake*
+
 Parameters: info
+
 Emitted-By: Agent.prototype.wake
+
 When: when Agent.wake(info) is called.  
+
 Note: this.wakeTime contains the current official agent time.  The event is triggered before calculating the new wakeTime.
 Use this for: agent strategy (placing bids, asks, responding to others bids/asks)
 
 *pre-transfer*
+
 Parameters: myTransfers, memo
+
 Emitted-By: Agent.prototype.transfer
+
 When: before modifying the agent's inventory
+
 Use this for: altering or removing transfers before they occur
 
 *post-transfer*
+
 Parameters: myTransfers, memo
+
 Emitted-By: Agent.prototype.transfer
+
 When: after modifying the agent's inventory
+
 Use this for: logging transfers, taking other actions after the transfer
 
 *pre-period*
+
 Parameters: None
+
 Emitted-By: Agent.prototype.initPeriod
+
 When: after new period information has been copied to agent
+
 Use this for:  additional agent set up at the beginning of every period
 
 *post-period*
+
 Parameters: None
+
 Emitted-By: Agent.prototype.endPeriod
+
 When: after all period activities, produce and redeem, have completed
+
 Use this for: any final agent accounting, profit capture, cleanup, etc. before ending the period
 
 *pre-redeem*
+
 Parameters: trans
+
 Emitted-By: Agent.prototype.redeem
+
 When: Typically at end of a period, after a redemption transfer has been calculated, but before the transfer takes place
+
 Use this for: modifying the redemption transfer
 
 *post-redeem*
+
 Parameters: trans
+
 Emitter-By: Agent.prototype.redeem
+
 When: after a redemption transfer has been processed and added to the agent's inventory
+
 Use this for: logging redemption amounts, taking other actions after a redemption
 
 *pre-produce*
+
 Parameters: trans
+
 Emtited-By: Agent.prototype.produce
+
 When: Typically at the end of a period, after a production transaction has been calculated, but before the transfer
+
 Use this for: modifying the production transfer 
 
 *post-produce*
+
 Parameters: trans
+
 Emitted-By:Agent.prototype.produce
+
 When: after a production transfer has been processed and added to the agent's inventory
+
 Use this for: logging production amounts, taking other actions after production
 
 ##ZiAgent Events
