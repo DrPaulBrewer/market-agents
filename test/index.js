@@ -42,34 +42,34 @@ describe('new Agent', function(){
 	assert.ok(agent2.id>agent1.id);
     });
     
-    it('test 1000 wakes, should have ascending wake times', function(){
+    it('test 100 wakes, should have ascending wake times', function(){
 	var agent = new Agent();
 	var i,l;
 	var t0,t1;
 	var wakes = 0;
 	agent.on('wake',function(){ wakes++; });
-	for(i=0,l=1000;i<l;i++){
+	for(i=0,l=100;i<l;i++){
 	    t0 = agent.wakeTime;
 	    agent.wake();
 	    t1 = agent.wakeTime;
 	    assert.ok(t1>t0);
 	}
-	assert.ok(wakes===1000);
+	assert.ok(wakes===100);
     });
 
-    it('test 1000 wakes, agent with rate 2 should use between 1/3 and 2/3 the time of agent with rate 1', function(){
+    it('test 100 wakes, agent with rate 2 should use between 1/3 and 2/3 the time of agent with rate 1', function(){
 	var agent1 = new Agent();
 	var agent2 = new Agent({rate: 2});
 	var i,l;
 	var wakes1=0, wakes2=0;
 	agent1.on('wake', function(){ wakes1++; });
 	agent2.on('wake', function(){ wakes2++; });
-	for(i=0,l=1000;i<l;++i){
+	for(i=0,l=100;i<l;++i){
 	    agent1.wake();
 	    agent2.wake();
 	}
-	assert.ok(wakes1===1000);
-	assert.ok(wakes2===1000);
+	assert.ok(wakes1===100);
+	assert.ok(wakes2===100);
 	assert.ok(agent2.wakeTime>(0.33*agent1.wakeTime));
 	assert.ok(agent2.wakeTime<(0.67*agent1.wakeTime));	
     });
@@ -77,7 +77,7 @@ describe('new Agent', function(){
     describe('agent-period cycle interactions', function(){
 	function setup(){
 	    var someMoneyNoX = {money: 1000, X:0};
-	    var period = {number:0, startTime:0, init:{inventory: someMoneyNoX}};
+	    var period = {number:0, duration:1000, equalDuration:true, init:{inventory: someMoneyNoX}};
 	    var agent0 = new Agent();
 	    var agent1 = new Agent();
 	    agent0.initPeriod(period);
@@ -112,21 +112,27 @@ describe('new Agent', function(){
 	    agents.forEach(function(a){ a.endPeriod(); });
 	    ended.should.deepEqual([1,1]);
 	});
-	it('agents should indicate period 1 after set with .initPeriod({number:1, ... })', function(){
+	it('agents should indicate period number:1, startTime:1000, endTime:2000 after set with .initPeriod({number:1, ... })', function(){
 	    var agents = setup();
 	    var buyOneXFor500 = {money: -500, X:1 };
 	    agents[0].transfer(buyOneXFor500);
 	    agents.forEach(function(a){ a.initPeriod(Object.assign({},a.period,{number:1})); });
-	    assert.ok(agents[0].period.number===1);
-	    assert.ok(agents[1].period.number===1);
+	    agents.forEach(function(a){
+		assert.ok(a.period.number===1);
+		assert.ok(a.period.startTime === 1000 );
+		assert.ok(a.period.endTime === 2000 );
+	    });
 	});
-	it('agents should indicate period 1 after set with .initPeriod(1)', function(){
+	it('agents should indicate period number:1, startTime:1000, endTime:2000  after set with .initPeriod(1)', function(){
 	    var agents = setup();
 	    var buyOneXFor500 = {money: -500, X:1 };
 	    agents[0].transfer(buyOneXFor500);
 	    agents.forEach(function(a){ a.initPeriod(1); });
-	    assert.ok(agents[0].period.number===1);
-	    assert.ok(agents[1].period.number===1);
+	    agents.forEach(function(a){
+		assert.ok(a.period.number===1);
+		assert.ok(a.period.startTime === 1000 );
+		assert.ok(a.period.endTime === 2000 );
+	    });
 	});
 	it('agents 1,2, should show initial inventory 0 X, 1000 Money for Period 1', function(){
 	    var agents = setup();

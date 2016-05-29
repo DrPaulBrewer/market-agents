@@ -11,7 +11,9 @@ function nextId(){ return _nextId++; }
 
 function poissonWake(){
     var delta = ProbJS.exponential(this.rate)();
-    return this.wakeTime+delta;
+    var result =  this.wakeTime+delta;
+    if (result>0)
+	return result;
 }
 
 var Agent = function(options){
@@ -25,7 +27,11 @@ var Agent = function(options){
 	costs: {},
 	wakeTime: 0,
 	rate: 1,
-	period: {number:0, startTime:0},
+	period: {
+	    number:0, 
+	    duration:1000,
+	    equalDuration: true
+	},
 	nextWake: poissonWake
     };
     Object.assign(this, defaults, clone(options, false));
@@ -61,6 +67,10 @@ Agent.prototype.initPeriod = function(period){
 	this.period = clone(period, false);
     else if (typeof(period)==='number')
 	this.period.number = period;
+    if (this.period.equalDuration && this.period.duration){
+	this.period.startTime = this.period.number*this.period.duration;
+	this.period.endTime = (1+this.period.number)*this.period.duration;
+    }
     if (typeof(this.period.startTime)==='number')
 	this.wakeTime = this.period.startTime;
     this.init(this.period.init);
@@ -74,8 +84,17 @@ Agent.prototype.endPeriod = function(){
 };
 
 Agent.prototype.wake = function(info){
+    var nextTime;
     this.emit('wake', info);
-    this.wakeTime = this.nextWake();
+    nextTime = this.nextWake();
+    if (this.period.endTime){
+	if (nextTime<this.period.endTime) 
+	    this.wakeTime = nextTime;
+	else if (this.period.endTime>0)
+	    this.wakeTime = undefined;
+    } else {
+	this.wakeTime = nextTime;
+    }
 };
 
 Agent.prototype.transfer = function(myTransfers, memo){
@@ -301,8 +320,8 @@ Pool.prototype.syncRun = function(untilTime, limitCalls){
 
 Pool.prototype.initPeriod = function(param){
     var i,l;
+    // passing param to all the agents is safe because Agent.initPeriod does a deep clone
     if (Array.isArray(param) && (param.length>0)){
-	// this is safe because Agent.initPeriod does a deep clone
 	for(i=0,l=this.agents.length; i<l; i++)
 	    this.agents[i].initPeriod(param[i%(param.length)]);
     } else {
@@ -409,7 +428,7 @@ Pool.prototype.distribute = function(field, good, aggregateArray){
     while(myCopy.length>0){
 	this.agents[i][field][good].push(myCopy.shift());
 	i = (i+1) % l;
-    };
+    }
 };
 
 module.exports = {
