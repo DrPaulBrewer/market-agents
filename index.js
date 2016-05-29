@@ -90,7 +90,7 @@ Agent.prototype.wake = function(info){
     if (this.period.endTime){
 	if (nextTime<this.period.endTime) 
 	    this.wakeTime = nextTime;
-	else if (this.period.endTime>0)
+	else
 	    this.wakeTime = undefined;
     } else {
 	this.wakeTime = nextTime;

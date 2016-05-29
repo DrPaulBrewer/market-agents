@@ -74,6 +74,26 @@ describe('new Agent', function(){
 	assert.ok(agent2.wakeTime<(0.67*agent1.wakeTime));	
     });
 
+    it('with period.endTime set wake up to 10000 times until wakeTime is undefined', function(){
+	var agent = new Agent();
+	agent.initPeriod(0);
+	assert.ok(agent.period.endTime>0);
+	var j = 0;
+	while (agent.wakeTime && (++j<10000))
+	    agent.wake();
+	assert.ok(agent.wakeTime===undefined);
+    });
+
+    it('wake 10000 times with no period.endTime yields .wakeTime within [9500,10500]', function(){
+	var agent = new Agent();
+	var i,l;
+	if (agent.period.endTime)
+	    delete agent.period.endTime; 
+	for(i=0,l=10000;i<l;++i)
+	    agent.wake();
+	agent.wakeTime.should.be.within(9500,10500);
+    });
+	    
     describe('agent-period cycle interactions', function(){
 	function setup(){
 	    var someMoneyNoX = {money: 1000, X:0};
