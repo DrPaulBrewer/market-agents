@@ -286,6 +286,17 @@ Pool.prototype.wake = function(){
 
 const async = require('async');
 
+Pool.prototype.endTime = function(){
+    var i,l,a;
+    var endTime = 0;
+    for(i=0,l=this.agents.length;i<l;++i){
+	a = this.agents[i];
+	if (a.period.endTime > endTime)
+	    endTime = a.period.endTime;
+    }
+    if (endTime>0) return endTime;
+};
+
 Pool.prototype.run = function(untilTime, done, batch){
     /* note: setTimeout slows this down significnatly if setImmediate is not available */
     var that = this;

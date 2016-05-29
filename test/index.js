@@ -574,7 +574,7 @@ describe('new Pool', function(){
 	});
     });
 
-    it('pool.initPeriod(5) sets all period numbers to 5', function(){
+    it('pool.initPeriod(5) sets all period numbers to 5, startTime to 5000, endTime to 6000, pool.endTime() yields 6000', function(){
 	var myPool = new Pool();
 	var agent0 = new Agent();
 	var agent1 = new Agent();
@@ -586,7 +586,10 @@ describe('new Pool', function(){
 	myPool.agents.length.should.equal(2);
 	myPool.agents.forEach(function(A){
 	    A.period.number.should.equal(5);
+	    A.period.startTime.should.equal(5000);
+	    A.period.endTime.should.equal(6000);
 	});
+	myPool.endTime().should.equal(6000);
     });
 
     it("pool.initPeriod([{number:1, init:{color:'blue'}},{number:1, init:{color:'red'}}]) with 3 agents in pool sets agents colors to blue, red, blue and all period numbers to 1", function(){
