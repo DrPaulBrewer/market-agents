@@ -383,7 +383,20 @@ Pool.prototype.trade = function(tradeSpec){
 
 Pool.prototype.distribute = function(field, good, aggregateArray){
     var i,l;
-    var myCopy = aggregateArray.slice();
+    var myCopy;
+    if (Array.isArray(aggregateArray)){
+	myCopy = aggregateArray.slice();
+    } else if (typeof(aggregateArray)==='string') {
+	myCopy = (aggregateArray
+		  .replace(/,/g," ")
+		  .split(/\s+/)
+		  .map(function(s){ return +s; })
+		  .filter(function(v){ return (v>0); })
+		  );
+    } else {
+	/* istanbul ignore next */
+	throw new Error("Error: Pool.prototype.distribute: expected aggregate to be Array or String, got: "+typeof(aggregateArray));
+    }
     if ((field!=='values') && (field!=='costs'))
 	throw new Error("Pool.distribute(field,good,aggArray) field should be 'values' or 'costs', got:"+field);
     for(i=0,l=this.agents.length;i<l;++i){
