@@ -13,8 +13,10 @@ describe('MarketAgents', function(){
 	MarketAgents.should.be.type('object');
     });
 
-    it('should have properties Agent, ziAgent, Pool', function(){
-	MarketAgents.should.have.properties('Agent','ziAgent','Pool');
+    var props = ['Agent','ziAgent','unitAgent','KaplanSniperAgent','Pool'];
+
+    it('should have properties '+props.join(" "), function(){
+	MarketAgents.should.have.properties(props);
     });
 
 });
@@ -74,13 +76,36 @@ describe('new Agent', function(){
 	assert.ok(agent2.wakeTime<(0.67*agent1.wakeTime));	
     });
 
-    it('with period.endTime set wake up to 10000 times until wakeTime is undefined', function(){
-	var agent = new Agent();
+    it('with period.endTime set wake up to 10000 times until wakeTime is undefined; .wakeTime, .pctPeriod increasing, .poissonWakesRemainingInPeriod decreasing, check formulas for pct, wakes', function(){
+	/* set rate to something other than 1 to test as 1/1===1 and reciprocal error could creep in */
+	var agent = new Agent({rate:2.7});
 	agent.initPeriod(0);
 	assert.ok(agent.period.endTime>0);
 	var j = 0;
-	while (agent.wakeTime && (++j<10000))
+	var lastWakeTime = 0;
+	var lastPctPeriod = 0;
+	var lastRemaining = Infinity;
+	var wakeTime=agent.wakeTime, pctPeriod, remaining;
+	var approxRemaining;
+	while (agent.wakeTime && (++j<10000)){
+	    pctPeriod = agent.pctPeriod();
+	    remaining = agent.poissonWakesRemainingInPeriod();
+	    wakeTime.should.be.above(lastWakeTime);
+	    pctPeriod.should.be.above(lastPctPeriod);
+	    pctPeriod.should.be.approximately( (agent.wakeTime-agent.period.startTime)/ (agent.period.endTime-agent.period.startTime), 0.001);
+	    remaining.should.be.below(lastRemaining);
+	    approxRemaining = (agent.period.endTime-agent.wakeTime)*agent.rate;
+	    approxRemaining.should.be.type("number");
+	    remaining.should.be.approximately(approxRemaining , 0.001);
+	    assert.ok((pctPeriod > 0) && (pctPeriod<1));
+	    assert.ok(remaining > 0);
+	    lastWakeTime = wakeTime;
+	    lastPctPeriod = pctPeriod;
+	    lastRemaining = remaining;
 	    agent.wake();
+	    wakeTime = agent.wakeTime;
+	}
+	assert.ok(j>100);
 	assert.ok(agent.wakeTime===undefined);
     });
 
@@ -494,6 +519,360 @@ describe('new ziAgent', function(){
 	norm.should.be.within(-5,5);
     });    
 });
+
+describe('new unitAgent', function(){
+   it('should have properties id, description, inventory, wakeTime, rate, nextWake, period with proper types',
+       function(){ 
+	   var myAgent = new unitAgent();
+	   myAgent.should.be.type('object');
+	   myAgent.should.have.properties('id','description','inventory','wakeTime','rate','nextWake','period');
+	   myAgent.id.should.be.type('number');
+	   myAgent.description.should.be.type('string');
+	   myAgent.inventory.should.be.type('object');
+	   myAgent.wakeTime.should.be.type('number');
+	   myAgent.rate.should.be.type('number');
+	   myAgent.nextWake.should.be.type('function');
+	   myAgent.period.should.be.type('object');
+       });
+    
+    it('should have properties markets, values, costs, minPrice, maxPrice with proper types', function(){
+	var a = new unitAgent();
+	a.should.have.properties('markets','values','costs','minPrice','maxPrice');
+	a.markets.should.be.type('object');
+	a.values.should.be.type('object');
+	a.costs.should.be.type('object');
+	a.minPrice.should.be.type('number');
+	a.maxPrice.should.be.type('number');
+    });
+
+    it('should not call this.bid() or this.ask() on this.wake() if values and costs not configured', function(){
+	var a = new unitAgent();
+	var wakes=0,bids=0,asks=0;
+	a.on('wake', function(){ wakes++; });
+	a.bid = function(){ bids++; };
+	a.ask = function(){ asks++; };
+	a.wake();
+	wakes.should.equal(1);
+	bids.should.equal(0);
+	asks.should.equal(0);
+    });
+
+    it('this.bidPrice and this.askPrice return undefined if input value is undefined, irregardless of integer or ignoreBudgetConstraint settings',
+       function(){
+	   var intflag, ignoreflag;
+	   var flags = [[0,0],[0,1],[1,0],[1,1]];
+	   flags.forEach(function(f){
+	       var a = new unitAgent({minPrice:10, maxPrice:90, ignoreBudgetConstraint:f[0], integer:f[1]});
+	       assert.ok(typeof(a.bidPrice())==='undefined');
+	       assert.ok(typeof(a.askPrice())==='undefined');
+	   });
+       });
+
+    it('this.bidPrice and this.askPrice should throw on valid input if this.getPreviousPrice function does not exist', function(){
+	var call_bidPrice_with_no_get_previous_price = function(){
+	    var a = new unitAgent({minPrice:10, maxPrice:90});
+	    var p = a.bidPrice(50);
+	};
+	var call_askPrice_with_no_get_previous_price = function(){
+	    var a = new unitAgent({minPrice:10, maxPrice:90});
+	    var p = a.askPrice(60);
+	};
+	call_bidPrice_with_no_get_previous_price.should.throw();
+	call_askPrice_with_no_get_previous_price.should.throw();
+    });
+
+    it('this.bidPrice(50) is undefined if .getPreviousPrice()===51.01', function(){
+	var a = new unitAgent({minPrice:10, maxPrice:90});
+	a.getPreviousPrice = function(){ return 51.01; };
+	var i,l,p;
+	for(i=0,l=100;i<l;++i){
+	    p = a.bidPrice(50);
+	    assert(typeof(p)==='undefined', p);
+	}
+	a.integer = true;
+	for(i=0,l=100;i<l;++i){
+	    p = a.bidPrice(50);
+	    assert(typeof(p)==='undefined', p);
+	}
+    });
+
+    it('this.bidPrice(50) is 32,33,34 approx 1/3 of time if ,integer===true, .getPreviousPrice()===33', function(){
+	var a = new unitAgent({minPrice: 10, maxPrice:90, integer: true});
+	a.getPreviousPrice = function(){ return 33; };
+	var i,l,p;
+	var bin = Array(100).fill(0);
+	for(i=0,l=30000;i<l;++i){
+	    p = a.bidPrice(50);
+	    bin[Math.floor(p)]++;
+	}
+	bin[31].should.equal(0);
+	bin[32].should.be.within(9500,10500);
+	bin[33].should.be.within(9500,10500);
+	bin[34].should.be.within(9500,10500);
+	bin[35].should.equal(0);
+    });
+
+    it('this.bidPrice(50) is 32-33, 33-34 approx 1/2 of time if ,integer===false, .getPreviousPrice()===33', function(){
+	var a = new unitAgent({minPrice: 10, maxPrice:90});
+	a.getPreviousPrice = function(){ return 33; };
+	var i,l,p;
+	var bin = Array(100).fill(0);
+	for(i=0,l=20000;i<l;++i){
+	    p = a.bidPrice(50);
+	    bin[Math.floor(p)]++;
+	}
+	bin[31].should.equal(0);
+	bin[32].should.be.within(9500,10500);
+	bin[33].should.be.within(9500,10500);
+	bin[34].should.equal(0);
+	bin[35].should.equal(0);
+    });
+
+    it('this.bidPrice(33) is 32-33, undefined approx 1/2 of time if .integer===false, .getPreviousPrice()===33', function(){
+	var a = new unitAgent({minPrice: 10, maxPrice:90});
+	a.getPreviousPrice = function(){ return 33; };
+	var i,l,p,un=0;
+	var bin = Array(100).fill(0);
+	for(i=0,l=20000;i<l;++i){
+	    p = a.bidPrice(33);
+	    if (p)
+		bin[Math.floor(p)]++;
+	    else
+		un++;
+	}
+	un.should.be.within(9500,10500);
+	bin[31].should.equal(0);
+	bin[32].should.be.within(9500,10500);
+	bin[33].should.equal(0);
+	bin[34].should.equal(0);
+	bin[35].should.equal(0);
+    });
+
+    it('this.askPrice(50) is undefined if .getPreviousPrice()===48.99', function(){
+	var a = new unitAgent({minPrice:10, maxPrice:90});
+	a.getPreviousPrice = function(){ return 48.99; };
+	var i,l,p;
+	for(i=0,l=100;i<l;++i){
+	    p = a.askPrice(50);
+	    assert(typeof(p)==='undefined', p);
+	}
+	a.integer=true;
+	for(i=0,l=100;i<l;++i){
+	    p = a.askPrice(50);
+	    assert(typeof(p)==='undefined', p);
+	}
+    });
+
+    it('this.askPrice(25) is 32,33,34 approx 1/3 of time if ,integer===true, .getPreviousPrice()===33', function(){
+	var a = new unitAgent({minPrice: 10, maxPrice:90, integer: true});
+	a.getPreviousPrice = function(){ return 33; };
+	var i,l,p;
+	var bin = Array(100).fill(0);
+	for(i=0,l=30000;i<l;++i){
+	    p = a.askPrice(25);
+	    bin[Math.floor(p)]++;
+	}
+	bin[31].should.equal(0);
+	bin[32].should.be.within(9500,10500);
+	bin[33].should.be.within(9500,10500);
+	bin[34].should.be.within(9500,10500);
+	bin[35].should.equal(0);
+    });
+
+    it('this.askPrice(25) is 32-33, 33-34 approx 1/2 of time if ,integer===false, .getPreviousPrice()===33', function(){
+	var a = new unitAgent({minPrice: 10, maxPrice:90});
+	a.getPreviousPrice = function(){ return 33; };
+	var i,l,p;
+	var bin = Array(100).fill(0);
+	for(i=0,l=20000;i<l;++i){
+	    p = a.askPrice(25);
+	    bin[Math.floor(p)]++;
+	}
+	bin[31].should.equal(0);
+	bin[32].should.be.within(9500,10500);
+	bin[33].should.be.within(9500,10500);
+	bin[34].should.equal(0);
+	bin[35].should.equal(0);
+    });
+});
+
+describe('new KaplanSniperAgent', function(){
+
+    function testKaplanSniperAgent(agentConfig, agentInfo, call, param, correctValue){
+	var a = new KaplanSniperAgent(agentConfig);
+	var message = "config: "+JSON.stringify(agentConfig)+"\n"+
+	    "info: "+JSON.stringify(agentInfo)+"\n"+
+	    "call: "+call+"\n"+
+	    "param: "+param+"\n"+
+	    "correct: "+correctValue;
+	a.getCurrentBidPrice = function(){ return agentInfo.currentBidPrice; };
+	a.getCurrentAskPrice = function(){ return agentInfo.currentAskPrice; };
+	a.getJuicyBidPrice = function(){ return agentInfo.juicyBidPrice; };
+	a.getJuicyAskPrice = function(){ return agentInfo.juicyAskPrice; };
+	if (correctValue===undefined)
+	    assert.strictEqual(typeof(a[call](param)), "undefined", message);
+	else
+	    assert.strictEqual(a[call](param), correctValue, message);
+    }
+
+   it('should have properties id, description, inventory, wakeTime, rate, nextWake, period with proper types',
+       function(){ 
+	   var myAgent = new KaplanSniperAgent();
+	   myAgent.should.be.type('object');
+	   myAgent.should.have.properties('id','description','inventory','wakeTime','rate','nextWake','period');
+	   myAgent.id.should.be.type('number');
+	   myAgent.description.should.be.type('string');
+	   myAgent.inventory.should.be.type('object');
+	   myAgent.wakeTime.should.be.type('number');
+	   myAgent.rate.should.be.type('number');
+	   myAgent.nextWake.should.be.type('function');
+	   myAgent.period.should.be.type('object');
+       });
+    
+    it('should have properties markets, values, costs, minPrice, maxPrice with proper types', function(){
+	var a = new KaplanSniperAgent();
+	a.should.have.properties('markets','values','costs','minPrice','maxPrice');
+	a.markets.should.be.type('object');
+	a.values.should.be.type('object');
+	a.costs.should.be.type('object');
+	a.minPrice.should.be.type('number');
+	a.maxPrice.should.be.type('number');
+    });
+
+    it('should not call this.bid() or this.ask() on this.wake() if values and costs not configured', function(){
+	var a = new KaplanSniperAgent();
+	var wakes=0,bids=0,asks=0;
+	a.on('wake', function(){ wakes++; });
+	a.bid = function(){ bids++; };
+	a.ask = function(){ asks++; };
+	a.wake();
+	wakes.should.equal(1);
+	bids.should.equal(0);
+	asks.should.equal(0);
+    });
+
+    it('this.bidPrice and this.askPrice return undefined if input value is undefined, irregardless of integer or ignoreBudgetConstraint settings',
+       function(){
+	   var intflag, ignoreflag;
+	   var flags = [[0,0],[0,1],[1,0],[1,1]];
+	   flags.forEach(function(f){
+	       var a = new KaplanSniperAgent({minPrice:10, maxPrice:90, ignoreBudgetConstraint:f[0], integer:f[1]});
+	       assert.ok(typeof(a.bidPrice())==='undefined');
+	       assert.ok(typeof(a.askPrice())==='undefined');
+	   });
+       });
+
+    it('this.bidPrice and this.askPrice should throw on valid input if special getter functions do not exist', function(){
+	var call_bidPrice_with_no_getters = function(){
+	    var a = new KaplanSniperAgent({minPrice:10, maxPrice:90});
+	    var p = a.bidPrice(50);
+	};
+	var call_askPrice_with_no_getters = function(){
+	    var a = new KaplanSniperAgent({minPrice:10, maxPrice:90});
+	    var p = a.askPrice(60);
+	};
+	call_bidPrice_with_no_getters.should.throw();
+	call_askPrice_with_no_getters.should.throw();
+    });
+
+    it('.bidPrice is undefined if currentAsk undefined', function(){
+	for(var i=1,l=100;i<l;++i)
+	    testKaplanSniperAgent({},
+				  {
+				      currentBidPrice: 10,
+				      juicyAskPrice: 40
+				  },
+				  "bidPrice",
+				  i,
+				  undefined);
+    });
+
+    it('.bidPrice(MV) equals currentAsk===50 iff 50<=juicyAskPrice and 50<=MV',function(){
+	var shouldBe50;
+	for(var marginalValue=1;marginalValue<100;++marginalValue)
+	    for(var juicyAskPrice=1;juicyAskPrice<100;++juicyAskPrice){
+		shouldBe50 = (50<=juicyAskPrice) && (50<=marginalValue);
+		testKaplanSniperAgent({},
+				      {
+					  currentAskPrice: 50,
+					  juicyAskPrice: juicyAskPrice
+				      },
+				      "bidPrice",
+				      marginalValue,
+				      (shouldBe50? 50: undefined)
+				     );
+	    }
+    }); 
+
+    it(".bidPrice(MV) equals currentAsk===50 iff spread <= desiredSpread and 50<=MV", function(){
+	var cBid,dSpread,MV;
+	for(cBid=1;cBid<50;cBid++)
+	    for(dSpread=1;dSpread<40;dSpread++)
+		for(MV=40;MV<60;MV++)
+		    testKaplanSniperAgent(
+			{
+			    desiredSpread: dSpread
+			},
+			{
+			    currentBidPrice: cBid,
+			    currentAskPrice: 50
+			},
+			"bidPrice",
+			MV,
+			( ((MV>=50) && ((50-cBid)<=dSpread))? 50: undefined)
+		    );			
+    });
+
+    it('.askPrice is undefined if currentBid undefined', function(){
+	var a = new KaplanSniperAgent();
+	a.getCurrentBidPrice = function(){};
+	a.getCurrentAskPrice = function(){ return 70; };
+	a.getJuicyBidPrice = function(){ return 150; };
+	for(var i=1,l=100;i<l;++i)
+	    assert(typeof(a.askPrice(i))==='undefined');
+    });
+
+    it('.askPrice(MC) equals currentBid===60 iff juicyBidPrice>=60 and MC<=60',function(){
+	var shouldBe60;
+	for(var marginalCost=1;marginalCost<100;++marginalCost)
+	    for(var juicyBidPrice=1;juicyBidPrice<100;++juicyBidPrice){
+		shouldBe60 = (juicyBidPrice<=60) && (marginalCost<=60);
+		testKaplanSniperAgent({},
+				      {
+					  currentBidPrice: 60,
+					  juicyBidPrice: juicyBidPrice
+				      },
+				      "askPrice",
+				      marginalCost,
+				      (shouldBe60? 60: undefined)
+				     );
+	    }
+    }); 
+
+    it('.askPrice(MC) equals currentBid iff spread <= desiredSpread and MC<= currentBid', function(){
+	for(var currentBid=55;currentBid<65;currentBid++)
+	    for(var currentAsk=currentBid+1; currentAsk<(currentBid+30); currentAsk++)
+		for(var desiredSpread=1; desiredSpread<15; desiredSpread++)
+		    for(var mc=50; mc<70; mc++)
+			testKaplanSniperAgent(
+			    {
+				desiredSpread: desiredSpread
+			    },
+			    {
+				currentBidPrice: currentBid,
+				currentAskPrice: currentAsk,
+				juicyBidPrice: 200,
+				juicyAskPrice: 10
+			    },
+			    "askPrice",
+			    mc,
+			    ( ((mc<=currentBid) && ((currentAsk-currentBid)<=desiredSpread))? currentBid: undefined)
+			);
+    });
+
+    
+    
+});
     
 describe('new Pool', function(){
     it('new Pool() initially has no agents', function(){
@@ -697,7 +1076,110 @@ describe('new Pool', function(){
 	poolAgentRateTest(rates, ziAgent);
     });
 
-    it('pool with 10 agents, pool.Trade agent 0 buys 1 X@400 from agent 5, correct inventories',
+    it('pool with 100 KaplanSniper agents, rates [0.1,0.11,...,1.09], check behavior for correct end-of-period sniping', function(){
+	var agentBidLog=[];
+	var agentAskLog=[];
+	var bidCount = 0, askCount = 0;
+	var currentBid=40, currentAsk=60;
+	var i=0,A=[];
+	for(i=0;i<100;++i){
+	    agentBidLog[i]=[];
+	    agentAskLog[i]=[];
+	}
+	var myPool = new Pool();
+	var getCurrentBidPrice = function(){ return currentBid;};
+	var getCurrentAskPrice = function(){ return currentAsk;};
+	var getJuicyBidPrice = function(){ return 101; };
+	var getJuicyAskPrice = function(){ return 1; };
+	var ask = function(good, price){ 
+	    askCount++;
+	    good.should.equal("X");
+	    price.should.equal(currentBid);
+	    this.unitCostFunction("X",this.inventory).should.be.within(0, currentBid);
+	    agentAskLog[this.id].push(this.wakeTime);
+	};
+	var bid = function(good, price){
+	    bidCount++;
+	    good.should.equal("X");
+	    price.should.equal(currentAsk);
+	    this.unitValueFunction("X",this.inventory).should.be.within(currentAsk, 100);
+	    agentBidLog[this.id].push(this.wakeTime);
+	};
+	    
+	for(i=1;i<50;i++){
+	    A[i] = new KaplanSniperAgent(
+		{
+		    id: i,
+		    desiredSpread:8,
+		    rate: (i+9.0)/100.0,
+		    inventory: {'X':0, 'money':1000},
+		    markets: {'X': 1 },
+		    costs: {'X': [2*i+1] }
+		}
+	    );
+	    A[i].getCurrentBidPrice = getCurrentBidPrice;
+	    A[i].getCurrentAskPrice = getCurrentAskPrice;
+	    A[i].getJuicyBidPrice = getJuicyBidPrice;
+	    A[i].getJuicyAskPrice = getJuicyAskPrice;
+	    A[i].bid = bid;
+	    A[i].ask = ask;
+	    A[i].id.should.equal(i);
+	    myPool.push(A[i]);
+	}
+	for(i=50;i<100;i++){
+	    A[i] = new KaplanSniperAgent(
+		{
+		    id: i,
+		    desiredSpread: 8,
+		    rate: (i+9.0)/100.0,
+		    inventory: {'X':0, 'money': 1000},
+		    markets: {'X': 1},
+		    values: {'X': [2*(i-50)+1]}
+		}
+	    );
+	    A[i].getCurrentBidPrice = getCurrentBidPrice;
+	    A[i].getCurrentAskPrice = getCurrentAskPrice;
+	    A[i].getJuicyBidPrice = getJuicyBidPrice;
+	    A[i].getJuicyAskPrice = getJuicyAskPrice;
+	    A[i].bid = bid;
+	    A[i].ask = ask;
+	    A[i].id.should.equal(i);
+	    myPool.push(A[i]);
+	}
+	
+	myPool.initPeriod({number:1, startTime: 1000, endTime: 2000});
+	myPool.syncRun(2000);
+	/* bidCount,askCount actually should be around 3x 20 = 60, but random, and want a test that will not fail often */
+	bidCount.should.be.above(20, 'not enough bids:'+bidCount);
+	askCount.should.be.above(20, 'not enough asks:'+askCount);
+	/* below we test that no bids or asks were earlier than the end-of-period rate-based snipe activation time */
+	/* and that no agent switched roles, i.e. no buyers were asking, no sellers were bidding */
+	agentAskLog.forEach(function(L,j){
+	    if (j===0) return;
+	    if (j<50){ 
+		var minT = 2000-(3.0/A[j].rate);
+		L.forEach(function(tAsk){ 
+		    tAsk.should.be.above(minT);
+		});
+	    } else {
+		L.length.should.equal(0);
+	    }
+	});
+	agentBidLog.forEach(function(L,j){
+	    if (j===0) return;
+	    if (j<50){ 
+		L.length.should.equal(0); 
+	    } else {
+		var minT = 2000-(3.0/A[j].rate);
+		L.forEach(function(tBid){ 
+		    tBid.should.be.above(minT);
+		});
+	    } 
+	});
+	
+    });
+
+    it('pool with 10 generic agents, pool.Trade agent 0 buys 1 X@400 from agent 5, correct inventories',
        function(){
 	   var i,l;
 	   var pool = new Pool();

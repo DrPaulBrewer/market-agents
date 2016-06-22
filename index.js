@@ -83,6 +83,18 @@ Agent.prototype.endPeriod = function(){
     this.emit('post-period');
 };
 
+Agent.prototype.pctPeriod = function(){
+    if ((this.period.startTime!==undefined) && (this.period.endTime>0) && (this.wakeTime!==undefined)){
+	return (this.wakeTime-this.period.startTime)/(this.period.endTime-this.period.startTime);
+    }
+};
+
+Agent.prototype.poissonWakesRemainingInPeriod = function(){
+    if ((this.rate>0) && (this.wakeTime!==undefined) && (this.period.endTime>0)){
+	return (this.period.endTime - this.wakeTime)*this.rate;
+    }
+};
+
 Agent.prototype.wake = function(info){
     var nextTime;
     this.emit('wake', info);
@@ -179,7 +191,7 @@ ziAgent = function(options){
 	maxPrice: 1000
     };
     Agent.call(this, Object.assign({}, defaults, options));
-    this.on('wake', ziAgent.prototype.sendBidsAndAsks);
+    this.on('wake', this.sendBidsAndAsks);
 }; 
 
 util.inherits(ziAgent, Agent);
@@ -246,6 +258,128 @@ ziAgent.prototype.askPrice = function(marginalCost){
     }
     return p;
 };
+
+unitAgent = function(options){
+    var defaults = {
+	description: "Paul Brewer's HBEER UNIT agent that bids/asks within 1 price unit of previous price"
+    };
+    ziAgent.call(this, Object.assign({}, defaults, options));
+};
+
+util.inherits(unitAgent,ziAgent);
+
+var um1p2 = ProbJS.uniform(-1,2);
+var um1p1 = ProbJS.uniform(-1,1);
+
+unitAgent.prototype.randomDelta = function(){
+    var delta;
+    if (this.integer){
+	do {
+	    delta = Math.floor(um1p2());
+	} while ((delta <= -2) || (delta >= 2.0));
+    } else {
+	do {
+	    delta = um1p1();
+	} while ( (delta < -1) || (delta > 1) );
+    }
+    return delta;
+};
+
+unitAgent.prototype.bidPrice = function(marginalValue){
+    if (typeof(marginalValue)!=='number') return undefined;
+    var p;
+    var value = marginalValue;
+    if (this.ignoreBudgetConstraint)
+	value = this.maxPrice;
+    var previous = this.getPreviousPrice();
+    if (previous)
+	p = previous+this.randomDelta();
+    else
+	p = ziAgent.prototype.bidPrice.call(this, marginalValue);
+    if ((p>value) || (p>this.maxPrice) || (p<this.minPrice)) return undefined;
+    return (p && this.integer)? Math.floor(p): p;
+};
+
+unitAgent.prototype.askPrice = function(marginalCost){
+    if (typeof(marginalCost)!=='number') return undefined;
+    var p;
+    var cost = marginalCost;
+    if (this.ignoreBudgetConstraint)
+	cost = this.minPrice;
+    var previous = this.getPreviousPrice();
+    if (previous)
+	p = previous+this.randomDelta();
+    else
+	p = ziAgent.prototype.askPrice.call(this, marginalCost);
+    if ((p<cost) || (p>this.maxPrice) || (p<this.minPrice)) return undefined;
+    return (p && this.integer)? Math.floor(p): p;
+};
+
+/* see e.g. "High Performance Bidding Agents for the Continuous Double Auction" 
+ *                Gerald Tesauro and Rajarshi Das, Institute for Advanced Commerce, IBM 
+ *
+ *  http://researcher.watson.ibm.com/researcher/files/us-kephart/dblauc.pdf
+ *
+ *      for discussion of Kaplan's Sniper traders on pp. 4-5
+*/
+
+KaplanSniperAgent = function(options){
+    var defaults = {
+	description: "Kaplan's snipers, trade on 'juicy' price, or low spread, or end of period",
+	desiredSpread: 10
+    };
+    ziAgent.call(this, Object.assign({}, defaults, options));
+};
+
+util.inherits(KaplanSniperAgent,ziAgent);
+
+KaplanSniperAgent.prototype.bidPrice = function(marginalValue){
+    if (typeof(marginalValue)!=='number') return undefined;
+    var currentBid = this.getCurrentBidPrice();
+    var currentAsk = this.getCurrentAskPrice();
+
+    // a trade can only occur if currentAsk <= marginalValue
+    if (currentAsk <= marginalValue){
+
+	// snipe if ask price is less than or equal to juicy ask price
+	var juicyPrice = this.getJuicyAskPrice();
+	if ((juicyPrice>0) && (currentAsk<=juicyPrice))
+	    return currentAsk;
+
+	// snipe if low bid ask spread 
+	if ((currentAsk>0) && (currentBid>0) && ((currentAsk-currentBid)<=this.desiredSpread))
+	    return currentAsk;
+
+	// snipe if period end is three wakes away or less
+	if (this.poissonWakesRemainingInPeriod()<=3)
+	    return currentAsk;
+    }
+    // otherwise return undefined
+};
+
+KaplanSniperAgent.prototype.askPrice = function(marginalCost){
+    if (typeof(marginalCost)!=='number') return undefined;
+    var currentBid = this.getCurrentBidPrice();
+    var currentAsk = this.getCurrentAskPrice();
+    // only trade if currentBid >= marginalCost
+    if (currentBid >= marginalCost){
+
+	// snipe if bid price is greater than or equal to juicy bid price
+	var juicyPrice = this.getJuicyBidPrice();
+	if ((juicyPrice>0) && (currentBid>=juicyPrice))
+	    return currentBid;
+
+	// snipe if low bid ask spread
+	if ((currentAsk>0) && (currentBid>0) && ((currentAsk-currentBid)<=this.desiredSpread))
+	    return currentBid;
+
+	// snipe if period end is three wakes away or less
+	if (this.poissonWakesRemainingInPeriod()<=3)
+	    return currentBid;
+    }
+    // otherwise return undefined
+};
+
 
 Pool = function(){
     this.agents = [];
@@ -407,7 +541,6 @@ Pool.prototype.trade = function(tradeSpec){
 		this.agentsById[tradeSpec.buyId[i]].transfer(buyerTransfer, {isTrade:1, isBuyAccepted:1});
 	    }
 	}
-	
     }
 };
 
@@ -445,6 +578,8 @@ Pool.prototype.distribute = function(field, good, aggregateArray){
 module.exports = {
     Agent: Agent,
     ziAgent: ziAgent,
+    unitAgent: unitAgent,
+    KaplanSniperAgent: KaplanSniperAgent,
     Pool: Pool
 };
 
