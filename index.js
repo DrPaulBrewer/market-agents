@@ -206,13 +206,13 @@ ziAgent.prototype.sendBidsAndAsks = function(){
 	good = names[i];
 	unitValue = this.unitValueFunction(good, this.inventory);
 	if (unitValue>0){
-	    myPrice = this.bidPrice(unitValue);
+	    myPrice = this.bidPrice(unitValue, this.markets[good]);
 	    if (myPrice)
 		this.bid(good, myPrice);
 	}
 	unitCost = this.unitCostFunction(good, this.inventory);
 	if (unitCost>0){
-	    myPrice = this.askPrice(unitCost);
+	    myPrice = this.askPrice(unitCost, this.markets[good]);
 	    if (myPrice)
 		this.ask(good, myPrice);
 	}
@@ -285,13 +285,13 @@ unitAgent.prototype.randomDelta = function(){
     return delta;
 };
 
-unitAgent.prototype.bidPrice = function(marginalValue){
+unitAgent.prototype.bidPrice = function(marginalValue, market){
     if (typeof(marginalValue)!=='number') return undefined;
     var p;
     var value = marginalValue;
     if (this.ignoreBudgetConstraint)
 	value = this.maxPrice;
-    var previous = this.getPreviousPrice();
+    var previous = market.lastTradePrice();
     if (previous)
 	p = previous+this.randomDelta();
     else
@@ -300,13 +300,13 @@ unitAgent.prototype.bidPrice = function(marginalValue){
     return (p && this.integer)? Math.floor(p): p;
 };
 
-unitAgent.prototype.askPrice = function(marginalCost){
+unitAgent.prototype.askPrice = function(marginalCost, market){
     if (typeof(marginalCost)!=='number') return undefined;
     var p;
     var cost = marginalCost;
     if (this.ignoreBudgetConstraint)
 	cost = this.minPrice;
-    var previous = this.getPreviousPrice();
+    var previous = market.lastTradePrice();
     if (previous)
 	p = previous+this.randomDelta();
     else
@@ -333,10 +333,10 @@ KaplanSniperAgent = function(options){
 
 util.inherits(KaplanSniperAgent,ziAgent);
 
-KaplanSniperAgent.prototype.bidPrice = function(marginalValue){
+KaplanSniperAgent.prototype.bidPrice = function(marginalValue, market){
     if (typeof(marginalValue)!=='number') return undefined;
-    var currentBid = this.getCurrentBidPrice();
-    var currentAsk = this.getCurrentAskPrice();
+    var currentBid = market.currentBidPrice();
+    var currentAsk = market.currentAskPrice();
 
     // a trade can only occur if currentAsk <= marginalValue
     if (currentAsk <= marginalValue){
@@ -357,10 +357,10 @@ KaplanSniperAgent.prototype.bidPrice = function(marginalValue){
     // otherwise return undefined
 };
 
-KaplanSniperAgent.prototype.askPrice = function(marginalCost){
+KaplanSniperAgent.prototype.askPrice = function(marginalCost, market){
     if (typeof(marginalCost)!=='number') return undefined;
-    var currentBid = this.getCurrentBidPrice();
-    var currentAsk = this.getCurrentAskPrice();
+    var currentBid = market.currentBidPrice();
+    var currentAsk = market.currentAskPrice();
     // only trade if currentBid >= marginalCost
     if (currentBid >= marginalCost){
 

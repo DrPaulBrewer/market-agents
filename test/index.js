@@ -581,28 +581,31 @@ describe('new unitAgent', function(){
 	call_askPrice_with_no_get_previous_price.should.throw();
     });
 
-    it('this.bidPrice(50) is undefined if .getPreviousPrice()===51.01', function(){
+    it('this.bidPrice(50) is undefined if market.lastTradePrice()===51.01', function(){
 	var a = new unitAgent({minPrice:10, maxPrice:90});
-	a.getPreviousPrice = function(){ return 51.01; };
+	var market = {
+	    lastTradePrice: function(){ return 51.01; }
+	};
 	var i,l,p;
 	for(i=0,l=100;i<l;++i){
-	    p = a.bidPrice(50);
+	    p = a.bidPrice(50, market);
 	    assert(typeof(p)==='undefined', p);
 	}
 	a.integer = true;
 	for(i=0,l=100;i<l;++i){
-	    p = a.bidPrice(50);
+	    p = a.bidPrice(50, market);
 	    assert(typeof(p)==='undefined', p);
 	}
     });
 
-    it('this.bidPrice(50) is 32,33,34 approx 1/3 of time if ,integer===true, .getPreviousPrice()===33', function(){
+    it('this.bidPrice(50) is 32,33,34 approx 1/3 of time if .integer===true, market.lastTradePrice()===33', function(){
 	var a = new unitAgent({minPrice: 10, maxPrice:90, integer: true});
-	a.getPreviousPrice = function(){ return 33; };
+	var market = {};
+	market.lastTradePrice = function(){ return 33; };
 	var i,l,p;
 	var bin = Array(100).fill(0);
 	for(i=0,l=30000;i<l;++i){
-	    p = a.bidPrice(50);
+	    p = a.bidPrice(50, market);
 	    bin[Math.floor(p)]++;
 	}
 	bin[31].should.equal(0);
@@ -612,13 +615,13 @@ describe('new unitAgent', function(){
 	bin[35].should.equal(0);
     });
 
-    it('this.bidPrice(50) is 32-33, 33-34 approx 1/2 of time if ,integer===false, .getPreviousPrice()===33', function(){
+    it('this.bidPrice(50) is 32-33, 33-34 approx 1/2 of time if .integer===false, market.lastTradePrice()===33', function(){
 	var a = new unitAgent({minPrice: 10, maxPrice:90});
-	a.getPreviousPrice = function(){ return 33; };
+	var market = { lastTradePrice: function(){ return 33; } };
 	var i,l,p;
 	var bin = Array(100).fill(0);
 	for(i=0,l=20000;i<l;++i){
-	    p = a.bidPrice(50);
+	    p = a.bidPrice(50, market);
 	    bin[Math.floor(p)]++;
 	}
 	bin[31].should.equal(0);
@@ -628,13 +631,13 @@ describe('new unitAgent', function(){
 	bin[35].should.equal(0);
     });
 
-    it('this.bidPrice(33) is 32-33, undefined approx 1/2 of time if .integer===false, .getPreviousPrice()===33', function(){
+    it('this.bidPrice(33) is 32-33, undefined approx 1/2 of time if .integer===false, market.lastTradePrice()===33', function(){
 	var a = new unitAgent({minPrice: 10, maxPrice:90});
-	a.getPreviousPrice = function(){ return 33; };
+	var market = { lastTradePrice: function(){ return 33; } };
 	var i,l,p,un=0;
 	var bin = Array(100).fill(0);
 	for(i=0,l=20000;i<l;++i){
-	    p = a.bidPrice(33);
+	    p = a.bidPrice(33, market);
 	    if (p)
 		bin[Math.floor(p)]++;
 	    else
@@ -648,28 +651,28 @@ describe('new unitAgent', function(){
 	bin[35].should.equal(0);
     });
 
-    it('this.askPrice(50) is undefined if .getPreviousPrice()===48.99', function(){
+    it('this.askPrice(50) is undefined if market.lastTradePrice()===48.99', function(){
 	var a = new unitAgent({minPrice:10, maxPrice:90});
-	a.getPreviousPrice = function(){ return 48.99; };
+	var market = { lastTradePrice: function(){ return 48.99; } };
 	var i,l,p;
 	for(i=0,l=100;i<l;++i){
-	    p = a.askPrice(50);
+	    p = a.askPrice(50, market);
 	    assert(typeof(p)==='undefined', p);
 	}
 	a.integer=true;
 	for(i=0,l=100;i<l;++i){
-	    p = a.askPrice(50);
+	    p = a.askPrice(50, market);
 	    assert(typeof(p)==='undefined', p);
 	}
     });
 
-    it('this.askPrice(25) is 32,33,34 approx 1/3 of time if ,integer===true, .getPreviousPrice()===33', function(){
+    it('this.askPrice(25) is 32,33,34 approx 1/3 of time if ,integer===true, market.lastTradePrice()===33', function(){
 	var a = new unitAgent({minPrice: 10, maxPrice:90, integer: true});
-	a.getPreviousPrice = function(){ return 33; };
+	var market = { lastTradePrice: function(){ return 33; } };
 	var i,l,p;
 	var bin = Array(100).fill(0);
 	for(i=0,l=30000;i<l;++i){
-	    p = a.askPrice(25);
+	    p = a.askPrice(25, market);
 	    bin[Math.floor(p)]++;
 	}
 	bin[31].should.equal(0);
@@ -679,13 +682,13 @@ describe('new unitAgent', function(){
 	bin[35].should.equal(0);
     });
 
-    it('this.askPrice(25) is 32-33, 33-34 approx 1/2 of time if ,integer===false, .getPreviousPrice()===33', function(){
+    it('this.askPrice(25) is 32-33, 33-34 approx 1/2 of time if ,integer===false, market.lastTradePrice()===33', function(){
 	var a = new unitAgent({minPrice: 10, maxPrice:90});
-	a.getPreviousPrice = function(){ return 33; };
+	var market = { lastTradePrice: function(){ return 33; } };
 	var i,l,p;
 	var bin = Array(100).fill(0);
 	for(i=0,l=20000;i<l;++i){
-	    p = a.askPrice(25);
+	    p = a.askPrice(25, market);
 	    bin[Math.floor(p)]++;
 	}
 	bin[31].should.equal(0);
@@ -700,19 +703,20 @@ describe('new KaplanSniperAgent', function(){
 
     function testKaplanSniperAgent(agentConfig, agentInfo, call, param, correctValue){
 	var a = new KaplanSniperAgent(agentConfig);
+	var market = {};
 	var message = "config: "+JSON.stringify(agentConfig)+"\n"+
 	    "info: "+JSON.stringify(agentInfo)+"\n"+
 	    "call: "+call+"\n"+
 	    "param: "+param+"\n"+
 	    "correct: "+correctValue;
-	a.getCurrentBidPrice = function(){ return agentInfo.currentBidPrice; };
-	a.getCurrentAskPrice = function(){ return agentInfo.currentAskPrice; };
+	market.currentBidPrice = function(){ return agentInfo.currentBidPrice; };
+	market.currentAskPrice = function(){ return agentInfo.currentAskPrice; };
 	a.getJuicyBidPrice = function(){ return agentInfo.juicyBidPrice; };
 	a.getJuicyAskPrice = function(){ return agentInfo.juicyAskPrice; };
 	if (correctValue===undefined)
-	    assert.strictEqual(typeof(a[call](param)), "undefined", message);
+	    assert.strictEqual(typeof(a[call](param, market)), "undefined", message);
 	else
-	    assert.strictEqual(a[call](param), correctValue, message);
+	    assert.strictEqual(a[call](param, market), correctValue, message);
     }
 
    it('should have properties id, description, inventory, wakeTime, rate, nextWake, period with proper types',
@@ -825,11 +829,13 @@ describe('new KaplanSniperAgent', function(){
 
     it('.askPrice is undefined if currentBid undefined', function(){
 	var a = new KaplanSniperAgent();
-	a.getCurrentBidPrice = function(){};
-	a.getCurrentAskPrice = function(){ return 70; };
+	var market = {
+	    currentBidPrice: function(){},
+	    currentAskPrice: function(){ return 70; }
+	};
 	a.getJuicyBidPrice = function(){ return 150; };
 	for(var i=1,l=100;i<l;++i)
-	    assert(typeof(a.askPrice(i))==='undefined');
+	    assert(typeof(a.askPrice(i, market))==='undefined');
     });
 
     it('.askPrice(MC) equals currentBid===60 iff juicyBidPrice>=60 and MC<=60',function(){
@@ -1087,8 +1093,10 @@ describe('new Pool', function(){
 	    agentAskLog[i]=[];
 	}
 	var myPool = new Pool();
-	var getCurrentBidPrice = function(){ return currentBid;};
-	var getCurrentAskPrice = function(){ return currentAsk;};
+	var market =  {
+	    currentBidPrice: function(){ return currentBid; },
+	    currentAskPrice: function(){ return currentAsk; }
+	};
 	var getJuicyBidPrice = function(){ return 101; };
 	var getJuicyAskPrice = function(){ return 1; };
 	var ask = function(good, price){ 
@@ -1113,12 +1121,10 @@ describe('new Pool', function(){
 		    desiredSpread:8,
 		    rate: (i+9.0)/100.0,
 		    inventory: {'X':0, 'money':1000},
-		    markets: {'X': 1 },
+		    markets: {'X': market },
 		    costs: {'X': [2*i+1] }
 		}
 	    );
-	    A[i].getCurrentBidPrice = getCurrentBidPrice;
-	    A[i].getCurrentAskPrice = getCurrentAskPrice;
 	    A[i].getJuicyBidPrice = getJuicyBidPrice;
 	    A[i].getJuicyAskPrice = getJuicyAskPrice;
 	    A[i].bid = bid;
@@ -1133,12 +1139,10 @@ describe('new Pool', function(){
 		    desiredSpread: 8,
 		    rate: (i+9.0)/100.0,
 		    inventory: {'X':0, 'money': 1000},
-		    markets: {'X': 1},
+		    markets: {'X': market},
 		    values: {'X': [2*(i-50)+1]}
 		}
 	    );
-	    A[i].getCurrentBidPrice = getCurrentBidPrice;
-	    A[i].getCurrentAskPrice = getCurrentAskPrice;
 	    A[i].getJuicyBidPrice = getJuicyBidPrice;
 	    A[i].getJuicyAskPrice = getJuicyAskPrice;
 	    A[i].bid = bid;
