@@ -285,7 +285,7 @@ describe('new ziAgent', function(){
     });
 
     it('should not call this.bid() or this.ask() on this.wake() if values and costs not configured', function(){
-	var zi = new ziAgent();
+	var zi = new ziAgent({markets:[{goods:'X'}]});
 	var wakes=0,bids=0,asks=0;
 	zi.on('wake', function(){ wakes++; });
 	zi.bid = function(){ bids++; };
@@ -297,12 +297,12 @@ describe('new ziAgent', function(){
     });
 
     it('should call this.bid() on this.wake() if values configured', function(){
-	var zi = new ziAgent({markets: {X:1}});
+	var zi = new ziAgent({markets: [{goods:"X"}]});
 	zi.initPeriod({number:0, startTime:0, init: {inventory: {coins:0, X:0, Y:0 }, values: {X: [100,1,1]}}});
 	var wakes=0,bids=0,asks=0;
 	zi.on('wake', function(){ wakes++; });
-	zi.bid = function(good, p){ 
-	    assert.ok(good==='X');
+	zi.bid = function(market, p){ 
+	    assert.ok(market.goods==='X');
 	    p.should.be.type('number');
 	    p.should.be.within(0,100);
 	    bids++; 
@@ -315,15 +315,15 @@ describe('new ziAgent', function(){
     });
 
     it('should call this.ask() on this.wake() if costs configured', function(){
-	var zi = new ziAgent({markets: {X:1}});
+	var zi = new ziAgent({markets: [{goods:"X"}]});
 	zi.initPeriod({number:0, startTime:0, init: {inventory: {coins:0, X:0, Y:0 }, costs: {X: [100,1000,1000]}}});
 	var wakes=0,bids=0,asks=0;
 	zi.on('wake', function(){ wakes++; });
 	zi.bid = function(good, p){ 
 	    bids++; 
 	};
-	zi.ask = function(good,p){ 
-	    good.should.equal('X');
+	zi.ask = function(market,p){ 
+	    market.goods.should.equal('X');
 	    p.should.be.type('number');
 	    p.should.be.within(100,1000);
 	    asks++; 
@@ -334,24 +334,24 @@ describe('new ziAgent', function(){
 	asks.should.equal(1);	
     });
 
-    it('should call this.bid() and this.ask() on this.wake() if both values and  costs configured', function(){
+    it('should call this.bid() on Y market and this.ask() on X market on this.wake() if both values and  costs configured', function(){
 	var zi = new ziAgent({
 	    inventory: {coins:0, X:0, Y:0},
-	    markets: {X:1,Y:1}, 
+	    markets: [{goods:"X"}, {goods:"Y"}], 
 	    costs: {X: [100]}, 
 	    values: {Y: [50]},
 	    maxPrice:1000
 	});
 	var wakes=0,bids=0,asks=0;
 	zi.on('wake', function(){ wakes++; });
-	zi.bid = function(good, p){ 
+	zi.bid = function(market, p){ 
 	    bids++; 
-	    good.should.equal('Y');
+	    market.goods.should.equal('Y');
 	    p.should.be.type('number');
 	    p.should.be.within(0,100);
 	};
-	zi.ask = function(good,p){ 
-	    good.should.equal('X');
+	zi.ask = function(market,p){ 
+	    market.goods.should.equal('X');
 	    p.should.be.type('number');
 	    p.should.be.within(50,1000);
 	    asks++; 
@@ -1094,21 +1094,22 @@ describe('new Pool', function(){
 	}
 	var myPool = new Pool();
 	var market =  {
+	    goods: "X",
 	    currentBidPrice: function(){ return currentBid; },
 	    currentAskPrice: function(){ return currentAsk; }
 	};
 	var getJuicyBidPrice = function(){ return 101; };
 	var getJuicyAskPrice = function(){ return 1; };
-	var ask = function(good, price){ 
+	var ask = function(market, price){ 
 	    askCount++;
-	    good.should.equal("X");
+	    market.goods.should.equal("X");
 	    price.should.equal(currentBid);
 	    this.unitCostFunction("X",this.inventory).should.be.within(0, currentBid);
 	    agentAskLog[this.id].push(this.wakeTime);
 	};
-	var bid = function(good, price){
+	var bid = function(market, price){
 	    bidCount++;
-	    good.should.equal("X");
+	    market.goods.should.equal("X");
 	    price.should.equal(currentAsk);
 	    this.unitValueFunction("X",this.inventory).should.be.within(currentAsk, 100);
 	    agentBidLog[this.id].push(this.wakeTime);
@@ -1121,7 +1122,7 @@ describe('new Pool', function(){
 		    desiredSpread:8,
 		    rate: (i+9.0)/100.0,
 		    inventory: {'X':0, 'money':1000},
-		    markets: {'X': market },
+		    markets: [market],
 		    costs: {'X': [2*i+1] }
 		}
 	    );
@@ -1139,7 +1140,7 @@ describe('new Pool', function(){
 		    desiredSpread: 8,
 		    rate: (i+9.0)/100.0,
 		    inventory: {'X':0, 'money': 1000},
-		    markets: {'X': market},
+		    markets: [market],
 		    values: {'X': [2*(i-50)+1]}
 		}
 	    );

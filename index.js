@@ -186,7 +186,7 @@ ziAgent = function(options){
     // from an idea developed by Gode and Sunder in a series of economics papers
     var defaults = {
 	description: 'Gode and Sunder style ZI Agent',
-	markets: {},
+	markets: [],
 	minPrice: 0,
 	maxPrice: 1000
     };
@@ -197,24 +197,23 @@ ziAgent = function(options){
 util.inherits(ziAgent, Agent);
 
 ziAgent.prototype.sendBidsAndAsks = function(){
-    var names = Object.keys(this.markets);
     var i,l;
     var unitValue, unitCost;
-    var good;
+    var market;
     var myPrice;
-    for(i=0,l=names.length;i<l;++i){
-	good = names[i];
-	unitValue = this.unitValueFunction(good, this.inventory);
+    for(i=0,l=this.markets.length;i<l;++i){
+	market = this.markets[i];
+	unitValue = this.unitValueFunction(market.goods, this.inventory);
 	if (unitValue>0){
-	    myPrice = this.bidPrice(unitValue, this.markets[good]);
+	    myPrice = this.bidPrice(unitValue, market);
 	    if (myPrice)
-		this.bid(good, myPrice);
+		this.bid(market, myPrice);
 	}
-	unitCost = this.unitCostFunction(good, this.inventory);
+	unitCost = this.unitCostFunction(market.goods, this.inventory);
 	if (unitCost>0){
-	    myPrice = this.askPrice(unitCost, this.markets[good]);
+	    myPrice = this.askPrice(unitCost, market);
 	    if (myPrice)
-		this.ask(good, myPrice);
+		this.ask(market, myPrice);
 	}
     }
 };
