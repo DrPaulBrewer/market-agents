@@ -7,15 +7,13 @@ market-agents
 
 ## Provides EventEmitter Agent framework for robot trading in economic and financial simulations
 
-### Warning: versions less than 1.0.0 are pre-release/experimental, may be subject to massive change without notice or not work 
-
 ##Installation
 
     npm install market-agents --save
 
 ##Initialization
 
-    var MarketAgents = require('market-agents');
+    const MarketAgents = require('market-agents');
     // unpack constructors
     const Agent = MarketAgents.Agent;
     const ziAgent = MarketAgents.Agent;
@@ -31,6 +29,7 @@ market-agents
     myPool.initPeriod([type1Params,type2Params,...,typeNParams]);
     myPool.runSync(10000); 
     myPool.endPeriod();
+
 
 ##Agent Construction
     
@@ -73,10 +72,6 @@ each Agent instance has access to these methods
 | | | inventory | object, goods as keys, number values | a hypothetical set of inventory levels for calcuating the function |
 |`.redeem()`|
 |`.produce()`|
-
-
-
-
 
 ##Agent Events
 
@@ -183,6 +178,23 @@ ziAgent registers ziAgent.Prototype.sendBidsAndAsks as the first responder to th
 Pool is not an EventEmitter of its own.  
 
 Instead, several Pool methods call methods on all agents in the Pool, triggering related Agent events.
+
+## Isomorphic Javascript
+
+This code is intended to run on either nodeJS or in browsers.
+
+### ES5 vs ES6
+
+Beginning with version 0.16.0, ES6 features are used that may be incompatible with older ES5 browsers.
+
+Either require  users to use the most modern browsers, nodeJS v6.*, or use a transpiler to produce ES5 code.
+
+Versions prior to 0.16.0 use mostly ES5 code with a smattering of `Object.assign()`, `const`.
+
+### Packaging
+
+CommonJS packaging (`require()`) is used, not ES6 modules.  
+
 
 
 
