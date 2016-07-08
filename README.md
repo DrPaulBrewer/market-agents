@@ -5,7 +5,12 @@ market-agents
 [![Coverage Status](https://coveralls.io/repos/github/DrPaulBrewer/market-agents/badge.svg?branch=master)](https://coveralls.io/github/DrPaulBrewer/market-agents?branch=master)
 
 
-## Provides EventEmitter Agent framework for robot trading in economic and financial simulations
+Provides EventEmitter Agent framework for robot trading in economic and financial simulations
+
+##Documentation
+
+The [ESDoc hosted documentation for market-agents](https://doc.esdoc.org/github.com/DrPaulBrewer/market-agents/) may be preferable as it should
+include both this information and documentation automatically generated from the source code and source code comments.
 
 ##Installation
 
@@ -18,7 +23,7 @@ market-agents
     const Agent = MarketAgents.Agent;
     const ziAgent = MarketAgents.Agent;
     const Pool = MarketAgents.Pool;
- 
+
 ##Blurb
 
     var myAgent = new Agent({inventory: {money:1000, X:5}});
