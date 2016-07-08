@@ -1,7 +1,7 @@
-import * as async from 'async'
-import {EventEmitter} from 'events'
-import * as ProbJS from 'prob.js'
+import * as async from 'async';
 import clone from 'clone';
+import {EventEmitter} from 'events';
+import * as ProbJS from 'prob.js';
 
 let privateNextId = 1;
 function nextId(){ return privateNextId++; }
