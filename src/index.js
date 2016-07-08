@@ -78,7 +78,12 @@ export class Agent extends EventEmitter {
         Object.assign(this, defaults, clone(options, false));
         this.init();
     }
-
+    
+    /**
+     * initialize an agent to new settings
+     * @param {Object} [newSettings] see constructor
+     *
+     */
 
     init(newSettings){
         if (typeof(newSettings)==='object'){
@@ -98,6 +103,21 @@ export class Agent extends EventEmitter {
         this.wakeTime = this.nextWake();
     }
     
+    /** 
+     * re-initialize agent to the beginning of a new simulation period
+     * 
+     * @param {number|Object} period A period initialization object, or a number indicating a new period using the previous period's initialization object
+     * @param {number} period.number A number, usually sequential, identifying the next period, e.g. 1,2,3,4,5,...
+     * @param {boolean} [period.equalDuration=false] with positive period.duration, autogenerates startTime and endTime as n or n+1 times period.duration
+     * @param {number} [period.startTime] period begins, manual setting for initial time value for agent wakeTime
+     * @param {number} [period.endTime] period ends, no agent wake events will be emitted for this period after this time
+     * @param {Object} [period.init] initializer for other agent properties, passed to .init()
+     * @emits {pre-period} emit per-period when initialization to new period is complete
+     * @example
+     * myAgent.initPeriod({number:1, duration:1000, equalDuration: true});
+     * myAgent.initPeriod(2);
+     */
+
     initPeriod(period){
         // period might look like this
         // period = {number:5, startTime:50000, init: {inventory:{X:0, Y:0}, values:{X:[300,200,100,0,0,0,0]}}}
