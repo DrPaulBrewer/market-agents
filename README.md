@@ -179,21 +179,9 @@ Pool is not an EventEmitter of its own.
 
 Instead, several Pool methods call methods on all agents in the Pool, triggering related Agent events.
 
-## Isomorphic Javascript
 
-This code is intended to run on either nodeJS or in browsers.
 
-### ES5 vs ES6
 
-Beginning with version 0.16.0, ES6 features are used that may be incompatible with older ES5 browsers.
-
-Either require  users to use the most modern browsers, nodeJS v6.*, or use a transpiler to produce ES5 code.
-
-Versions prior to 0.16.0 use mostly ES5 code with a smattering of `Object.assign()`, `const`.
-
-### Packaging
-
-CommonJS packaging (`require()`) is used, not ES6 modules.  
 
 
 

@@ -1,12 +1,12 @@
 /* eslint-env node, mocha */
-const assert = require('assert');
-require('should');
-const MarketAgents = require("../src/index.js");
-const Agent = MarketAgents.Agent;
-const ZIAgent = MarketAgents.ZIAgent;
-const Pool = MarketAgents.Pool;
-const UnitAgent = MarketAgents.UnitAgent;
-const KaplanSniperAgent = MarketAgents.KaplanSniperAgent;
+
+import assert from 'assert';
+import "should";
+import * as MarketAgents from "../src/index.js";
+
+const {Agent,ZIAgent,Pool,UnitAgent,KaplanSniperAgent} = MarketAgents;
+
+/**  @test {MarketAgents} */
 
 describe('MarketAgents', function(){
     
@@ -21,6 +21,8 @@ describe('MarketAgents', function(){
     });
 
 });
+
+/** @test {Agent} */
 
 describe('new Agent', function(){
     it('should have properties id, description, inventory, wakeTime, rate, nextWake, period with proper types',
@@ -255,6 +257,8 @@ describe('new Agent', function(){
         });
     });
 });
+
+/** @test {ZIAgent} */
     
 describe('new ZIAgent', function(){
     it('should have properties id, description, inventory, wakeTime, rate, nextWake, period with proper types',

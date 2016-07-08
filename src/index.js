@@ -1,7 +1,7 @@
-const async = require('async');
-const EventEmitter = require('events').EventEmitter;
-const ProbJS = require('prob.js');
-const clone = require('clone');
+import * as async from 'async'
+import {EventEmitter} from 'events'
+import * as ProbJS from 'prob.js'
+import clone from 'clone';
 
 let privateNextId = 1;
 function nextId(){ return privateNextId++; }
@@ -34,7 +34,7 @@ function poissonWake(){
         return result;
 }
 
-class Agent extends EventEmitter {
+export class Agent extends EventEmitter {
     
     constructor(options){
         super();
@@ -191,7 +191,7 @@ class Agent extends EventEmitter {
     }
 }
 
-class ZIAgent extends Agent {
+export class ZIAgent extends Agent {
     // from an idea developed by Gode and Sunder in a series of economics papers
     constructor(options){
         const defaults = {
@@ -270,7 +270,7 @@ class ZIAgent extends Agent {
 const um1p2 = ProbJS.uniform(-1,2);
 const um1p1 = ProbJS.uniform(-1,1);
 
-class UnitAgent extends ZIAgent {
+export class UnitAgent extends ZIAgent {
     constructor(options){
         const defaults = {
             description: "Paul Brewer's HBEER UNIT agent that bids/asks within 1 price unit of previous price"
@@ -326,7 +326,7 @@ class UnitAgent extends ZIAgent {
  *      for discussion of Kaplan's Sniper traders on pp. 4-5
 */
 
-class KaplanSniperAgent extends ZIAgent {
+export class KaplanSniperAgent extends ZIAgent {
     constructor(options){
         const defaults = {
             description: "Kaplan's snipers, trade on 'juicy' price, or low spread, or end of period",
@@ -384,7 +384,7 @@ class KaplanSniperAgent extends ZIAgent {
     }
 }
 
-class Pool { 
+export class Pool { 
     constructor(){
         this.agents = [];
         this.agentsById = {};
@@ -560,10 +560,3 @@ class Pool {
     }
 }
 
-module.exports = {
-    Agent,
-    ZIAgent,
-    UnitAgent,
-    KaplanSniperAgent,
-    Pool
-};
