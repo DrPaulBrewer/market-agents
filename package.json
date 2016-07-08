@@ -26,7 +26,7 @@
   "bugs": {
     "url": "https://github.com/drpaulbrewer/market-agents/issues"
   },
-  "homepage": "https://github.com/drpaulbrewer/market-agents#readme",
+  "homepage": "https://doc.esdoc.org/github.com/DrPaulBrewer/market-agents/",
   "devDependencies": {
     "babel": "^6.5.2",
     "babel-cli": "^6.10.1",
