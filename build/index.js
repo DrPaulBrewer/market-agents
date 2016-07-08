@@ -15,15 +15,15 @@ var _async = require('async');
 
 var async = _interopRequireWildcard(_async);
 
+var _clone = require('clone');
+
+var _clone2 = _interopRequireDefault(_clone);
+
 var _events = require('events');
 
 var _prob = require('prob.js');
 
 var ProbJS = _interopRequireWildcard(_prob);
-
-var _clone = require('clone');
-
-var _clone2 = _interopRequireDefault(_clone);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
