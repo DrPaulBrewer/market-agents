@@ -109,10 +109,11 @@ export class Agent extends EventEmitter {
      * @param {number|Object} period A period initialization object, or a number indicating a new period using the previous period's initialization object
      * @param {number} period.number A number, usually sequential, identifying the next period, e.g. 1,2,3,4,5,...
      * @param {boolean} [period.equalDuration=false] with positive period.duration, autogenerates startTime and endTime as n or n+1 times period.duration
+     * @param {number} [period.duration] the length of the period, used with period.equalDuration
      * @param {number} [period.startTime] period begins, manual setting for initial time value for agent wakeTime
      * @param {number} [period.endTime] period ends, no agent wake events will be emitted for this period after this time
      * @param {Object} [period.init] initializer for other agent properties, passed to .init()
-     * @emits {pre-period} emit per-period when initialization to new period is complete
+     * @emits {pre-period} when initialization to new period is complete
      * @example
      * myAgent.initPeriod({number:1, duration:1000, equalDuration: true});
      * myAgent.initPeriod(2);
@@ -135,6 +136,12 @@ export class Agent extends EventEmitter {
         this.init(this.period.init);
         this.emit('pre-period');
     }
+
+    /**
+     * ends current period, causing agent to undertake end-of-period tasks such as production and redemption of units
+     *
+     * @emits {post-period} when period ends, always, but after first completing any production/redemption
+     */
     
     endPeriod(){
         if (typeof(this.produce)==='function') this.produce();
@@ -142,11 +149,26 @@ export class Agent extends EventEmitter {
         this.emit('post-period');
     }
 
+    /** 
+     * percent of period used 
+     *
+     * @return {number} proportion of period time used as a number from 0.0, at beginning of period, to 1.0 at end of period.
+     *
+     */
+
+
     pctPeriod(){
         if ((this.period.startTime!==undefined) && (this.period.endTime>0) && (this.wakeTime!==undefined)){
             return (this.wakeTime-this.period.startTime)/(this.period.endTime-this.period.startTime);
         }
     }
+
+    /**
+     * guess at number of random Poisson wakes remaining in period
+     * 
+     * @return {number} "expected" number of remaining random Poisson wakes, calculated as (this.period.endTime-this.wakeTime)*rate
+     * 
+     */
 
     poissonWakesRemainingInPeriod(){
         if ((this.rate>0) && (this.wakeTime!==undefined) && (this.period.endTime>0)){
@@ -154,6 +176,13 @@ export class Agent extends EventEmitter {
         }
     }
 
+    /**
+     * wakes agent so it can act, emitting wake, and sets next wakeTime from this.nextWake() unless period.endTime exceeded 
+     *
+     * @param {Object} [info] optional info passed to this.emit('wake', info)
+     * @emits {wake(info)} immediately
+     */
+    
     wake(info){
         this.emit('wake', info);
         const nextTime = this.nextWake();
@@ -166,6 +195,15 @@ export class Agent extends EventEmitter {
             this.wakeTime = nextTime;
         }
     }
+
+    /** 
+     * increases or decreases agent's inventories of one or more goods and/or money
+     * 
+     * @param {Object} myTransfers object with goods as keys and changes in inventory as number values
+     * @param {Object} [memo] optional memo passed to event listeners
+     * @emits {pre-transfer(myTransfers, memo)} before transfer takes place, modifications to myTransfers will change transfer
+     * @emits {post-transfer(myTransfers, memo)} after transfer takes place
+     */
     
     transfer(myTransfers, memo){
         if (myTransfers){
@@ -180,6 +218,14 @@ export class Agent extends EventEmitter {
             this.emit('post-transfer', myTransfers, memo);
         }
     }
+
+    /** 
+     * agent's marginal cost of producing next unit
+     *
+     * @param {String} good (e.g. "X", "Y")
+     * @param {Object} hypotheticalInventory object with goods as keys and values as numeric levels of inventory 
+     * @return {number} marginal unit cost of next unit, at given (negative) hyptothetical inventory, using agent's configured costs
+     */
     
     unitCostFunction(good, hypotheticalInventory){
         const costs = this.costs[good];
@@ -188,6 +234,14 @@ export class Agent extends EventEmitter {
         }
     }
 
+    /**
+     * agent's marginal value for redeeming next unit
+     *
+     * @param {String} good (e.g. "X", "Y")
+     * @param {Object} hypotheticalInventory object with goods as keys and values as numeric levels of inventory 
+     * @return {number} marginal unit value of next unit, at given (positive) hyptothetical inventory, using agent's configured values
+     */
+
     unitValueFunction(good, hypotheticalInventory){
         const vals = this.values[good];
         if ((Array.isArray(vals)) && (hypotheticalInventory[good] >= 0)){
@@ -195,6 +249,14 @@ export class Agent extends EventEmitter {
         }
     }
 
+    /** 
+     * redeems units in positive inventory with configured values, usually called automatically at end-of-period.
+     * transfer uses memo object {isRedeem:1} 
+     * 
+     * @emits {pre-redeem(transferAmounts)} before calling .transfer, can modify transferAmounts
+     * @emits {post-redeem(transferAmounts)} after calling .transfer
+     */
+    
     redeem(){
         if (this.values){
             const trans = {};
@@ -212,6 +274,14 @@ export class Agent extends EventEmitter {
             this.emit('post-redeem',trans);
         }
     }
+
+    /** 
+     * produces units in negative inventory with configured costs, usually called automatically at end-of-period.
+     * transfer uses memo object {isProduce:1}
+     * 
+     * @emits {pre-redeem(transferAmounts)} before calling .transfer, can modify transferAmounts
+     * @emits {post-redeem(transferAmounts)} after calling .transfer
+     */
 
     produce(){
         if (this.costs){ 
