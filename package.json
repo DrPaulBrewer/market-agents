@@ -9,8 +9,7 @@
     "build": "bash build.sh",
     "doc": "node_modules/.bin/esdoc -c esdoc.json",
     "test": "node_modules/.bin/mocha --compilers js:babel-core/register --reporter spec --slow 50 --timeout 60000",
-    "cover": "node_modules/istanbul/lib/cli.js cover -- node_modules/mocha/bin/_mocha --compilers js:babel-core/register -R spec --timeout 60000 test/*",
-    "prepublish": "npm run clean && npm run build && npm run test && npm run cover"
+    "cover": "node_modules/istanbul/lib/cli.js cover -- node_modules/mocha/bin/_mocha --compilers js:babel-core/register -R spec --timeout 60000 test/*"
   },
   "repository": {
     "type": "git",
