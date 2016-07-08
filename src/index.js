@@ -34,7 +34,28 @@ function poissonWake(){
         return result;
 }
 
+/**
+ * Agent with Poisson-distributed opportunities to act, with period managment,  optional inventory, unit values and costs, and end-of-period production and consumption to satisfy trades
+ *
+ */ 
+
 export class Agent extends EventEmitter {
+
+    /**
+     * creates an Agent with clone of specified options and initializes with .init().
+     *   Option properties are stored directly on the created agent's this.  
+     *
+     * @param {Object} options Agent creation options
+     * @param {string} [options.description] text description of agent, optional
+     * @param {Object} [options.inventory={}] initial inventory, as object with good names as keys and levels as values
+     * @param {string} [options.money='money'] Good used as money by this agent
+     * @param {Object} [options.values={}] marginal value table of agent for goods that are redeemed at end-of-period, as object with goods as keys and numeric arrays as values
+     * @param {Object} [options.costs={}] marginal cost table of agent for goods that are produced at end-of-period, as object with goods as keys and numeric arrays as values
+     * @param {number} [options.wakeTime=0] initial wake-up time for agent, adjusted by this.init() to first poisson-based wake with .nextWake()
+     * @param {number} [options.rate=1] Poisson-arrival rate of agent wake events
+     * @param {function():number} [options.nextWake=poissonWake] calculates next Agent wake-up time
+     * 
+     */
     
     constructor(options){
         super();
