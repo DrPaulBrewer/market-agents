@@ -586,14 +586,26 @@ var ZIAgent = exports.ZIAgent = function (_Trader) {
 var um1p2 = ProbJS.uniform(-1, 2);
 var um1p1 = ProbJS.uniform(-1, 1);
 
-var UnitAgent = exports.UnitAgent = function (_Trader2) {
-    _inherits(UnitAgent, _Trader2);
+/**
+ * UNIT agent, that uses ZIAgent if there is no previous market price, afterward, bids/asks randomly within 1 price unit of previous price
+ *
+ * see also Brewer, Paul Chapter 4 in Handbook of Experimental Economics Results, Charles R. Plott and Vernon L. Smith, eds.,  Elsevier: 2008
+ *
+ * available on Google Books at https://books.google.com search for "Handbook of Experimental Economics Results" and go to pp. 31-45.
+ *
+ * Paid copies available at http://www.sciencedirect.com/science/article/pii/S1574072207000042
+ * 
+ * 
+ */
+
+var UnitAgent = exports.UnitAgent = function (_ZIAgent) {
+    _inherits(UnitAgent, _ZIAgent);
 
     function UnitAgent(options) {
         _classCallCheck(this, UnitAgent);
 
         var defaults = {
-            description: "Paul Brewer's HBEER UNIT agent that bids/asks within 1 price unit of previous price"
+            description: "Paul Brewer's UNIT agent that bids/asks within 1 price unit of previous price"
         };
         return _possibleConstructorReturn(this, Object.getPrototypeOf(UnitAgent).call(this, Object.assign({}, defaults, options)));
     }
@@ -636,7 +648,7 @@ var UnitAgent = exports.UnitAgent = function (_Trader2) {
     }]);
 
     return UnitAgent;
-}(Trader);
+}(ZIAgent);
 
 /**
  * a reimplementation of a Kaplan Sniper Agent (JavaScript implementation by Paul Brewer)
@@ -649,8 +661,8 @@ var UnitAgent = exports.UnitAgent = function (_Trader2) {
  *      for discussion of Kaplan's Sniper traders on pp. 4-5
  */
 
-var KaplanSniperAgent = exports.KaplanSniperAgent = function (_Trader3) {
-    _inherits(KaplanSniperAgent, _Trader3);
+var KaplanSniperAgent = exports.KaplanSniperAgent = function (_Trader2) {
+    _inherits(KaplanSniperAgent, _Trader2);
 
     function KaplanSniperAgent(options) {
         _classCallCheck(this, KaplanSniperAgent);

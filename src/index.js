@@ -507,10 +507,23 @@ export class ZIAgent extends Trader {
 const um1p2 = ProbJS.uniform(-1,2);
 const um1p1 = ProbJS.uniform(-1,1);
 
-export class UnitAgent extends Trader {
+/**
+ * UNIT agent, that uses ZIAgent if there is no previous market price, afterward, bids/asks randomly within 1 price unit of previous price
+ *
+ * see also Brewer, Paul Chapter 4 in Handbook of Experimental Economics Results, Charles R. Plott and Vernon L. Smith, eds.,  Elsevier: 2008
+ *
+ * available on Google Books at https://books.google.com search for "Handbook of Experimental Economics Results" and go to pp. 31-45.
+ *
+ * Paid copies available at http://www.sciencedirect.com/science/article/pii/S1574072207000042
+ * 
+ * 
+ */
+
+export class UnitAgent extends ZIAgent {
+   
     constructor(options){
         const defaults = {
-            description: "Paul Brewer's HBEER UNIT agent that bids/asks within 1 price unit of previous price"
+            description: "Paul Brewer's UNIT agent that bids/asks within 1 price unit of previous price"
         };
         super(Object.assign({}, defaults, options));
     }
