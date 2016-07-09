@@ -544,6 +544,12 @@ describe('new ZIAgent', function(){
 });
 
 describe('new UnitAgent', function(){
+    
+    it('should be a subclass of ZIAgent', function(){
+	let myAgent = new UnitAgent();
+	myAgent.should.be.instanceOf(ZIAgent);
+    });
+    
    it('should have properties id, description, inventory, wakeTime, rate, nextWake, period with proper types',
        function(){ 
            let myAgent = new UnitAgent();
