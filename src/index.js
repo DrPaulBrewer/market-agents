@@ -377,7 +377,7 @@ export class Trader extends Agent {
      * 
      * 
      * @abstract
-     * @param {number} marginalCost The marginal coat of producing the next unit.
+     * @param {number} marginalCost The marginal cost of producing the next unit.
      * @param {Object} market For requesting current market conditions, previous trade price, etc.
      * @return {number|undefined} agent's sell price or undefined if not willing to sell
      * @throws {Error} when calling placeholder
@@ -420,7 +420,7 @@ export class Trader extends Agent {
 }
 
 /**
- * robot agent based on my implementation of Gode and Sunder's "Zero Intelligence" robots, as described in the economics research literature.
+ * a reimplementation of Gode and Sunder's "Zero Intelligence" robots, as described in the economics research literature.
  * 
  * see 
  *
@@ -428,7 +428,7 @@ export class Trader extends Agent {
  *
  *    Gode, Dhananjay K., and S. Sunder. [1993b]. ‘Lower bounds for efficiency of surplus extraction in double auctions.’  In  Friedman,  D.  and  J.  Rust  (eds).  The  Double  Auction  Market:  Institutions,  Theories,  and Evidence,  pp. 199-219.
  *
- *    Gode,  Dhananjay  K.,  and  S.  Sunder.  [1997].  ‘Double  auction  dynamics:  structural  consequences  of  non-binding price controls.’  Mimeo. Gode,  Dhananjay  K.,  and  S.  Sunder.  [1997a].  ‘What  makes  markets  allocationally  efficient?’  Quarterly Journal of Economics, vol. 112 (May), pp.603-630. 
+ *    Gode,  Dhananjay  K.,  and  S.  Sunder.  [1997a].  ‘What  makes  markets  allocationally  efficient?’  Quarterly Journal of Economics, vol. 112 (May), pp.603-630. 
  * 
  */
 
@@ -556,7 +556,7 @@ export class UnitAgent extends Trader {
 }
 
 /**
- * Kaplan Sniper Agent (JavaScript implementation by Paul Brewer)
+ * a reimplementation of a Kaplan Sniper Agent (JavaScript implementation by Paul Brewer)
  *
  * see e.g. "High Performance Bidding Agents for the Continuous Double Auction" 
  *                Gerald Tesauro and Rajarshi Das, Institute for Advanced Commerce, IBM 
