@@ -8,7 +8,7 @@ install:
 
 script:
   - npm run lint
-  - eslint ./test/index.js
+  - npm run lint-test
   - npm run cover
 
 after_script: 
