@@ -426,7 +426,7 @@ var Trader = exports.Trader = function (_Agent) {
          * calculate price this agent is willing to pay.  Placeholder throws error.  Must be overridden and implemented in other code.
          * 
          * @abstract
-         * @param {number} marginalValue The marginal value of redeeming the next unit. sets the maximum price for random price generation
+         * @param {number} marginalValue The marginal value of redeeming the next unit.
          * @param {Object} market For requesting current market conditions, previous trade price, etc.
          * @return {number|undefined} agent's buy price or undefined if not willing to buy
          * @throws {Error} when calling placeholder
@@ -445,9 +445,10 @@ var Trader = exports.Trader = function (_Agent) {
          * 
          * 
          * @abstract
-         * @param {number} marginalCost the marginal coat of producing the next unit. sets the minimum price for random price generation
+         * @param {number} marginalCost The marginal cost of producing the next unit.
          * @param {Object} market For requesting current market conditions, previous trade price, etc.
          * @return {number|undefined} agent's sell price or undefined if not willing to sell
+         * @throws {Error} when calling placeholder
          */
 
         // eslint-disable-next-line no-unused-vars
@@ -459,7 +460,7 @@ var Trader = exports.Trader = function (_Agent) {
         }
 
         /**
-         * for each market in markets, calculates agent's strategy for buy or sell prices  and then sends limit orders for 1 unit at those prices
+         * for each market in agent's configured markets, calculates agent's price strategy for buy or sell prices and then sends limit orders for 1 unit at those prices
          *
          * 
          * 
@@ -490,12 +491,15 @@ var Trader = exports.Trader = function (_Agent) {
 }(Agent);
 
 /**
- * robot agent based on my implementation of Gode and Sunder's "Zero Intelligence" robots, as described in the economics research literature.
+ * a reimplementation of Gode and Sunder's "Zero Intelligence" robots, as described in the economics research literature.
  * 
  * see 
+ *
  *    Gode,  Dhananjay  K.,  and  S.  Sunder.  [1993].  ‘Allocative  efficiency  of  markets  with  zero-intelligence  traders:  Market  as  a  partial  substitute  for  individual  rationality.’    Journal  of  Political  Economy, vol. 101, pp.119-137. 
- *    Gode, Dhananjay K., and S. Sunder. [1993b]. ‘Lower bounds for efficiency of surplus extraction in double auctions.’  In  Friedman,  D.  and  J.  Rust  (eds).  The  Double  Auction  Market:  Institutions,  Theories,  and Evidence,  pp. 199-219. 
- *    Gode,  Dhananjay  K.,  and  S.  Sunder.  [1997].  ‘Double  auction  dynamics:  structural  consequences  of  non-binding price controls.’  Mimeo. Gode,  Dhananjay  K.,  and  S.  Sunder.  [1997a].  ‘What  makes  markets  allocationally  efficient?’  Quarterly Journal of Economics, vol. 112 (May), pp.603-630. 
+ *
+ *    Gode, Dhananjay K., and S. Sunder. [1993b]. ‘Lower bounds for efficiency of surplus extraction in double auctions.’  In  Friedman,  D.  and  J.  Rust  (eds).  The  Double  Auction  Market:  Institutions,  Theories,  and Evidence,  pp. 199-219.
+ *
+ *    Gode,  Dhananjay  K.,  and  S.  Sunder.  [1997a].  ‘What  makes  markets  allocationally  efficient?’  Quarterly Journal of Economics, vol. 112 (May), pp.603-630. 
  * 
  */
 
@@ -634,13 +638,16 @@ var UnitAgent = exports.UnitAgent = function (_Trader2) {
     return UnitAgent;
 }(Trader);
 
-/* see e.g. "High Performance Bidding Agents for the Continuous Double Auction" 
+/**
+ * a reimplementation of a Kaplan Sniper Agent (JavaScript implementation by Paul Brewer)
+ *
+ * see e.g. "High Performance Bidding Agents for the Continuous Double Auction" 
  *                Gerald Tesauro and Rajarshi Das, Institute for Advanced Commerce, IBM 
  *
  *  http://researcher.watson.ibm.com/researcher/files/us-kephart/dblauc.pdf
  *
  *      for discussion of Kaplan's Sniper traders on pp. 4-5
-*/
+ */
 
 var KaplanSniperAgent = exports.KaplanSniperAgent = function (_Trader3) {
     _inherits(KaplanSniperAgent, _Trader3);

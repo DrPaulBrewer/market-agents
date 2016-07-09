@@ -6,12 +6,12 @@
   "jsnext:main": "src/index.js",
   "scripts": {
     "clean": "rm -rf ./build ./doc ; mkdir ./build",
-    "build": "bash build.sh",
+    "build": "node_modules/.bin/babel build src/index.js -o build/index.js",
     "doc": "node_modules/.bin/esdoc -c esdoc.json",
     "lint": "node_modules/.bin/eslint src/index.js",
     "lint-test": "node_modules/.bin/eslint test/index.js",
     "test": "node_modules/.bin/mocha --compilers js:babel-core/register --reporter spec --slow 50 --timeout 60000",
-    "cover": "node_modules/.bin/babel-istanbul cover -- node_modules/mocha/bin/_mocha --compilers js:babel-core/register -R spec --timeout 60000 test/*"
+    "cover": "node_modules/.bin/istanbul cover node_modules/.bin/_mocha -- -u exports --compilers js:babel-register --timeout 60000"
   },
   "repository": {
     "type": "git",
@@ -33,12 +33,12 @@
     "babel": "^6.5.2",
     "babel-cli": "^6.10.1",
     "babel-core": "^6.10.4",
-    "babel-istanbul": "^0.11.0",
     "babel-preset-es2015": "^6.9.0",
     "coveralls": "^2.11.9",
     "esdoc": "^0.4.7",
     "eslint": "^3.0.1",
-    "mocha": "^2.4.5",
+    "istanbul": "^1.0.0-alpha.2",
+    "mocha": "^2.5.3",
     "should": "^8.3.1"
   },
   "dependencies": {
