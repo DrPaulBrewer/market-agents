@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-exports.Pool = exports.KaplanSniperAgent = exports.UnitAgent = exports.ZIAgent = exports.Agent = undefined;
+exports.Pool = exports.KaplanSniperAgent = exports.UnitAgent = exports.ZIAgent = exports.Trader = exports.Agent = undefined;
 
 var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
 
@@ -68,8 +68,29 @@ function poissonWake() {
     if (result > 0) return result;
 }
 
+/**
+ * Agent with Poisson-distributed opportunities to act, with period managment,  optional inventory, unit values and costs, and end-of-period production and consumption to satisfy trades
+ *
+ */
+
 var Agent = exports.Agent = function (_EventEmitter) {
     _inherits(Agent, _EventEmitter);
+
+    /**
+     * creates an Agent with clone of specified options and initializes with .init().
+     *   Option properties are stored directly on the created agent's this.  
+     *
+     * @param {Object} options Agent creation options
+     * @param {string} [options.description] text description of agent, optional
+     * @param {Object} [options.inventory={}] initial inventory, as object with good names as keys and levels as values
+     * @param {string} [options.money='money'] Good used as money by this agent
+     * @param {Object} [options.values={}] marginal value table of agent for goods that are redeemed at end-of-period, as object with goods as keys and numeric arrays as values
+     * @param {Object} [options.costs={}] marginal cost table of agent for goods that are produced at end-of-period, as object with goods as keys and numeric arrays as values
+     * @param {number} [options.wakeTime=0] initial wake-up time for agent, adjusted by this.init() to first poisson-based wake with .nextWake()
+     * @param {number} [options.rate=1] Poisson-arrival rate of agent wake events
+     * @param {function():number} [options.nextWake=poissonWake] calculates next Agent wake-up time
+     * 
+     */
 
     function Agent(options) {
         _classCallCheck(this, Agent);
@@ -97,6 +118,12 @@ var Agent = exports.Agent = function (_EventEmitter) {
         return _this;
     }
 
+    /**
+     * initialize an agent to new settings
+     * @param {Object} [newSettings] see constructor
+     *
+     */
+
     _createClass(Agent, [{
         key: 'init',
         value: function init(newSettings) {
@@ -115,6 +142,23 @@ var Agent = exports.Agent = function (_EventEmitter) {
             if (this.money && !this.inventory[this.money]) this.inventory[this.money] = 0;
             this.wakeTime = this.nextWake();
         }
+
+        /** 
+         * re-initialize agent to the beginning of a new simulation period
+         * 
+         * @param {number|Object} period A period initialization object, or a number indicating a new period using the previous period's initialization object
+         * @param {number} period.number A number, usually sequential, identifying the next period, e.g. 1,2,3,4,5,...
+         * @param {boolean} [period.equalDuration=false] with positive period.duration, autogenerates startTime and endTime as n or n+1 times period.duration
+         * @param {number} [period.duration] the length of the period, used with period.equalDuration
+         * @param {number} [period.startTime] period begins, manual setting for initial time value for agent wakeTime
+         * @param {number} [period.endTime] period ends, no agent wake events will be emitted for this period after this time
+         * @param {Object} [period.init] initializer for other agent properties, passed to .init()
+         * @emits {pre-period} when initialization to new period is complete
+         * @example
+         * myAgent.initPeriod({number:1, duration:1000, equalDuration: true});
+         * myAgent.initPeriod(2);
+         */
+
     }, {
         key: 'initPeriod',
         value: function initPeriod(period) {
@@ -130,6 +174,13 @@ var Agent = exports.Agent = function (_EventEmitter) {
             this.init(this.period.init);
             this.emit('pre-period');
         }
+
+        /**
+         * ends current period, causing agent to undertake end-of-period tasks such as production and redemption of units
+         *
+         * @emits {post-period} when period ends, always, but after first completing any production/redemption
+         */
+
     }, {
         key: 'endPeriod',
         value: function endPeriod() {
@@ -137,6 +188,14 @@ var Agent = exports.Agent = function (_EventEmitter) {
             if (typeof this.redeem === 'function') this.redeem();
             this.emit('post-period');
         }
+
+        /** 
+         * percent of period used 
+         *
+         * @return {number} proportion of period time used as a number from 0.0, at beginning of period, to 1.0 at end of period.
+         *
+         */
+
     }, {
         key: 'pctPeriod',
         value: function pctPeriod() {
@@ -144,6 +203,14 @@ var Agent = exports.Agent = function (_EventEmitter) {
                 return (this.wakeTime - this.period.startTime) / (this.period.endTime - this.period.startTime);
             }
         }
+
+        /**
+         * guess at number of random Poisson wakes remaining in period
+         * 
+         * @return {number} "expected" number of remaining random Poisson wakes, calculated as (this.period.endTime-this.wakeTime)*rate
+         * 
+         */
+
     }, {
         key: 'poissonWakesRemainingInPeriod',
         value: function poissonWakesRemainingInPeriod() {
@@ -151,6 +218,14 @@ var Agent = exports.Agent = function (_EventEmitter) {
                 return (this.period.endTime - this.wakeTime) * this.rate;
             }
         }
+
+        /**
+         * wakes agent so it can act, emitting wake, and sets next wakeTime from this.nextWake() unless period.endTime exceeded 
+         *
+         * @param {Object} [info] optional info passed to this.emit('wake', info)
+         * @emits {wake(info)} immediately
+         */
+
     }, {
         key: 'wake',
         value: function wake(info) {
@@ -162,6 +237,16 @@ var Agent = exports.Agent = function (_EventEmitter) {
                 this.wakeTime = nextTime;
             }
         }
+
+        /** 
+         * increases or decreases agent's inventories of one or more goods and/or money
+         * 
+         * @param {Object} myTransfers object with goods as keys and changes in inventory as number values
+         * @param {Object} [memo] optional memo passed to event listeners
+         * @emits {pre-transfer(myTransfers, memo)} before transfer takes place, modifications to myTransfers will change transfer
+         * @emits {post-transfer(myTransfers, memo)} after transfer takes place
+         */
+
     }, {
         key: 'transfer',
         value: function transfer(myTransfers, memo) {
@@ -174,6 +259,15 @@ var Agent = exports.Agent = function (_EventEmitter) {
                 this.emit('post-transfer', myTransfers, memo);
             }
         }
+
+        /** 
+         * agent's marginal cost of producing next unit
+         *
+         * @param {String} good (e.g. "X", "Y")
+         * @param {Object} hypotheticalInventory object with goods as keys and values as numeric levels of inventory 
+         * @return {number} marginal unit cost of next unit, at given (negative) hyptothetical inventory, using agent's configured costs
+         */
+
     }, {
         key: 'unitCostFunction',
         value: function unitCostFunction(good, hypotheticalInventory) {
@@ -182,6 +276,15 @@ var Agent = exports.Agent = function (_EventEmitter) {
                 return costs[-hypotheticalInventory[good]];
             }
         }
+
+        /**
+         * agent's marginal value for redeeming next unit
+         *
+         * @param {String} good (e.g. "X", "Y")
+         * @param {Object} hypotheticalInventory object with goods as keys and values as numeric levels of inventory 
+         * @return {number} marginal unit value of next unit, at given (positive) hyptothetical inventory, using agent's configured values
+         */
+
     }, {
         key: 'unitValueFunction',
         value: function unitValueFunction(good, hypotheticalInventory) {
@@ -190,6 +293,15 @@ var Agent = exports.Agent = function (_EventEmitter) {
                 return vals[hypotheticalInventory[good]];
             }
         }
+
+        /** 
+         * redeems units in positive inventory with configured values, usually called automatically at end-of-period.
+         * transfer uses memo object {isRedeem:1} 
+         * 
+         * @emits {pre-redeem(transferAmounts)} before calling .transfer, can modify transferAmounts
+         * @emits {post-redeem(transferAmounts)} after calling .transfer
+         */
+
     }, {
         key: 'redeem',
         value: function redeem() {
@@ -209,6 +321,15 @@ var Agent = exports.Agent = function (_EventEmitter) {
                 this.emit('post-redeem', trans);
             }
         }
+
+        /** 
+         * produces units in negative inventory with configured costs, usually called automatically at end-of-period.
+         * transfer uses memo object {isProduce:1}
+         * 
+         * @emits {pre-redeem(transferAmounts)} before calling .transfer, can modify transferAmounts
+         * @emits {post-redeem(transferAmounts)} after calling .transfer
+         */
+
     }, {
         key: 'produce',
         value: function produce() {
@@ -233,28 +354,118 @@ var Agent = exports.Agent = function (_EventEmitter) {
     return Agent;
 }(_events.EventEmitter);
 
-var ZIAgent = exports.ZIAgent = function (_Agent) {
-    _inherits(ZIAgent, _Agent);
+/**
+ * agent that places trades in one or more markets based on marginal costs or values
+ *
+ * This is an abstract class, meant to be subclassed for particular strategies.
+ *
+ */
 
-    // from an idea developed by Gode and Sunder in a series of economics papers
+var Trader = exports.Trader = function (_Agent) {
+    _inherits(Trader, _Agent);
 
-    function ZIAgent(options) {
-        _classCallCheck(this, ZIAgent);
+    /**
+     * @param {Object} [options] passed to Agent constructor(); Trader specific properties detailed below
+     * @param {Array<Object>} [options.markets=[]] list of market objects where this agent acts on wake 
+     * @param {number} [options.minPrice=0] minimum price when submitting limit orders to buy 
+     * @param {number} [options.maxPrice=1000] maximum price when submitting sell limit orders to sell
+     * @param {boolean} [options.ignoreBudgetConstraint=false] ignore budget constraint, substituting maxPrice for unit value when bidding, and minPrice for unit cost when selling
+     * @listens {wake} to trigger sendBidsAndAsks()  
+     *
+     */
+
+    function Trader(options) {
+        _classCallCheck(this, Trader);
 
         var defaults = {
-            description: 'Gode and Sunder style ZI Agent',
+            description: 'Trader',
             markets: [],
             minPrice: 0,
             maxPrice: 1000
         };
 
-        var _this2 = _possibleConstructorReturn(this, Object.getPrototypeOf(ZIAgent).call(this, Object.assign({}, defaults, options)));
+        var _this2 = _possibleConstructorReturn(this, Object.getPrototypeOf(Trader).call(this, Object.assign({}, defaults, options)));
 
         _this2.on('wake', _this2.sendBidsAndAsks);
         return _this2;
     }
 
-    _createClass(ZIAgent, [{
+    /** send a limit order to buy one unit to the indicated market at myPrice. Placeholder throws error. Must be overridden and implemented in other code.
+     * @abstract
+     * @param {Object} market 
+     * @param {number} myPrice
+     * @throws {Error} when calling placeholder
+     */
+
+    // eslint-disable-next-line no-unused-vars
+
+
+    _createClass(Trader, [{
+        key: 'bid',
+        value: function bid(market, myPrice) {
+            throw new Error("called placeholder for abstract method .bid(market,myPrice) -- you must implement this method");
+        }
+
+        /** 
+         * send a limit order to sell one unit to the indicated market at myPrice. Placeholder throws error. Must be overridden and implemented in other code. 
+         * @abstract 
+         * @param {Object} market 
+         * @param {number} myPrice
+         * @throws {Error} when calling placeholder 
+         */
+
+        // eslint-disable-next-line no-unused-vars
+
+    }, {
+        key: 'ask',
+        value: function ask(market, myPrice) {
+            throw new Error("called placeholder for abstract method .ask(market,myPrice) -- you must implement this method");
+        }
+
+        /**
+         * calculate price this agent is willing to pay.  Placeholder throws error.  Must be overridden and implemented in other code.
+         * 
+         * @abstract
+         * @param {number} marginalValue The marginal value of redeeming the next unit. sets the maximum price for random price generation
+         * @param {Object} market For requesting current market conditions, previous trade price, etc.
+         * @return {number|undefined} agent's buy price or undefined if not willing to buy
+         * @throws {Error} when calling placeholder
+         */
+
+        // eslint-disable-next-line no-unused-vars
+
+    }, {
+        key: 'bidPrice',
+        value: function bidPrice(marginalValue, market) {
+            throw new Error("called placeholder for abstract method .bidPrice(marginalValue, market) -- you must implement this method");
+        }
+
+        /**
+         * calculate price this agent is willing to accept. Placeholder throws error. Must be overridden and implemented in other code. 
+         * 
+         * 
+         * @abstract
+         * @param {number} marginalCost the marginal coat of producing the next unit. sets the minimum price for random price generation
+         * @param {Object} market For requesting current market conditions, previous trade price, etc.
+         * @return {number|undefined} agent's sell price or undefined if not willing to sell
+         */
+
+        // eslint-disable-next-line no-unused-vars
+
+    }, {
+        key: 'askPrice',
+        value: function askPrice(marginalCost, market) {
+            throw new Error("called placeholder for abstract method .bidPrice(marginalValue, market) -- you must implement this method");
+        }
+
+        /**
+         * for each market in markets, calculates agent's strategy for buy or sell prices  and then sends limit orders for 1 unit at those prices
+         *
+         * 
+         * 
+         */
+
+    }, {
         key: 'sendBidsAndAsks',
         value: function sendBidsAndAsks() {
             for (var i = 0, l = this.markets.length; i < l; ++i) {
@@ -273,7 +484,47 @@ var ZIAgent = exports.ZIAgent = function (_Agent) {
                 }
             }
         }
-    }, {
+    }]);
+
+    return Trader;
+}(Agent);
+
+/**
+ * robot agent based on my implementation of Gode and Sunder's "Zero Intelligence" robots, as described in the economics research literature.
+ * 
+ * see 
+ *    Gode,  Dhananjay  K.,  and  S.  Sunder.  [1993].  ‘Allocative  efficiency  of  markets  with  zero-intelligence  traders:  Market  as  a  partial  substitute  for  individual  rationality.’    Journal  of  Political  Economy, vol. 101, pp.119-137. 
+ *    Gode, Dhananjay K., and S. Sunder. [1993b]. ‘Lower bounds for efficiency of surplus extraction in double auctions.’  In  Friedman,  D.  and  J.  Rust  (eds).  The  Double  Auction  Market:  Institutions,  Theories,  and Evidence,  pp. 199-219. 
+ *    Gode,  Dhananjay  K.,  and  S.  Sunder.  [1997].  ‘Double  auction  dynamics:  structural  consequences  of  non-binding price controls.’  Mimeo. Gode,  Dhananjay  K.,  and  S.  Sunder.  [1997a].  ‘What  makes  markets  allocationally  efficient?’  Quarterly Journal of Economics, vol. 112 (May), pp.603-630. 
+ * 
+ */
+
+var ZIAgent = exports.ZIAgent = function (_Trader) {
+    _inherits(ZIAgent, _Trader);
+
+    /*
+     * creates "Zero Intelligence" robot agent similar to those described in Gode and Sunder (1993)
+     * 
+     * @param {Object} [options] passed to Trader and Agent constructors()
+     * @param {boolean} [options.integer] true instructs pricing routines to use positive integer prices, false allows positive real number prices
+     */
+
+    function ZIAgent(options) {
+        _classCallCheck(this, ZIAgent);
+
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(ZIAgent).call(this, Object.assign({}, { description: 'Gode and Sunder Style ZI Agent' }, options)));
+    }
+
+    /**
+     * calculate price this agent is willing to pay as a uniform random number ~ U[minPrice, marginalValue] inclusive.
+     * If this.integer is true, the returned price will be an integer.
+     * 
+     * 
+     * @param {number} marginalValue the marginal value of redeeming the next unit. sets the maximum price for random price generation 
+     * @return {number|undefined} randomized buy price or undefined if marginalValue non-numeric or less than this.minPrice
+     */
+
+    _createClass(ZIAgent, [{
         key: 'bidPrice',
         value: function bidPrice(marginalValue) {
             if (typeof marginalValue !== 'number') return undefined;
@@ -293,6 +544,16 @@ var ZIAgent = exports.ZIAgent = function (_Agent) {
             }
             return p;
         }
+
+        /**
+         * calculate price this agent is willing to accept as a uniform random number ~ U[marginalCost, maxPrice] inclusive.
+         * If this.integer is true, the returned price will be an integer.
+         * 
+         *
+         * @param {number} marginalCost the marginal coat of producing the next unit. sets the minimum price for random price generation
+         * @return {number|undefined} randomized sell price or undefined if marginalCost non-numeric or greater than this.maxPrice
+         */
+
     }, {
         key: 'askPrice',
         value: function askPrice(marginalCost) {
@@ -316,13 +577,13 @@ var ZIAgent = exports.ZIAgent = function (_Agent) {
     }]);
 
     return ZIAgent;
-}(Agent);
+}(Trader);
 
 var um1p2 = ProbJS.uniform(-1, 2);
 var um1p1 = ProbJS.uniform(-1, 1);
 
-var UnitAgent = exports.UnitAgent = function (_ZIAgent) {
-    _inherits(UnitAgent, _ZIAgent);
+var UnitAgent = exports.UnitAgent = function (_Trader2) {
+    _inherits(UnitAgent, _Trader2);
 
     function UnitAgent(options) {
         _classCallCheck(this, UnitAgent);
@@ -371,7 +632,7 @@ var UnitAgent = exports.UnitAgent = function (_ZIAgent) {
     }]);
 
     return UnitAgent;
-}(ZIAgent);
+}(Trader);
 
 /* see e.g. "High Performance Bidding Agents for the Continuous Double Auction" 
  *                Gerald Tesauro and Rajarshi Das, Institute for Advanced Commerce, IBM 
@@ -381,8 +642,8 @@ var UnitAgent = exports.UnitAgent = function (_ZIAgent) {
  *      for discussion of Kaplan's Sniper traders on pp. 4-5
 */
 
-var KaplanSniperAgent = exports.KaplanSniperAgent = function (_ZIAgent2) {
-    _inherits(KaplanSniperAgent, _ZIAgent2);
+var KaplanSniperAgent = exports.KaplanSniperAgent = function (_Trader3) {
+    _inherits(KaplanSniperAgent, _Trader3);
 
     function KaplanSniperAgent(options) {
         _classCallCheck(this, KaplanSniperAgent);
@@ -440,7 +701,7 @@ var KaplanSniperAgent = exports.KaplanSniperAgent = function (_ZIAgent2) {
     }]);
 
     return KaplanSniperAgent;
-}(ZIAgent);
+}(Trader);
 
 var Pool = exports.Pool = function () {
     function Pool() {

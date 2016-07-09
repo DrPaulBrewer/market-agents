@@ -302,11 +302,28 @@ export class Agent extends EventEmitter {
     }
 }
 
-export class ZIAgent extends Agent {
-    // from an idea developed by Gode and Sunder in a series of economics papers
+/**
+ * agent that places trades in one or more markets based on marginal costs or values
+ *
+ * This is an abstract class, meant to be subclassed for particular strategies.
+ *
+ */
+
+export class Trader extends Agent {
+
+    /**
+     * @param {Object} [options] passed to Agent constructor(); Trader specific properties detailed below
+     * @param {Array<Object>} [options.markets=[]] list of market objects where this agent acts on wake 
+     * @param {number} [options.minPrice=0] minimum price when submitting limit orders to buy 
+     * @param {number} [options.maxPrice=1000] maximum price when submitting sell limit orders to sell
+     * @param {boolean} [options.ignoreBudgetConstraint=false] ignore budget constraint, substituting maxPrice for unit value when bidding, and minPrice for unit cost when selling
+     * @listens {wake} to trigger sendBidsAndAsks()  
+     *
+     */
+
     constructor(options){
         const defaults = {
-            description: 'Gode and Sunder style ZI Agent',
+            description: 'Trader',
             markets: [],
             minPrice: 0,
             maxPrice: 1000
@@ -314,6 +331,68 @@ export class ZIAgent extends Agent {
         super(Object.assign({}, defaults, options));
         this.on('wake', this.sendBidsAndAsks);
     }
+    
+    /** send a limit order to buy one unit to the indicated market at myPrice. Placeholder throws error. Must be overridden and implemented in other code.
+     * @abstract
+     * @param {Object} market 
+     * @param {number} myPrice
+     * @throws {Error} when calling placeholder
+     */     
+    
+    // eslint-disable-next-line no-unused-vars
+    bid(market, myPrice){
+	throw new Error("called placeholder for abstract method .bid(market,myPrice) -- you must implement this method");
+    }
+
+    /** 
+     * send a limit order to sell one unit to the indicated market at myPrice. Placeholder throws error. Must be overridden and implemented in other code. 
+     * @abstract 
+     * @param {Object} market 
+     * @param {number} myPrice
+     * @throws {Error} when calling placeholder 
+     */     
+    
+    // eslint-disable-next-line no-unused-vars
+    ask(market, myPrice){
+	throw new Error("called placeholder for abstract method .ask(market,myPrice) -- you must implement this method");
+    }
+
+    /**
+     * calculate price this agent is willing to pay.  Placeholder throws error.  Must be overridden and implemented in other code.
+     * 
+     * @abstract
+     * @param {number} marginalValue The marginal value of redeeming the next unit. sets the maximum price for random price generation
+     * @param {Object} market For requesting current market conditions, previous trade price, etc.
+     * @return {number|undefined} agent's buy price or undefined if not willing to buy
+     * @throws {Error} when calling placeholder
+     */
+
+    // eslint-disable-next-line no-unused-vars
+    bidPrice(marginalValue, market){
+	throw new Error("called placeholder for abstract method .bidPrice(marginalValue, market) -- you must implement this method");
+    }
+
+    /**
+     * calculate price this agent is willing to accept. Placeholder throws error. Must be overridden and implemented in other code. 
+     * 
+     * 
+     * @abstract
+     * @param {number} marginalCost the marginal coat of producing the next unit. sets the minimum price for random price generation
+     * @param {Object} market For requesting current market conditions, previous trade price, etc.
+     * @return {number|undefined} agent's sell price or undefined if not willing to sell
+     */
+
+    // eslint-disable-next-line no-unused-vars
+    askPrice(marginalCost, market){
+	throw new Error("called placeholder for abstract method .bidPrice(marginalValue, market) -- you must implement this method");
+    }
+
+    /**
+     * for each market in markets, calculates agent's strategy for buy or sell prices  and then sends limit orders for 1 unit at those prices
+     *
+     * 
+     * 
+     */
     
     sendBidsAndAsks(){
         for(let i=0,l=this.markets.length;i<l;++i){
@@ -337,6 +416,40 @@ export class ZIAgent extends Agent {
         }
     }
 
+}
+
+/**
+ * robot agent based on my implementation of Gode and Sunder's "Zero Intelligence" robots, as described in the economics research literature.
+ * 
+ * see 
+ *    Gode,  Dhananjay  K.,  and  S.  Sunder.  [1993].  ‘Allocative  efficiency  of  markets  with  zero-intelligence  traders:  Market  as  a  partial  substitute  for  individual  rationality.’    Journal  of  Political  Economy, vol. 101, pp.119-137. 
+ *    Gode, Dhananjay K., and S. Sunder. [1993b]. ‘Lower bounds for efficiency of surplus extraction in double auctions.’  In  Friedman,  D.  and  J.  Rust  (eds).  The  Double  Auction  Market:  Institutions,  Theories,  and Evidence,  pp. 199-219. 
+ *    Gode,  Dhananjay  K.,  and  S.  Sunder.  [1997].  ‘Double  auction  dynamics:  structural  consequences  of  non-binding price controls.’  Mimeo. Gode,  Dhananjay  K.,  and  S.  Sunder.  [1997a].  ‘What  makes  markets  allocationally  efficient?’  Quarterly Journal of Economics, vol. 112 (May), pp.603-630. 
+ * 
+ */
+
+export class ZIAgent extends Trader {
+
+    /*
+     * creates "Zero Intelligence" robot agent similar to those described in Gode and Sunder (1993)
+     * 
+     * @param {Object} [options] passed to Trader and Agent constructors()
+     * @param {boolean} [options.integer] true instructs pricing routines to use positive integer prices, false allows positive real number prices
+     */
+
+    constructor(options){
+        super(Object.assign({}, {description: 'Gode and Sunder Style ZI Agent'} , options));
+    }
+    
+    /**
+     * calculate price this agent is willing to pay as a uniform random number ~ U[minPrice, marginalValue] inclusive.
+     * If this.integer is true, the returned price will be an integer.
+     * 
+     * 
+     * @param {number} marginalValue the marginal value of redeeming the next unit. sets the maximum price for random price generation 
+     * @return {number|undefined} randomized buy price or undefined if marginalValue non-numeric or less than this.minPrice
+     */
+
     bidPrice(marginalValue){
         if (typeof(marginalValue)!=='number') return undefined;
         let p;
@@ -356,6 +469,15 @@ export class ZIAgent extends Agent {
         }
         return p;
     }
+
+    /**
+     * calculate price this agent is willing to accept as a uniform random number ~ U[marginalCost, maxPrice] inclusive.
+     * If this.integer is true, the returned price will be an integer.
+     * 
+     *
+     * @param {number} marginalCost the marginal coat of producing the next unit. sets the minimum price for random price generation
+     * @return {number|undefined} randomized sell price or undefined if marginalCost non-numeric or greater than this.maxPrice
+     */
 
     askPrice(marginalCost){
         if (typeof(marginalCost)!=='number') return undefined;
@@ -381,7 +503,7 @@ export class ZIAgent extends Agent {
 const um1p2 = ProbJS.uniform(-1,2);
 const um1p1 = ProbJS.uniform(-1,1);
 
-export class UnitAgent extends ZIAgent {
+export class UnitAgent extends Trader {
     constructor(options){
         const defaults = {
             description: "Paul Brewer's HBEER UNIT agent that bids/asks within 1 price unit of previous price"
@@ -437,7 +559,7 @@ export class UnitAgent extends ZIAgent {
  *      for discussion of Kaplan's Sniper traders on pp. 4-5
 */
 
-export class KaplanSniperAgent extends ZIAgent {
+export class KaplanSniperAgent extends Trader {
     constructor(options){
         const defaults = {
             description: "Kaplan's snipers, trade on 'juicy' price, or low spread, or end of period",

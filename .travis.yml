@@ -7,7 +7,7 @@ install:
   - npm install
 
 script:
-  - eslint ./src/index.js
+  - npm run lint
   - eslint ./test/index.js
   - npm run cover
 
