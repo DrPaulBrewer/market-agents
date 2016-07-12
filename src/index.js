@@ -341,7 +341,7 @@ export class Trader extends Agent {
     
     // eslint-disable-next-line no-unused-vars
     bid(market, myPrice){
-	throw new Error("called placeholder for abstract method .bid(market,myPrice) -- you must implement this method");
+        throw new Error("called placeholder for abstract method .bid(market,myPrice) -- you must implement this method");
     }
 
     /** 
@@ -354,7 +354,7 @@ export class Trader extends Agent {
     
     // eslint-disable-next-line no-unused-vars
     ask(market, myPrice){
-	throw new Error("called placeholder for abstract method .ask(market,myPrice) -- you must implement this method");
+        throw new Error("called placeholder for abstract method .ask(market,myPrice) -- you must implement this method");
     }
 
     /**
@@ -369,7 +369,7 @@ export class Trader extends Agent {
 
     // eslint-disable-next-line no-unused-vars
     bidPrice(marginalValue, market){
-	throw new Error("called placeholder for abstract method .bidPrice(marginalValue, market) -- you must implement this method");
+        throw new Error("called placeholder for abstract method .bidPrice(marginalValue, market) -- you must implement this method");
     }
 
     /**
@@ -385,7 +385,7 @@ export class Trader extends Agent {
 
     // eslint-disable-next-line no-unused-vars
     askPrice(marginalCost, market){
-	throw new Error("called placeholder for abstract method .bidPrice(marginalValue, market) -- you must implement this method");
+        throw new Error("called placeholder for abstract method .bidPrice(marginalValue, market) -- you must implement this method");
     }
 
     /**
@@ -544,7 +544,7 @@ export class UnitAgent extends ZIAgent {
     }
 
     bidPrice(marginalValue, market){
-	let p;
+        let p;
         if (typeof(marginalValue)!=='number') return undefined;
         const previous = market.lastTradePrice();
         if (previous)
@@ -566,6 +566,34 @@ export class UnitAgent extends ZIAgent {
         if ((p<marginalCost) || (p>this.maxPrice) || (p<this.minPrice)) return undefined;
         return (p && this.integer)? Math.floor(p): p;
     }
+}
+
+export class OneupmanshipAgent extends Trader {
+    constructor(options){
+        const defaults = {
+            description: "Paul Brewer's OneupmanshipAgent that increases the bid or cuts the ask by one price unit, if profitable to do so according to MC/MV"
+        };
+        super(Object.assign({}, defaults, options));
+    }
+
+    bidPrice(marginalValue, market){ 
+        if (typeof(marginalValue)!=='number') return undefined;
+        const currentBid = market.currentBidPrice();
+        if (!currentBid)
+            return this.minPrice;
+        if (currentBid<(marginalValue-1))
+            return currentBid+1;
+    }
+
+    askPrice(marginalCost, market){ 
+        if (typeof(marginalCost)!=='number') return undefined;
+        const currentAsk = market.currentAskPrice();
+        if (!currentAsk)
+            return this.maxPrice;
+        if (currentAsk>(marginalCost+1))
+            return currentAsk-1;
+    }
+            
 }
 
 /**

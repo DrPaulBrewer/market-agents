@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-exports.Pool = exports.KaplanSniperAgent = exports.UnitAgent = exports.ZIAgent = exports.Trader = exports.Agent = undefined;
+exports.Pool = exports.KaplanSniperAgent = exports.OneupmanshipAgent = exports.UnitAgent = exports.ZIAgent = exports.Trader = exports.Agent = undefined;
 
 var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
 
@@ -650,6 +650,39 @@ var UnitAgent = exports.UnitAgent = function (_ZIAgent) {
     return UnitAgent;
 }(ZIAgent);
 
+var OneupmanshipAgent = exports.OneupmanshipAgent = function (_Trader2) {
+    _inherits(OneupmanshipAgent, _Trader2);
+
+    function OneupmanshipAgent(options) {
+        _classCallCheck(this, OneupmanshipAgent);
+
+        var defaults = {
+            description: "Paul Brewer's OneupmanshipAgent that increases the bid or cuts the ask by one price unit, if profitable to do so according to MC/MV"
+        };
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(OneupmanshipAgent).call(this, Object.assign({}, defaults, options)));
+    }
+
+    _createClass(OneupmanshipAgent, [{
+        key: 'bidPrice',
+        value: function bidPrice(marginalValue, market) {
+            if (typeof marginalValue !== 'number') return undefined;
+            var currentBid = market.currentBidPrice();
+            if (!currentBid) return this.minPrice;
+            if (currentBid < marginalValue - 1) return currentBid + 1;
+        }
+    }, {
+        key: 'askPrice',
+        value: function askPrice(marginalCost, market) {
+            if (typeof marginalCost !== 'number') return undefined;
+            var currentAsk = market.currentAskPrice();
+            if (!currentAsk) return this.maxPrice;
+            if (currentAsk > marginalCost + 1) return currentAsk - 1;
+        }
+    }]);
+
+    return OneupmanshipAgent;
+}(Trader);
+
 /**
  * a reimplementation of a Kaplan Sniper Agent (JavaScript implementation by Paul Brewer)
  *
@@ -661,8 +694,8 @@ var UnitAgent = exports.UnitAgent = function (_ZIAgent) {
  *      for discussion of Kaplan's Sniper traders on pp. 4-5
  */
 
-var KaplanSniperAgent = exports.KaplanSniperAgent = function (_Trader2) {
-    _inherits(KaplanSniperAgent, _Trader2);
+var KaplanSniperAgent = exports.KaplanSniperAgent = function (_Trader3) {
+    _inherits(KaplanSniperAgent, _Trader3);
 
     function KaplanSniperAgent(options) {
         _classCallCheck(this, KaplanSniperAgent);

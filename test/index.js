@@ -4,7 +4,7 @@ import assert from 'assert';
 import "should";
 import * as MarketAgents from "../src/index.js";
 
-const {Agent,ZIAgent,Pool,UnitAgent,KaplanSniperAgent} = MarketAgents;
+const {Agent,ZIAgent,Pool,UnitAgent,OneupmanshipAgent,KaplanSniperAgent} = MarketAgents;
 
 /**  @test {MarketAgents} */
 
@@ -546,8 +546,8 @@ describe('new ZIAgent', function(){
 describe('new UnitAgent', function(){
     
     it('should be a subclass of ZIAgent', function(){
-	let myAgent = new UnitAgent();
-	myAgent.should.be.instanceOf(ZIAgent);
+        let myAgent = new UnitAgent();
+        myAgent.should.be.instanceOf(ZIAgent);
     });
     
    it('should have properties id, description, inventory, wakeTime, rate, nextWake, period with proper types',
@@ -605,7 +605,7 @@ describe('new UnitAgent', function(){
             let a = new UnitAgent({minPrice:10, maxPrice:90});
             a.askPrice(60);
         }
-	callBidPriceWithNoGetPreviousPrice.should.throw();
+        callBidPriceWithNoGetPreviousPrice.should.throw();
         callAskPriceWithNoGetPreviousPrice.should.throw();
     });
 
@@ -726,6 +726,58 @@ describe('new UnitAgent', function(){
         bin[35].should.equal(0);
     });
 });
+
+describe('new OneupmanshipAgent', function(){
+    const common = {
+        minPrice:1,
+        maxPrice:100
+    };
+    it('should bid minPrice if no currentBid', function(){
+        const market = {
+            currentBidPrice(){ return undefined;}
+        };
+        (new OneupmanshipAgent(common)
+         .bidPrice(40,market)
+         .should.equal(common.minPrice));
+    });
+    it('should bid 31 if the current bid is 30 and the MV is 40', function(){
+        const market = {
+            currentBidPrice(){ return 30; }
+        };
+        (new OneupmanshipAgent(common)
+         .bidPrice(40,market)
+         .should.equal(31));
+    });
+    it('should not bid if the current bid is 50 and the MV is 40', function(){
+        const market = {
+            currentBidPrice(){ return 50; }
+        };
+        assert.ok(new OneupmanshipAgent(common).bidPrice(40,market)===undefined);
+    });
+    it('should ask maxPrice if no currentAsk', function(){
+        const market = {
+            currentAskPrice(){ return undefined;}
+        };
+        (new OneupmanshipAgent(common)
+         .askPrice(77,market)
+         .should.equal(common.maxPrice));
+    });
+    it('should ask 79 if the current ask is 80 and the MC is 77', function(){
+        const market = {
+            currentAskPrice(){ return 80; }
+        };
+        (new OneupmanshipAgent(common)
+         .askPrice(77,market)
+         .should.equal(79));
+    });
+    it('should not ask if the current ask is 77 and the MC is 77', function(){
+        const market = {
+            currentAskPrice(){ return 77; }
+        };
+        assert.ok(new OneupmanshipAgent(common).askPrice(77,market)===undefined);
+    });
+});
+
 
 describe('new KaplanSniperAgent', function(){
     // eslint-disable-next-line max-params
