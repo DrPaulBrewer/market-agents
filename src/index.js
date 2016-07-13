@@ -101,7 +101,7 @@ export class Agent extends EventEmitter {
         if (this.money && !(this.inventory[this.money]))
             this.inventory[this.money] = 0;
 
-	/*
+	/**
 	 * time, in JS ms since epoch, of agent wake
 	 * @type {number}
 	 */
@@ -440,7 +440,7 @@ export class Trader extends Agent {
 
 export class ZIAgent extends Trader {
 
-    /*
+    /**
      * creates "Zero Intelligence" robot agent similar to those described in Gode and Sunder (1993)
      * 
      * @param {Object} [options] passed to Trader and Agent constructors()
@@ -527,7 +527,7 @@ const um1p1 = ProbJS.uniform(-1,1);
 
 export class UnitAgent extends ZIAgent {
    
-    /*
+    /**
      * creates "Unit" robot agent similar to those described in Brewer(2008)
      * 
      * @param {Object} [options] passed to Trader and Agent constructors()
@@ -540,7 +540,7 @@ export class UnitAgent extends ZIAgent {
         super(Object.assign({}, defaults, options));
     }
 
-    /*
+    /**
      * calculates random change from previous transaction price
      * @return {number} a uniform random number on [-1,1]; or, if this.integer is set, picked randomly from the set {-1,0,1}
      */
@@ -608,14 +608,14 @@ export class UnitAgent extends ZIAgent {
     }
 }
 
-/*
+/**
  * OneupmanshipAgent is a robotic version of that annoying market participant who starts at extremely high or low price, and always bid $1 more, or ask $1 less than any competition
  *
  */
 
 export class OneupmanshipAgent extends Trader {
     
-    /* 
+    /**
      * create OneupmanshipAgent 
      * @param {Object} [options] Passed to Trader and Agent constructors
      *
@@ -776,11 +776,22 @@ export class KaplanSniperAgent extends Trader {
     }
 }
 
+/**
+ * Pool for managing a collection of agents.  
+ * Agents may belong to multiple pools.
+ *
+ */
+
 export class Pool { 
     constructor(){
         this.agents = [];
         this.agentsById = {};
     }
+
+    /**
+     * Add an agent to the Pool
+     * @param {Agent} agent to add to pool.  Should be instanceof Agent, including subclasses.
+     */
     
     push(agent){
         if (!(agent instanceof Agent))
@@ -790,6 +801,11 @@ export class Pool {
             this.agentsById[agent.id] = agent;
         }
     }
+
+    /**
+     * finds agent from Pool with lowest wakeTime
+     * @return {Agent} 
+     */
 
     next(){
         if (this.nextCache) return this.nextCache;
@@ -805,6 +821,10 @@ export class Pool {
         return result;
     }
 
+    /** 
+     * wakes agent in Pool with lowest wakeTime
+     */
+
     wake(){
         const A = this.next();
         if (A){
@@ -813,6 +833,11 @@ export class Pool {
             delete this.nextCache;
         }
     }
+
+    /**
+     * finds latest period.endTime of all agent in Pool
+     * @return {number} max of agents period.endTime  
+     */
 
     endTime(){
         let endTime = 0;
@@ -823,6 +848,16 @@ export class Pool {
         }
         if (endTime>0) return endTime;
     }
+
+    /**
+     * Repeatedly wake agents in Pool, until simulation time "untilTime" is reached. Optionally call done(sim) callback.
+     * The run method returns immediately and runs asynchronously. For a synchronous equivalent, see syncRun(untilTime, limitCalls)
+     *
+     * @param {number} untilTime Stop time for this run
+     * @param {function(Error)} done callback called in this=Pool context
+     * @param {number} batch Batch size of number of agents to wake up synchronously before surrendering to event loop
+     * @return {undefined} asynchronous function, returns undefined immediately
+     */
 
     run(untilTime, done, batch){
         // note: setTimeout slows this down significnatly if setImmediate is not available
@@ -846,6 +881,15 @@ export class Pool {
         );
     }
 
+    /**
+     * Repeatedly wake agents in Pool, until simulation time "untilTime" or "limitCalls" agent wake calls are reached.
+     * This method runs synchronously.  It returns only when finished.
+     *
+     * @param {number} untilTime Stop time for this run
+     * @param {number} [limitCalls] Stop run once this number of agent wake up calls have been executed.
+     * 
+     */
+
     syncRun(untilTime, limitCalls){
         let nextAgent = this.next();
         let calls = 0;
@@ -855,6 +899,12 @@ export class Pool {
             calls++;
         }
     }
+
+    /** 
+     * calls .initPeriod for all agents in the Pool
+     * 
+     * @param {Object|number} param passed to each agent's .initPeriod()
+     */
 
     initPeriod(param){
         // passing param to all the agents is safe because Agent.initPeriod does a deep clone
@@ -867,10 +917,28 @@ export class Pool {
         }
     }
 
+    /**
+     * calls .endPeriod for all agents in the Pool
+     */
+
     endPeriod(){
         for(let i=0,l=this.agents.length;i<l;i++)
             this.agents[i].endPeriod();
     }
+
+    /**
+     * adjusts Pool agents inventories, via agent.transfer(), in response to one or more trades
+     * @param {Object} tradeSpec Object providing specifics of trades.
+     * @param {string} tradeSpec.bs 'b' for buy trade, 's' for sell trade. In a buy trade, buyQ, buyId are single element arrays.  In a sell trade, sellQ, sellId are single element arrays,
+     * @param {string} tradeSpec.goods the name of the goods, as stored in agent inventory object
+     * @param {string} tradeSpec.money the name of money used for payment, as stored in agent inventory object
+     * @param {number[]} tradeSpec.prices the price of each trade
+     * @param {number[]} tradeSpec.buyId the agent id of a buyer in a trade
+     * @param {number[]} tradeSpec.buyQ the number bought by the corresponding agent in .buyId
+     * @param {number[]} tradeSpec.sellId the agent id of a seller in a trade
+     * @param {number[]} tradeSPec.sellQ the number bought by he corresponding agent in .sellId
+     * @throws {Error} when accounting identities do not balance or trade invalid 
+     */
     
     trade(tradeSpec){
         let i,l,buyerTransfer,sellerTransfer;
@@ -916,6 +984,15 @@ export class Pool {
             }
         }
     }
+
+    /**
+     * distribute an aggregate setting of buyer Values or seller Costs to a pool of sellers, by giving each agent a successive value from the array without replacement
+     *
+     * @param {string} field "values" or "costs"
+     * @param {good} good name of good for agents inventories. 
+     * @param {number[]|string} aggregateArray list of numeric values or costs reflecting the aggregate pool values or costs
+     * @throws {Error} when field is invalid or aggregateArray is wrong type
+     */
 
     distribute(field, good, aggregateArray){
         let i,l;

@@ -141,7 +141,7 @@ var Agent = exports.Agent = function (_EventEmitter) {
             // if this.money is defined but is not in inventory, zero the inventory of this.money
             if (this.money && !this.inventory[this.money]) this.inventory[this.money] = 0;
 
-            /*
+            /**
              * time, in JS ms since epoch, of agent wake
              * @type {number}
              */
@@ -512,7 +512,7 @@ var Trader = exports.Trader = function (_Agent) {
 var ZIAgent = exports.ZIAgent = function (_Trader) {
     _inherits(ZIAgent, _Trader);
 
-    /*
+    /**
      * creates "Zero Intelligence" robot agent similar to those described in Gode and Sunder (1993)
      * 
      * @param {Object} [options] passed to Trader and Agent constructors()
@@ -607,7 +607,7 @@ var um1p1 = ProbJS.uniform(-1, 1);
 var UnitAgent = exports.UnitAgent = function (_ZIAgent) {
     _inherits(UnitAgent, _ZIAgent);
 
-    /*
+    /**
      * creates "Unit" robot agent similar to those described in Brewer(2008)
      * 
      * @param {Object} [options] passed to Trader and Agent constructors()
@@ -622,7 +622,7 @@ var UnitAgent = exports.UnitAgent = function (_ZIAgent) {
         return _possibleConstructorReturn(this, Object.getPrototypeOf(UnitAgent).call(this, Object.assign({}, defaults, options)));
     }
 
-    /*
+    /**
      * calculates random change from previous transaction price
      * @return {number} a uniform random number on [-1,1]; or, if this.integer is set, picked randomly from the set {-1,0,1}
      */
@@ -693,7 +693,7 @@ var UnitAgent = exports.UnitAgent = function (_ZIAgent) {
     return UnitAgent;
 }(ZIAgent);
 
-/*
+/**
  * OneupmanshipAgent is a robotic version of that annoying market participant who starts at extremely high or low price, and always bid $1 more, or ask $1 less than any competition
  *
  */
@@ -701,7 +701,7 @@ var UnitAgent = exports.UnitAgent = function (_ZIAgent) {
 var OneupmanshipAgent = exports.OneupmanshipAgent = function (_Trader2) {
     _inherits(OneupmanshipAgent, _Trader2);
 
-    /* 
+    /**
      * create OneupmanshipAgent 
      * @param {Object} [options] Passed to Trader and Agent constructors
      *
@@ -870,6 +870,12 @@ var KaplanSniperAgent = exports.KaplanSniperAgent = function (_Trader3) {
     return KaplanSniperAgent;
 }(Trader);
 
+/**
+ * Pool for managing a collection of agents.  
+ * Agents may belong to multiple pools.
+ *
+ */
+
 var Pool = exports.Pool = function () {
     function Pool() {
         _classCallCheck(this, Pool);
@@ -877,6 +883,11 @@ var Pool = exports.Pool = function () {
         this.agents = [];
         this.agentsById = {};
     }
+
+    /**
+     * Add an agent to the Pool
+     * @param {Agent} agent to add to pool.  Should be instanceof Agent, including subclasses.
+     */
 
     _createClass(Pool, [{
         key: 'push',
@@ -887,6 +898,12 @@ var Pool = exports.Pool = function () {
                 this.agentsById[agent.id] = agent;
             }
         }
+
+        /**
+         * finds agent from Pool with lowest wakeTime
+         * @return {Agent} 
+         */
+
     }, {
         key: 'next',
         value: function next() {
@@ -907,6 +924,11 @@ var Pool = exports.Pool = function () {
             this.nextCache = result;
             return result;
         }
+
+        /** 
+         * wakes agent in Pool with lowest wakeTime
+         */
+
     }, {
         key: 'wake',
         value: function wake() {
@@ -917,6 +939,12 @@ var Pool = exports.Pool = function () {
                 delete this.nextCache;
             }
         }
+
+        /**
+         * finds latest period.endTime of all agent in Pool
+         * @return {number} max of agents period.endTime  
+         */
+
     }, {
         key: 'endTime',
         value: function endTime() {
@@ -927,6 +955,17 @@ var Pool = exports.Pool = function () {
             }
             if (endTime > 0) return endTime;
         }
+
+        /**
+         * Repeatedly wake agents in Pool, until simulation time "untilTime" is reached. Optionally call done(sim) callback.
+         * The run method returns immediately and runs asynchronously. For a synchronous equivalent, see syncRun(untilTime, limitCalls)
+         *
+         * @param {number} untilTime Stop time for this run
+         * @param {function(Error)} done callback called in this=Pool context
+         * @param {number} batch Batch size of number of agents to wake up synchronously before surrendering to event loop
+         * @return {undefined} asynchronous function, returns undefined immediately
+         */
+
     }, {
         key: 'run',
         value: function run(untilTime, done, batch) {
@@ -945,6 +984,16 @@ var Pool = exports.Pool = function () {
                 done.call(that, e);
             });
         }
+
+        /**
+         * Repeatedly wake agents in Pool, until simulation time "untilTime" or "limitCalls" agent wake calls are reached.
+         * This method runs synchronously.  It returns only when finished.
+         *
+         * @param {number} untilTime Stop time for this run
+         * @param {number} [limitCalls] Stop run once this number of agent wake up calls have been executed.
+         * 
+         */
+
     }, {
         key: 'syncRun',
         value: function syncRun(untilTime, limitCalls) {
@@ -956,6 +1005,13 @@ var Pool = exports.Pool = function () {
                 calls++;
             }
         }
+
+        /** 
+         * calls .initPeriod for all agents in the Pool
+         * 
+         * @param {Object|number} param passed to each agent's .initPeriod()
+         */
+
     }, {
         key: 'initPeriod',
         value: function initPeriod(param) {
@@ -970,6 +1026,11 @@ var Pool = exports.Pool = function () {
                 }
             }
         }
+
+        /**
+         * calls .endPeriod for all agents in the Pool
+         */
+
     }, {
         key: 'endPeriod',
         value: function endPeriod() {
@@ -977,6 +1038,21 @@ var Pool = exports.Pool = function () {
                 this.agents[i].endPeriod();
             }
         }
+
+        /**
+         * adjusts Pool agents inventories, via agent.transfer(), in response to one or more trades
+         * @param {Object} tradeSpec Object providing specifics of trades.
+         * @param {string} tradeSpec.bs 'b' for buy trade, 's' for sell trade. In a buy trade, buyQ, buyId are single element arrays.  In a sell trade, sellQ, sellId are single element arrays,
+         * @param {string} tradeSpec.goods the name of the goods, as stored in agent inventory object
+         * @param {string} tradeSpec.money the name of money used for payment, as stored in agent inventory object
+         * @param {number[]} tradeSpec.prices the price of each trade
+         * @param {number[]} tradeSpec.buyId the agent id of a buyer in a trade
+         * @param {number[]} tradeSpec.buyQ the number bought by the corresponding agent in .buyId
+         * @param {number[]} tradeSpec.sellId the agent id of a seller in a trade
+         * @param {number[]} tradeSPec.sellQ the number bought by he corresponding agent in .sellId
+         * @throws {Error} when accounting identities do not balance or trade invalid 
+         */
+
     }, {
         key: 'trade',
         value: function trade(tradeSpec) {
@@ -1015,6 +1091,16 @@ var Pool = exports.Pool = function () {
                 }
             }
         }
+
+        /**
+         * distribute an aggregate setting of buyer Values or seller Costs to a pool of sellers, by giving each agent a successive value from the array without replacement
+         *
+         * @param {string} field "values" or "costs"
+         * @param {good} good name of good for agents inventories. 
+         * @param {number[]|string} aggregateArray list of numeric values or costs reflecting the aggregate pool values or costs
+         * @throws {Error} when field is invalid or aggregateArray is wrong type
+         */
+
     }, {
         key: 'distribute',
         value: function distribute(field, good, aggregateArray) {
