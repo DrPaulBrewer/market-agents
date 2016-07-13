@@ -466,8 +466,8 @@ var Trader = exports.Trader = function (_Agent) {
         }
 
         /**
-         * for each market in agent's configured markets, calculates agent's price strategy for buy or sell prices and then sends limit orders for 1 unit at those prices
-         *
+         * For each market in agent's configured markets, calculates agent's price strategy for buy or sell prices and then sends limit orders for 1 unit at those prices.
+         * Normally you do not need to explicltly call this function: the wake listener set in the constructor of Trader and subclasses calls sendBidsAndAsks() automatcally on each wake event.
          * 
          * 
          */
@@ -593,19 +593,25 @@ var um1p2 = ProbJS.uniform(-1, 2);
 var um1p1 = ProbJS.uniform(-1, 1);
 
 /**
- * UNIT agent, that uses ZIAgent if there is no previous market price, afterward, bids/asks randomly within 1 price unit of previous price
+ * Unit agent: uses ZIAgent algorithm if there is no previous market price, afterward, bids/asks randomly within 1 price unit of previous price
  *
  * see also Brewer, Paul Chapter 4 in Handbook of Experimental Economics Results, Charles R. Plott and Vernon L. Smith, eds.,  Elsevier: 2008
  *
- * available on Google Books at https://books.google.com search for "Handbook of Experimental Economics Results" and go to pp. 31-45.
+ * Chapter available on Google Books at https://books.google.com search for "Handbook of Experimental Economics Results" and go to pp. 31-45.
+ * or on Science Direct (paywall) at http://www.sciencedirect.com/science/article/pii/S1574072207000042
  *
- * Paid copies available at http://www.sciencedirect.com/science/article/pii/S1574072207000042
  * 
  * 
  */
 
 var UnitAgent = exports.UnitAgent = function (_ZIAgent) {
     _inherits(UnitAgent, _ZIAgent);
+
+    /*
+     * creates "Unit" robot agent similar to those described in Brewer(2008)
+     * 
+     * @param {Object} [options] passed to Trader and Agent constructors()
+     */
 
     function UnitAgent(options) {
         _classCallCheck(this, UnitAgent);
@@ -615,6 +621,11 @@ var UnitAgent = exports.UnitAgent = function (_ZIAgent) {
         };
         return _possibleConstructorReturn(this, Object.getPrototypeOf(UnitAgent).call(this, Object.assign({}, defaults, options)));
     }
+
+    /*
+     * calculates random change from previous transaction price
+     * @return {number} a uniform random number on [-1,1]; or, if this.integer is set, picked randomly from the set {-1,0,1}
+     */
 
     _createClass(UnitAgent, [{
         key: 'randomDelta',
@@ -631,6 +642,19 @@ var UnitAgent = exports.UnitAgent = function (_ZIAgent) {
             }
             return delta;
         }
+
+        /**
+         * Calculate price this agent is willing to pay.
+         * The returned price is within one price unit of the previous market trade price, or uses the ZIAgent random algorithm if there is no previous market trade price.
+         * Undefined (no bid) is returned if the propsed price would exceed the marginalValue parameter
+         * If this.integer is true, the returned price will be an integer.
+         * 
+         * 
+         * @param {number} marginalValue the marginal value of redeeming the next unit. sets the maximum price for allowable random price generation 
+         * @param {Object} market The market for which a bid is being prepared.  An object with lastTradePrice() method. 
+         * @return {number|undefined} agent's buy price or undefined
+         */
+
     }, {
         key: 'bidPrice',
         value: function bidPrice(marginalValue, market) {
@@ -641,6 +665,19 @@ var UnitAgent = exports.UnitAgent = function (_ZIAgent) {
             if (p > marginalValue || p > this.maxPrice || p < this.minPrice) return undefined;
             return p && this.integer ? Math.floor(p) : p;
         }
+
+        /**
+         * Calculate price this agent is willing to accept.
+         * The returned price is within one price unit of the previous market trade price, or uses the ZIAgent random algorithm if there is no previous market trade price.
+         * Undefined (no ask) is returned if the propsed price would be lower than the marginalCost parameter
+         * If this.integer is true, the returned price will be an integer.
+         * 
+         * 
+         * @param {number} marginalCost the marginal cost of producing the next unit. sets the minimum price for allowable random price generation
+         * @param {Object} market The market for which a bid is being prepared.  An object with lastTradePrice() method. 
+         * @return {number|undefined} agent's buy price or undefined
+         */
+
     }, {
         key: 'askPrice',
         value: function askPrice(marginalCost, market) {
@@ -656,17 +693,40 @@ var UnitAgent = exports.UnitAgent = function (_ZIAgent) {
     return UnitAgent;
 }(ZIAgent);
 
+/*
+ * OneupmanshipAgent is a robotic version of that annoying market participant who starts at extremely high or low price, and always bid $1 more, or ask $1 less than any competition
+ *
+ */
+
 var OneupmanshipAgent = exports.OneupmanshipAgent = function (_Trader2) {
     _inherits(OneupmanshipAgent, _Trader2);
+
+    /* 
+     * create OneupmanshipAgent 
+     * @param {Object} [options] Passed to Trader and Agent constructors
+     *
+     */
 
     function OneupmanshipAgent(options) {
         _classCallCheck(this, OneupmanshipAgent);
 
         var defaults = {
-            description: "Paul Brewer's OneupmanshipAgent that increases the bid or cuts the ask by one price unit, if profitable to do so according to MC/MV"
+            description: "Brewer's OneupmanshipAgent that increases the market bid or decreases the market ask by one price unit, if profitable to do so according to MV or MC"
         };
         return _possibleConstructorReturn(this, Object.getPrototypeOf(OneupmanshipAgent).call(this, Object.assign({}, defaults, options)));
     }
+
+    /**
+     * Calculate price this agent is willing to pay.
+     * The returned price is either this.minPrice (no bidding), or market.currentBidPrice()+1, or undefined.
+     * Undefined (no bid) is returned if the propsed price would exceed the marginalValue parameter
+     * this.integer is ignored
+     * 
+     * 
+     * @param {number} marginalValue the marginal value of redeeming the next unit. sets the maximum price for allowable bidding 
+     * @param {Object} market The market for which a bid is being prepared.  An object with currentBidPrice() and currentAskPrice() methods.
+     * @return {number|undefined} agent's buy price or undefined
+     */
 
     _createClass(OneupmanshipAgent, [{
         key: 'bidPrice',
@@ -676,6 +736,19 @@ var OneupmanshipAgent = exports.OneupmanshipAgent = function (_Trader2) {
             if (!currentBid) return this.minPrice;
             if (currentBid < marginalValue - 1) return currentBid + 1;
         }
+
+        /**
+         * Calculate price this agent is willing to accept.
+         * The returned price is either this.maxPrice (no asks), or market.currentAskPrice()-1, or undefined.
+         * Undefined (no bid) is returned if the propsed price is less than the marginalCost parameter
+         * this.integer is ignored
+         * 
+         * 
+         * @param {number} marginalCost the marginal cost of producing the next unit. sets the minimum price for allowable bidding 
+         * @param {Object} market The market for which a bid is being prepared.  An object with currentBidPrice() and currentAskPrice() methods.
+         * @return {number|undefined} agent's buy price or undefined
+         */
+
     }, {
         key: 'askPrice',
         value: function askPrice(marginalCost, market) {
@@ -703,6 +776,13 @@ var OneupmanshipAgent = exports.OneupmanshipAgent = function (_Trader2) {
 var KaplanSniperAgent = exports.KaplanSniperAgent = function (_Trader3) {
     _inherits(KaplanSniperAgent, _Trader3);
 
+    /**
+     * Create KaplanSniperAgent
+     *
+     * @param {Object} [options] options passed to Trader and Agent constructors
+     * @param {number} [options.desiredSpread=10] desiredSpread for sniping; agent will accept trade if ||market.currentAskPrice()-market.currentBidPrice()||<=desiredSpread
+     */
+
     function KaplanSniperAgent(options) {
         _classCallCheck(this, KaplanSniperAgent);
 
@@ -712,6 +792,20 @@ var KaplanSniperAgent = exports.KaplanSniperAgent = function (_Trader3) {
         };
         return _possibleConstructorReturn(this, Object.getPrototypeOf(KaplanSniperAgent).call(this, Object.assign({}, defaults, options)));
     }
+
+    /**
+     * Calculates price this agent is willing to pay.
+     * The returned price always equals either undefined or the price of market.currentAsk(), triggering an immediate trade.
+     * 
+     * The KaplanSniperAgent will buy, if market.currentAskPrice<=marginalValue,  during one of three conditions:
+     * (A) market ask price is less than or equal to .getJuicyAskPrice(), which needs to be set at the simulation level to the previous period low trade price
+     * (B) when spread = (market ask price - market bid price) is less than or equal to agent's desiredSpread (default: 10)
+     * (C) when period is ending
+     *
+     * @param {number} marginalValue The marginal value of redeeming the next unit.  Sets the maximum price for trading.
+     * @param {Object} market The market for which a bid is being prepared.  An object with currentBidPrice() and currentAskPrice() methods.
+     * @return {number|undefined} agent's buy prce or undefined
+     */
 
     _createClass(KaplanSniperAgent, [{
         key: 'bidPrice',
@@ -735,6 +829,21 @@ var KaplanSniperAgent = exports.KaplanSniperAgent = function (_Trader3) {
             }
             // otherwise return undefined
         }
+
+        /**
+         * Calculates price this agent is willing to accept.
+         * The returned price always equals either undefined or the price of market.currentBid(), triggering an immediate trade.
+         * 
+         * The KaplanSniperAgent will sell, if marginalCost<=market.currentBidPrice,  during one of three conditions:
+         * (A) market bid price is greater than or equal to .getJuicyBidPrice(), which needs to be set at the simulation level to the previous period high trade price
+         * (B) when spread = (market ask price - market bid price) is less than or equal to agent's desiredSpread (default: 10)
+         * (C) when period is ending
+         *
+         * @param {number} marginalCost The marginal cost of producing the next unit.  Sets the minimum price for trading.
+         * @param {Object} market The market for which an ask is being prepared.  An object with currentBidPrice() and currentAskPrice() methods.
+         * @return {number|undefined} agent's sell price or undefined
+         */
+
     }, {
         key: 'askPrice',
         value: function askPrice(marginalCost, market) {
