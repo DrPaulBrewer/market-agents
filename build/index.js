@@ -143,7 +143,7 @@ var Agent = exports.Agent = function (_EventEmitter) {
 
             /**
              * time, in JS ms since epoch, of agent wake
-             * @type {number}
+             * @type {number} this.wakeTime
              */
 
             this.wakeTime = this.nextWake();
@@ -886,7 +886,7 @@ var Pool = exports.Pool = function () {
 
     /**
      * Add an agent to the Pool
-     * @param {Agent} agent to add to pool.  Should be instanceof Agent, including subclasses.
+     * @param {Object} agent to add to pool.  Should be instanceof Agent, including subclasses.
      */
 
     _createClass(Pool, [{
@@ -901,7 +901,7 @@ var Pool = exports.Pool = function () {
 
         /**
          * finds agent from Pool with lowest wakeTime
-         * @return {Agent} 
+         * @return {Object} 
          */
 
     }, {
@@ -961,7 +961,7 @@ var Pool = exports.Pool = function () {
          * The run method returns immediately and runs asynchronously. For a synchronous equivalent, see syncRun(untilTime, limitCalls)
          *
          * @param {number} untilTime Stop time for this run
-         * @param {function(Error)} done callback called in this=Pool context
+         * @param {function(error: Object)} done callback called in this=Pool context
          * @param {number} batch Batch size of number of agents to wake up synchronously before surrendering to event loop
          * @return {undefined} asynchronous function, returns undefined immediately
          */
