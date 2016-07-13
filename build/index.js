@@ -140,6 +140,12 @@ var Agent = exports.Agent = function (_EventEmitter) {
             }
             // if this.money is defined but is not in inventory, zero the inventory of this.money
             if (this.money && !this.inventory[this.money]) this.inventory[this.money] = 0;
+
+            /*
+             * time, in JS ms since epoch, of agent wake
+             * @type {number}
+             */
+
             this.wakeTime = this.nextWake();
         }
 
