@@ -3,7 +3,7 @@ market-agents
 
 [![Build Status](https://travis-ci.org/DrPaulBrewer/market-agents.svg?branch=master)](https://travis-ci.org/DrPaulBrewer/market-agents)
 [![Coverage Status](https://coveralls.io/repos/github/DrPaulBrewer/market-agents/badge.svg?branch=master)](https://coveralls.io/github/DrPaulBrewer/market-agents?branch=master)
-[![Documentation Status](https://doc.esdoc.org/github.com/user-name/repo-name/badge.svg)
+[![Documentation Status](https://doc.esdoc.org/github.com/DrPaulBrewer/market-agents/badge.svg)
 
 
 Provides EventEmitter Agent framework for robot trading in economic and financial simulations
