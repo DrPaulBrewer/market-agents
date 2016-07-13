@@ -18,67 +18,17 @@ include both this information and documentation automatically generated from the
 
 ##Initialization
 
-    const MarketAgents = require('market-agents');
-    // unpack constructors
-    const Agent = MarketAgents.Agent;
-    const ziAgent = MarketAgents.Agent;
-    const Pool = MarketAgents.Pool;
+    import * as MarketAgents from 'market-agents'; // ES6 
+    // or
+    const MarketAgents = require('market-agents'); // CJS
+    // unpack some constructors
+    const { Agent, ZIAgent, Pool } = MarketAgents;
 
-##Blurb
+##Agent classes, methods, etc.
 
-    var myAgent = new Agent({inventory: {money:1000, X:5}});
-    var myZIAgent = new ziAgent();
-    myAgent.on('some-event', function(...){...});
-    var myPool = new Pool();
-    for(var i=0,l=100;i<l;++i) myPool.push(new ziAgent());
-    myPool.initPeriod([type1Params,type2Params,...,typeNParams]);
-    myPool.runSync(10000); 
-    myPool.endPeriod();
+See the [ESDoc hosted documentation for market-agents](https://doc.esdoc.org/github.com/DrPaulBrewer/market-agents/)
 
-
-##Agent Construction
-    
-    var myAgent = new Agent({option1:value1, option2:value2, ... });
-    
-Creates a new `Agent` instance; internally the `Agent` class is implemented as a subclass of `EventEmitter`.
-
-### `new Agent(options)` constructor options
-
-
-| option | type | default | description |
-|--------|------|---------|-------------|
-|`costs`| object keys:goods, values: Array of number | {} | unit costs of goods for producing goods in `Agent.prototype.produce()` (usually at end-of-period) |  
-|`description`| any | "Agent" | description of agent, unused |
-| `id` | number | autoincremented number | unique agent id number. *Most apps should leave .id unset and let the autoincrementer set it * |
-|`inventory`| object | {} | initial money and goods owned by agent |
-|`nextWake`| function returning next wake up time, no paramters, `this` Agent context | `poissonWake` providing conjugate exponential wake time for Poisson distribution |  alternate function for determining next wake time |
-|`money`| string | "money" | name of goods used as money |
-|`period`| object | `{number:0, duration:1000, equalDuration:true }` | initial parameters for .initPeriod |
-|`rate`| number | 1 | Poisson firing rate of Agent's .wake() events |
-|`values`| object keys:goods, values: Array of number | {} | unit values for redeeming goods in `Agent.prototype.redeem()` (usually at end-of-period) |
-|`wakeTime`| number | 0 | initial wake up time for Agent's first action|
-
-### `Agent.prototype` methods
-
-each Agent instance has access to these methods
-
-|Agent method| usage | param | type | description | 
-|------------|-------|-------|------|-------------|
-|`.init(newSettings)`| called by `.initPeriod`; external applications should probably call .initPeriod instead | `newSettings` | object |  copies `newSettings.inventory` to `this.inventory` without overwriting inventory levels in `this.inventory` not in `newSettings.inventory, then copies any remaining properties of `newSettings` to `this`; If `this.money` is set and money inventory is undefined, sets money inventory to zero. sets `this.wakeTime` to next wake up time.  |
-|`.initPeriod(newPeriod)`| called by `Pool.initPeriod()` to start a new period for an agent; Emits event "pre-period" after performing initialization tasks in the description | period | number or object | Starts a new period for this agent.  If period is a number, recalculates period.startTime and period.endTime if period.equalDuration is set, retains all of the other properties of previous period and changes only period.numnber.  If `period` is an object, `this.period` is set to a deep copy of `period`, `period.startTime` sets the agent's wake up time, and `.init(this.period.init)` is called to set inventory or other agent properties. |
-|`.endPeriod()`| called by `Pool.endPeriod()` to end the period for an agent; Emits event "post-period" after any production or redemption activity. | none | n/a | Ends the period for an agent. Calls .produce() and .redeem() if they exist, to allow for end-of-period settlement of trades in certain goods against the cost or value schedule.  |
-|`.wake(info)`| called by `Pool.wake()` to wake up an agent so that it can calculate a strategy, trade, etc... ; Emits event "wake(info)" passing info | info | any | First emits the "wake(info)" event for this agent, then calculates next wake time |
-|`.transfer(myTransfer, memo)`| Call this to record a change in an agent's inventories of goods and/or money. Called by Agent's `.produce` and `.redeem`, `Pool.trade` to record changes in inventory goods and money. emits "pre-transfer(amounts, memo)" before the transfer, allowing modification, and emits "post-transfer(amounts, memo)" after the transfer | myTransfer | object with goods as keys and numbers indicating positive/negative changes (deltas) as values | records a change in agents money or inventory; the memo field can be omitted, or any type, to assist in logging or using any additional information, such as why the transfer occurred. |
-|`.unitCostFunction(good, inventory)` | call `.unitCostFunction('X', {X:-3, ... })` to return a number giving this agent's Marginal Cost of producing the next (4th) X unit; Called by `ziAgent.sendBidsAndAsks()` | | | returns number giving the marginal cost of producing the next unit from `this.costs`|
-| | | good | string | good identifies which good, i.e. "X" or "Y" or something else |
-| | | inventory | object, goods as keys, number values | a hypothetical set of inventory levels for calculating the function |
-|`.unitValueFunction(good, inventory)` | call `.unitValueFUnction('Y', {Y:0})` to return a number giving this agent's Marginal Value of redeeming the next (1st) Y unit; Called by `ziAgent.sendBidsAndAsks()` | | | returns number giving the marginal value of redeeming the next unit from `this.values`|
-| | | good | string | good identifies which good, i.e. "X' or "Y" or something else |
-| | | inventory | object, goods as keys, number values | a hypothetical set of inventory levels for calcuating the function |
-|`.redeem()`|
-|`.produce()`|
-
-##Agent Events
+##Agent Event Reference
 
 *wake*
 
@@ -171,12 +121,13 @@ When: after a production transfer has been processed and added to the agent's in
 
 Use this for: logging production amounts, taking other actions after production
 
-##ZiAgent Events
+##Trader Events
 
-ziAgent inherits all event behavior from Agent and adds no unique events to Agent.
+Trader registers ziAgent.Prototype.sendBidsAndAsks as the first responder to the Agent *Wake* event.
 
-ziAgent registers ziAgent.Prototype.sendBidsAndAsks as the first responder to the Agent *Wake* event.
+##Trader subclasses (e.g. ZIAgent, etc.)
 
+inherit Agent and Trader events and behavior
 
 ##Pool Events
 
