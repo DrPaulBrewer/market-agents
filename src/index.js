@@ -230,7 +230,7 @@ export class Agent extends EventEmitter {
      *
      * @param {String} good (e.g. "X", "Y")
      * @param {Object} hypotheticalInventory object with goods as keys and values as numeric levels of inventory 
-     * @return {number} marginal unit cost of next unit, at given (negative) hyptothetical inventory, using agent's configured costs
+     * @return {number} marginal unit cost of next unit, at given (negative) hypothetical inventory, using agent's configured costs
      */
     
     unitCostFunction(good, hypotheticalInventory){
@@ -245,7 +245,7 @@ export class Agent extends EventEmitter {
      *
      * @param {String} good (e.g. "X", "Y")
      * @param {Object} hypotheticalInventory object with goods as keys and values as numeric levels of inventory 
-     * @return {number} marginal unit value of next unit, at given (positive) hyptothetical inventory, using agent's configured values
+     * @return {number} marginal unit value of next unit, at given (positive) hypothetical inventory, using agent's configured values
      */
 
     unitValueFunction(good, hypotheticalInventory){
