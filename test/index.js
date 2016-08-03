@@ -968,13 +968,12 @@ describe('new Pool', function(){
         myPool.syncRun(1000);
     });
 
-    it('pool with no agents, .run(1000,cb) calls cb(false) normally, no error', function(done){
-        function cb(error){
-            assert.ok(!error);
-            done();
-        }
+    it('pool with no agents, .runAsPromise(1000) calls resolve normally, no error', function(done){
         let myPool = new Pool();
-        myPool.run(1000,cb);
+        (myPool
+         .runAsPromise(1000)
+         .then((()=>done()),((e)=>assert.ok(false,e)))        
+	);
     });
 
     it('should not accept invalid agents:  pool.push(a) should throw an error if a is not Agent-related', function(){
@@ -994,15 +993,6 @@ describe('new Pool', function(){
         pool.agents.forEach(function(A){
             assert.ok(pool.agentsById[A.id]===A);
         });
-    });
-
-    it('pool.run(1000) with omitted callback function should throw an error', function(){
-        let myPool = new Pool();
-        myPool.push(new Agent());
-        function doNotDoThis(){
-            myPool.run(1000); // callback function intentionally omitted
-        }
-        doNotDoThis.should.throw();
     });
 
     it('pool.initPeriod with 2 agents in pool calls .initPeriod on each agent', function(){
@@ -1086,7 +1076,6 @@ describe('new Pool', function(){
     function poolAgentRateTest(rates, AgentFunc, done){
         let async = (typeof(done)==='function');
         let numberOfAgents = rates.length;
-        let cb;
         let wakes = new Array(numberOfAgents).fill(0);
         let expected = rates.map(function(r){ return 1000*r; });
         function checkWakes(){
@@ -1103,15 +1092,17 @@ describe('new Pool', function(){
             myPool.push(myAgent);
         }
         if (async){
-            cb = function(error){
-                if (error)
-                    throw new Error("pool should not throw error");
-                checkWakes();
-                done();
-            };
-            myPool.run(1000, cb, 53);
-            // previous line should return immediately, before event loop runs, so wakeCounts are zero
-            wakes.forEach(function(wakeCount){ wakeCount.should.equal(0); });
+            (myPool
+             .runAsPromise(1000, 5)
+             .then(function(){
+                 checkWakes();
+                 done();
+             }, function(e){
+                 throw new Error("pool should not throw error:"+e);
+             })
+            );
+            // previous line should return before event loop runs, so wakeCounts at most one pass, i.e. 5
+            wakes.forEach(function(wakeCount){ wakeCount.should.be.below(6); });
         } else {
             myPool.syncRun(1000);
             checkWakes();
@@ -1122,15 +1113,15 @@ describe('new Pool', function(){
         poolAgentRateTest([1],Agent);
     });
 
-    it('pool with one agent, rate 1, wakes about 1000 times with .Run(1000) ', function(done){
+    it('pool with one agent, rate 1, wakes about 1000 times by t=1000 (runAsPromise) ', function(done){
         poolAgentRateTest([1],Agent,done);
     });
 
-    it('pool with ten agents, rate 1, wakes about 1000 times each with .syncRun(1000) ', function(){
+    it('pool with ten agents, rate 1, wakes about 1000 times by t=1000 (syncRun) ', function(){
         poolAgentRateTest(new Array(10).fill(1), Agent);
     });
 
-    it('pool with ten agents, rate 1, wakes about 1000 times each with .Run(1000) ', function(done){
+    it('pool with ten agents, rate 1, wakes about 1000 times each by t=1000 ', function(done){
         poolAgentRateTest(new Array(10).fill(1), Agent, done);
     });
 
@@ -1138,7 +1129,7 @@ describe('new Pool', function(){
         poolAgentRateTest([1,2,3,4,5,6,7,8,9,10], Agent);
     });
 
-    it('pool with ten agents, rates [1,2,3,4,5,6,7,8,9,10], wakes about [1000,2000,...,10000] times each with .Run(1000) ', function(done){
+    it('pool with ten agents, rates [1,2,3,4,5,6,7,8,9,10], wakes about [1000,2000,...,10000] times each with .runAsPromise ', function(done){
         poolAgentRateTest([1,2,3,4,5,6,7,8,9,10], Agent, done);
     });
 
@@ -1146,7 +1137,7 @@ describe('new Pool', function(){
         poolAgentRateTest([2],ZIAgent);
     });
 
-    it('pool with one zi agent, rate 2, wakes about 2000 times with .Run(1000) ', function(done){
+    it('pool with one zi agent, rate 2, wakes about 2000 times with .runAsPromise ', function(done){
         poolAgentRateTest([2],ZIAgent,done);
     });
 

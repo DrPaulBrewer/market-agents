@@ -37,7 +37,7 @@ module.exports = {
             "never"
         ],
         "consistent-return": "off",
-        "consistent-this": "error",
+        "consistent-this": "off",
         "curly": "off",
         "default-case": "error",
         "dot-location": "off",

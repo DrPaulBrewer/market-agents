@@ -11,10 +11,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _async = require('async');
-
-var async = _interopRequireWildcard(_async);
-
 var _clone = require('clone');
 
 var _clone2 = _interopRequireDefault(_clone);
@@ -25,9 +21,9 @@ var _prob = require('prob.js');
 
 var ProbJS = _interopRequireWildcard(_prob);
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -133,7 +129,7 @@ var Agent = exports.Agent = function (_EventEmitter) {
                 var mySettings = Object.assign({}, newSettings);
                 // copy new values to inventory.  do not reset other inventory values
                 Object.assign(this.inventory, mySettings.inventory);
-                // reset non-inventory as specified, completely overwriting previous
+                // reset non-inventory as specified, completely overwriting previous 
                 // to execute this reset, first: delete the inventory settings, then apply the remainder
                 delete mySettings.inventory;
                 Object.assign(this, mySettings);
@@ -821,7 +817,7 @@ var KaplanSniperAgent = exports.KaplanSniperAgent = function (_Trader3) {
                 var juicyPrice = this.getJuicyAskPrice();
                 if (juicyPrice > 0 && currentAsk <= juicyPrice) return currentAsk;
 
-                // snipe if low bid ask spread
+                // snipe if low bid ask spread 
                 if (currentAsk > 0 && currentBid > 0 && currentAsk - currentBid <= this.desiredSpread) return currentAsk;
 
                 // snipe if period end is three wakes away or less
@@ -957,31 +953,29 @@ var Pool = exports.Pool = function () {
         }
 
         /**
-         * Repeatedly wake agents in Pool, until simulation time "untilTime" is reached. Optionally call done(sim) callback.
-         * The run method returns immediately and runs asynchronously. For a synchronous equivalent, see syncRun(untilTime, limitCalls)
+         * Repeatedly wake agents in Pool, until simulation time "untilTime" is reached. For a synchronous equivalent, see syncRun(untilTime, limitCalls)
          *
          * @param {number} untilTime Stop time for this run
-         * @param {function(error: Object)} done callback called in this=Pool context
          * @param {number} batch Batch size of number of agents to wake up synchronously before surrendering to event loop
-         * @return {undefined} asynchronous function, returns undefined immediately
+         * @return {Promise<Object,Error>} returns promise resolving to pool, with caught errors passed to reject handler.
          */
 
     }, {
-        key: 'run',
-        value: function run(untilTime, done, batch) {
-            // note: setTimeout slows this down significnatly if setImmediate is not available
-            var that = this;
-            if (typeof done !== 'function') throw new Error("Pool.run: done callback function undefined");
-            async.whilst(function () {
-                var nextAgent = that.next();
-                return nextAgent && nextAgent.wakeTime < untilTime;
-            }, function (cb) {
-                async.setImmediate(function () {
-                    that.syncRun(untilTime, batch || 1);
-                    cb();
-                });
-            }, function (e) {
-                done.call(that, e);
+        key: 'runAsPromise',
+        value: function runAsPromise(untilTime, batch) {
+            var pool = this;
+            return new Promise(function (resolve, reject) {
+                function loop() {
+                    var nextAgent = 0;
+                    try {
+                        pool.syncRun(untilTime, batch || 1);
+                        nextAgent = pool.next();
+                    } catch (e) {
+                        return reject(e);
+                    }
+                    return nextAgent && nextAgent.wakeTime < untilTime ? setImmediate(loop) : resolve(pool);
+                }
+                loop();
             });
         }
 

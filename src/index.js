@@ -1,4 +1,3 @@
-import * as async from 'async';
 import clone from 'clone';
 import {EventEmitter} from 'events';
 import * as ProbJS from 'prob.js';
@@ -101,11 +100,11 @@ export class Agent extends EventEmitter {
         if (this.money && !(this.inventory[this.money]))
             this.inventory[this.money] = 0;
 
-	/**
-	 * time, in JS ms since epoch, of agent wake
-	 * @type {number} this.wakeTime
-	 */
-	
+        /**
+         * time, in JS ms since epoch, of agent wake
+         * @type {number} this.wakeTime
+         */
+        
         this.wakeTime = this.nextWake();
     }
     
@@ -850,35 +849,28 @@ export class Pool {
     }
 
     /**
-     * Repeatedly wake agents in Pool, until simulation time "untilTime" is reached. Optionally call done(sim) callback.
-     * The run method returns immediately and runs asynchronously. For a synchronous equivalent, see syncRun(untilTime, limitCalls)
+     * Repeatedly wake agents in Pool, until simulation time "untilTime" is reached. For a synchronous equivalent, see syncRun(untilTime, limitCalls)
      *
      * @param {number} untilTime Stop time for this run
-     * @param {function(error: Object)} done callback called in this=Pool context
      * @param {number} batch Batch size of number of agents to wake up synchronously before surrendering to event loop
-     * @return {undefined} asynchronous function, returns undefined immediately
+     * @return {Promise<Object,Error>} returns promise resolving to pool, with caught errors passed to reject handler.
      */
 
-    run(untilTime, done, batch){
-        // note: setTimeout slows this down significnatly if setImmediate is not available
-        const that = this;
-        if (typeof(done)!=='function')
-            throw new Error("Pool.run: done callback function undefined");
-        async.whilst(
-            function(){ 
-                const nextAgent = that.next();
-                return (nextAgent && (nextAgent.wakeTime < untilTime));
-            },
-            function(cb){
-                async.setImmediate(function(){
-                    that.syncRun(untilTime, batch || 1);
-                    cb();
-                });
-            },
-            function(e){
-                done.call(that,e);
+    runAsPromise(untilTime, batch){
+        const pool = this;
+        return new Promise(function(resolve,reject){
+            function loop(){
+                let nextAgent = 0;
+                try {
+                    pool.syncRun(untilTime, (batch||1));
+                    nextAgent = pool.next();
+                } catch(e){
+                    return reject(e);
+                }
+                return (nextAgent && (nextAgent.wakeTime<untilTime))? setImmediate(loop): resolve(pool);
             }
-        );
+            loop();
+        });
     }
 
     /**
