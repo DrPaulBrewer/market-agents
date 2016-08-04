@@ -975,7 +975,7 @@ var Pool = exports.Pool = function () {
                     }
                     return nextAgent && nextAgent.wakeTime < untilTime ? setImmediate(loop) : resolve(pool);
                 }
-                loop();
+                setImmediate(loop);
             });
         }
 

@@ -1101,8 +1101,8 @@ describe('new Pool', function(){
                  throw new Error("pool should not throw error:"+e);
              })
             );
-            // previous line should return before event loop runs, so wakeCounts at most one pass, i.e. 5
-            wakes.forEach(function(wakeCount){ wakeCount.should.be.below(6); });
+            // previous line should return before event loop runs, so wakeCount should be 0
+            wakes.forEach(function(wakeCount){ wakeCount.should.equal(0); });
         } else {
             myPool.syncRun(1000);
             checkWakes();

@@ -869,7 +869,7 @@ export class Pool {
                 }
                 return (nextAgent && (nextAgent.wakeTime<untilTime))? setImmediate(loop): resolve(pool);
             }
-            loop();
+            setImmediate(loop);
         });
     }
 
