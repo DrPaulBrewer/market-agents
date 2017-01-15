@@ -672,6 +672,74 @@ export class OneupmanshipAgent extends Trader {
 }
 
 /**
+ * MidpointAgent - An agent that bids/asks halfway between the current bid and current ask.  
+ *   When there is no current bid or current ask, the agent bids minPrice or asks maxPrice.
+ * 
+ */
+
+export class MidpointAgent extends Trader {
+        constructor(options){
+        const defaults = {
+            description: "Brewer's MidpointAgent bids/asks halfway between the bid and ask, if profitable to do according to MC or MV"
+        };
+        super(Object.assign({}, defaults, options));
+    }
+    
+    /**
+     * Calculate price this agent is willing to pay.
+     * The returned price is either the min price, the midpoint of the bid/ask, or undefined.  
+     * Undefined (no bid) is returned if the propsed price would exceed the marginalValue parameter
+     * this.integer==true  causes midpoint prices to be rounded up to the next integer before comparison with marginalValue 
+     *
+     * @param {number} marginalValue the marginal value of redeeming the next unit. sets the maximum price for allowable bidding 
+     * @param {Object} market The market for which a bid is being prepared.  An object with currentBidPrice() and currentAskPrice() methods.
+     * @return {number|undefined} agent's buy price or undefined
+     */
+
+    bidPrice(marginalValue, market){ 
+        if (typeof(marginalValue)!=='number') return undefined;
+        const currentBid = market.currentBidPrice();
+        if (!currentBid)
+            return (this.minPrice <= marginalValue)? this.minPrice: undefined;      
+        const currentAsk = market.currentAskPrice();
+        if (currentAsk){
+            const midpoint = (currentBid+currentAsk)/2;
+            const myBid = (this.integer)? Math.ceil(midpoint): midpoint;
+            if (myBid <= marginalValue)
+                return myBid;
+        }
+    }
+
+    /**
+     * Calculate price this agent is willing to accept.
+     * The returned price is either the max price, the midpoint of the bid/ask, or undefined.  
+     * Undefined (no ask) is returned if the propsed price is less than the marginalCost parameter
+     * this.integer==true  causes midpoint prices to be rounded up to the next integer before comparison with marginalValue 
+     * 
+     * 
+     * @param {number} marginalCost the marginal cost of producing the next unit. sets the minimum price for allowable bidding 
+     * @param {Object} market The market for which a bid is being prepared.  An object with currentBidPrice() and currentAskPrice() methods.
+     * @return {number|undefined} agent's buy price or undefined
+     */
+
+    askPrice(marginalCost, market){ 
+        if (typeof(marginalCost)!=='number') return undefined;
+        const currentAsk = market.currentAskPrice();
+        if (!currentAsk)
+            return (this.maxPrice>=marginalCost)? this.maxPrice: undefined;
+        const currentBid = market.currentBidPrice();
+        if (currentBid){
+            const midpoint = (currentBid+currentAsk)/2;
+            const myAsk = (this.integer)? Math.floor(midpoint): midpoint;
+            if (myAsk >= marginalCost)
+                return myAsk;
+        }
+    }
+    
+}
+
+
+/**
  * a reimplementation of a Kaplan Sniper Agent (JavaScript implementation by Paul Brewer)
  *
  * see e.g. "High Performance Bidding Agents for the Continuous Double Auction" 

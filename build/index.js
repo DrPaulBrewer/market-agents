@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-exports.Pool = exports.KaplanSniperAgent = exports.OneupmanshipAgent = exports.UnitAgent = exports.ZIAgent = exports.Trader = exports.Agent = undefined;
+exports.Pool = exports.KaplanSniperAgent = exports.MidpointAgent = exports.OneupmanshipAgent = exports.UnitAgent = exports.ZIAgent = exports.Trader = exports.Agent = undefined;
 
 var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
 
@@ -759,6 +759,79 @@ var OneupmanshipAgent = exports.OneupmanshipAgent = function (_Trader2) {
 }(Trader);
 
 /**
+ * MidpointAgent - An agent that bids/asks halfway between the current bid and current ask.  
+ *   When there is no current bid or current ask, the agent bids minPrice or asks maxPrice.
+ * 
+ */
+
+var MidpointAgent = exports.MidpointAgent = function (_Trader3) {
+    _inherits(MidpointAgent, _Trader3);
+
+    function MidpointAgent(options) {
+        _classCallCheck(this, MidpointAgent);
+
+        var defaults = {
+            description: "Brewer's MidpointAgent bids/asks halfway between the bid and ask, if profitable to do according to MC or MV"
+        };
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(MidpointAgent).call(this, Object.assign({}, defaults, options)));
+    }
+
+    /**
+     * Calculate price this agent is willing to pay.
+     * The returned price is either the min price, the midpoint of the bid/ask, or undefined.  
+     * Undefined (no bid) is returned if the propsed price would exceed the marginalValue parameter
+     * this.integer==true  causes midpoint prices to be rounded up to the next integer before comparison with marginalValue 
+     *
+     * @param {number} marginalValue the marginal value of redeeming the next unit. sets the maximum price for allowable bidding 
+     * @param {Object} market The market for which a bid is being prepared.  An object with currentBidPrice() and currentAskPrice() methods.
+     * @return {number|undefined} agent's buy price or undefined
+     */
+
+    _createClass(MidpointAgent, [{
+        key: 'bidPrice',
+        value: function bidPrice(marginalValue, market) {
+            if (typeof marginalValue !== 'number') return undefined;
+            var currentBid = market.currentBidPrice();
+            if (!currentBid) return this.minPrice <= marginalValue ? this.minPrice : undefined;
+            var currentAsk = market.currentAskPrice();
+            if (currentAsk) {
+                var midpoint = (currentBid + currentAsk) / 2;
+                var myBid = this.integer ? Math.ceil(midpoint) : midpoint;
+                if (myBid <= marginalValue) return myBid;
+            }
+        }
+
+        /**
+         * Calculate price this agent is willing to accept.
+         * The returned price is either the max price, the midpoint of the bid/ask, or undefined.  
+         * Undefined (no ask) is returned if the propsed price is less than the marginalCost parameter
+         * this.integer==true  causes midpoint prices to be rounded up to the next integer before comparison with marginalValue 
+         * 
+         * 
+         * @param {number} marginalCost the marginal cost of producing the next unit. sets the minimum price for allowable bidding 
+         * @param {Object} market The market for which a bid is being prepared.  An object with currentBidPrice() and currentAskPrice() methods.
+         * @return {number|undefined} agent's buy price or undefined
+         */
+
+    }, {
+        key: 'askPrice',
+        value: function askPrice(marginalCost, market) {
+            if (typeof marginalCost !== 'number') return undefined;
+            var currentAsk = market.currentAskPrice();
+            if (!currentAsk) return this.maxPrice >= marginalCost ? this.maxPrice : undefined;
+            var currentBid = market.currentBidPrice();
+            if (currentBid) {
+                var midpoint = (currentBid + currentAsk) / 2;
+                var myAsk = this.integer ? Math.floor(midpoint) : midpoint;
+                if (myAsk >= marginalCost) return myAsk;
+            }
+        }
+    }]);
+
+    return MidpointAgent;
+}(Trader);
+
+/**
  * a reimplementation of a Kaplan Sniper Agent (JavaScript implementation by Paul Brewer)
  *
  * see e.g. "High Performance Bidding Agents for the Continuous Double Auction" 
@@ -769,8 +842,8 @@ var OneupmanshipAgent = exports.OneupmanshipAgent = function (_Trader2) {
  *      for discussion of Kaplan's Sniper traders on pp. 4-5
  */
 
-var KaplanSniperAgent = exports.KaplanSniperAgent = function (_Trader3) {
-    _inherits(KaplanSniperAgent, _Trader3);
+var KaplanSniperAgent = exports.KaplanSniperAgent = function (_Trader4) {
+    _inherits(KaplanSniperAgent, _Trader4);
 
     /**
      * Create KaplanSniperAgent

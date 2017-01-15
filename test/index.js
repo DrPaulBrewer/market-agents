@@ -4,7 +4,7 @@ import assert from 'assert';
 import "should";
 import * as MarketAgents from "../src/index.js";
 
-const {Agent,ZIAgent,Pool,UnitAgent,OneupmanshipAgent,KaplanSniperAgent} = MarketAgents;
+const {Agent,ZIAgent,Pool,UnitAgent,OneupmanshipAgent,MidpointAgent,KaplanSniperAgent} = MarketAgents;
 
 /**  @test {MarketAgents} */
 
@@ -14,7 +14,7 @@ describe('MarketAgents', function(){
         MarketAgents.should.be.type('object');
     });
 
-    let props = ['Agent','ZIAgent','UnitAgent','KaplanSniperAgent','Pool'];
+    let props = ['Agent','ZIAgent','UnitAgent','MidpointAgent','KaplanSniperAgent','Pool'];
 
     it('should have properties '+props.join(" "), function(){
         MarketAgents.should.have.properties(props);
@@ -778,6 +778,63 @@ describe('new OneupmanshipAgent', function(){
     });
 });
 
+describe('new MidpointAgent', function(){
+    const common = {
+        minPrice:1,
+        maxPrice:100,
+        integer: true
+    };
+    it('should bid minPrice if no currentBid', function(){
+        const market = {
+            currentBidPrice(){ return undefined;}
+        };
+        (new MidpointAgent(common)
+         .bidPrice(40,market)
+         .should.equal(common.minPrice));
+    });
+    it('should bid 33 if the current bid is 30, current ask is 35 and the MV is 40', function(){
+        const market = {
+            currentBidPrice(){ return 30; },
+            currentAskPrice(){ return 35; }
+        };
+        (new MidpointAgent(common)
+         .bidPrice(40,market)
+         .should.equal(33));
+    });
+    it('should not bid if the current bid is 50 and current ask is 60 but the MV is 40', function(){
+        const market = {
+            currentBidPrice(){ return 50; },
+            currentAskPrice(){ return 60; }
+        };
+        assert.ok(new MidpointAgent(common).bidPrice(40,market)===undefined);
+    });
+    it('should ask maxPrice if no currentAsk', function(){
+        const market = {
+            currentBidPrice(){ return 10; },
+            currentAskPrice(){ return undefined;}
+        };
+        (new MidpointAgent(common)
+         .askPrice(77,market)
+         .should.equal(common.maxPrice));
+    });
+    it('should ask 78 if the current ask is 80, current bid is 76 and the MC is 77', function(){
+        const market = {
+            currentAskPrice(){ return 80; },
+            currentBidPrice(){ return 76; }
+        };
+        (new MidpointAgent(common)
+         .askPrice(77,market)
+         .should.equal(78));
+    });
+    it('should not ask if the current ask is 77, current bid is 76,  and the MC is 77', function(){
+        const market = {
+            currentAskPrice(){ return 77; },
+            currentBidPrice(){ return 76; }
+        };
+        assert.ok(new MidpointAgent(common).askPrice(77,market)===undefined);
+    });
+});
+
 
 describe('new KaplanSniperAgent', function(){
     // eslint-disable-next-line max-params
@@ -973,7 +1030,7 @@ describe('new Pool', function(){
         (myPool
          .runAsPromise(1000)
          .then((()=>done()),((e)=>assert.ok(false,e)))        
-	);
+        );
     });
 
     it('should not accept invalid agents:  pool.push(a) should throw an error if a is not Agent-related', function(){
