@@ -1177,10 +1177,7 @@ var Pool = exports.Pool = function () {
             if (Array.isArray(aggregateArray)) {
                 myCopy = aggregateArray.slice();
             } else {
-
-                /* istanbul ignore next */
-
-                throw new Error("Error: Pool.prototype.distribute: expected aggregate to be Array or String, got: " + (typeof aggregateArray === 'undefined' ? 'undefined' : _typeof(aggregateArray)));
+                throw new Error("Error: Pool.prototype.distribute: expected aggregate to be Array, got: " + (typeof aggregateArray === 'undefined' ? 'undefined' : _typeof(aggregateArray)));
             }
             if (field !== 'values' && field !== 'costs') throw new Error("Pool.distribute(field,good,aggArray) field should be 'values' or 'costs', got:" + field);
             for (i = 0, l = this.agents.length; i < l; ++i) {

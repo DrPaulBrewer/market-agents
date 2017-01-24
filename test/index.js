@@ -1515,6 +1515,15 @@ describe('new Pool', function(){
         myPool.agents[4].values.X.should.deepEqual([40]);       
     });
 
+    it("pool.distribute('values','X','100 80 60 50 40 30 20 10') throws error as array expected", function(){
+        let myPool = new Pool();
+        [1,2,3,4,5].forEach(function(){myPool.push(new Agent()); });
+        function tryDistribute(){
+            myPool.distribute('values','X',"100 80 60 50 40 30 20 10");
+        }
+        tryDistribute.should.throw();
+    });
+
     it("pool.distribute('values','X',[100,80,60,50,40,30,20,10]) over 10 agents",function(){
         let myPool = new Pool();
         [1,2,3,4,5,6,7,8,9,10].forEach(function(){myPool.push(new Agent()); });

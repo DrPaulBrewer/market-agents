@@ -1059,12 +1059,8 @@ export class Pool {
         let myCopy;
         if (Array.isArray(aggregateArray)){
             myCopy = aggregateArray.slice();
-        } else {
-            
-            /* istanbul ignore next */
-
-            throw new Error("Error: Pool.prototype.distribute: expected aggregate to be Array or String, got: "+typeof(aggregateArray));
-
+        } else {            
+            throw new Error("Error: Pool.prototype.distribute: expected aggregate to be Array, got: "+typeof(aggregateArray));
         }
         if ((field!=='values') && (field!=='costs'))
             throw new Error("Pool.distribute(field,good,aggArray) field should be 'values' or 'costs', got:"+field);
