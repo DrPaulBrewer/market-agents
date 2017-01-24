@@ -1164,7 +1164,7 @@ var Pool = exports.Pool = function () {
          *
          * @param {string} field "values" or "costs"
          * @param {good} good name of good for agents inventories. 
-         * @param {number[]|string} aggregateArray list of numeric values or costs reflecting the aggregate pool values or costs
+         * @param {number[]} aggregateArray list of numeric values or costs reflecting the aggregate pool values or costs
          * @throws {Error} when field is invalid or aggregateArray is wrong type
          */
 
@@ -1176,12 +1176,6 @@ var Pool = exports.Pool = function () {
             var myCopy = void 0;
             if (Array.isArray(aggregateArray)) {
                 myCopy = aggregateArray.slice();
-            } else if (typeof aggregateArray === 'string') {
-                myCopy = aggregateArray.replace(/,/g, " ").split(/\s+/).map(function (s) {
-                    return +s;
-                }).filter(function (v) {
-                    return v > 0;
-                });
             } else {
 
                 /* istanbul ignore next */
