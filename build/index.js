@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-exports.Pool = exports.KaplanSniperAgent = exports.MidpointAgent = exports.OneupmanshipAgent = exports.UnitAgent = exports.ZIAgent = exports.Trader = exports.Agent = undefined;
+exports.Pool = exports.KaplanSniperAgent = exports.MidpointAgent = exports.OneupmanshipAgent = exports.UnitAgent = exports.ZIAgent = exports.HoarderAgent = exports.TruthfulAgent = exports.Trader = exports.Agent = undefined;
 
 var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
 
@@ -32,6 +32,7 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 var privateNextId = 1;
+
 function nextId() {
     return privateNextId++;
 }
@@ -505,8 +506,73 @@ var Trader = exports.Trader = function (_Agent) {
  * 
  */
 
-var ZIAgent = exports.ZIAgent = function (_Trader) {
-    _inherits(ZIAgent, _Trader);
+var TruthfulAgent = exports.TruthfulAgent = function (_Trader) {
+    _inherits(TruthfulAgent, _Trader);
+
+    /**
+     * creates "Truthful" robot agent that always sends bids at marginalValue or asks at marginalCost
+     *
+     * @param {Object} [options] passed to Trader and Agent constructors
+     *
+     */
+
+    function TruthfulAgent(options) {
+        _classCallCheck(this, TruthfulAgent);
+
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(TruthfulAgent).call(this, Object.assign({}, { description: 'Truthful Agent bids=value or asks=cost' }, options)));
+    }
+
+    _createClass(TruthfulAgent, [{
+        key: 'bidPrice',
+        value: function bidPrice(marginalValue) {
+            if (typeof marginalValue !== 'number') return undefined;
+            return this.integer ? Math.floor(marginalValue) : marginalValue;
+        }
+    }, {
+        key: 'askPrice',
+        value: function askPrice(marginalCost) {
+            if (typeof marginalCost !== 'number') return undefined;
+            return this.integer ? Math.ceil(marginalCost) : marginalCost;
+        }
+    }]);
+
+    return TruthfulAgent;
+}(Trader);
+
+var HoarderAgent = exports.HoarderAgent = function (_Trader2) {
+    _inherits(HoarderAgent, _Trader2);
+
+    /**
+     * creates "Hoarder" robot agent that always buys 1 unit at the current asking price.
+     * Hoarder agent never sells units, and disregards marginalValue, and so will sometimes overpay relative to value.
+     * Hoarder does not interact with an empty market.
+     *
+     */
+
+    function HoarderAgent(options) {
+        _classCallCheck(this, HoarderAgent);
+
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(HoarderAgent).call(this, Object.assign({}, { description: 'Hoarder Agent always bids the current asking price and never asks' }, options)));
+    }
+
+    _createClass(HoarderAgent, [{
+        key: 'bidPrice',
+        value: function bidPrice(marginalValue, market) {
+            var currentAskPrice = market.currentAskPrice();
+            if (currentAskPrice > 0) return currentAskPrice; // Hoarder will send order to buy 1 unit at the current asking price
+        }
+    }, {
+        key: 'askPrice',
+        value: function askPrice() {
+            return undefined; // Hoarder never sells
+        }
+    }]);
+
+    return HoarderAgent;
+}(Trader);
+
+var ZIAgent = exports.ZIAgent = function (_Trader3) {
+    _inherits(ZIAgent, _Trader3);
 
     /**
      * creates "Zero Intelligence" robot agent similar to those described in Gode and Sunder (1993)
@@ -694,8 +760,8 @@ var UnitAgent = exports.UnitAgent = function (_ZIAgent) {
  *
  */
 
-var OneupmanshipAgent = exports.OneupmanshipAgent = function (_Trader2) {
-    _inherits(OneupmanshipAgent, _Trader2);
+var OneupmanshipAgent = exports.OneupmanshipAgent = function (_Trader4) {
+    _inherits(OneupmanshipAgent, _Trader4);
 
     /**
      * create OneupmanshipAgent 
@@ -764,8 +830,8 @@ var OneupmanshipAgent = exports.OneupmanshipAgent = function (_Trader2) {
  * 
  */
 
-var MidpointAgent = exports.MidpointAgent = function (_Trader3) {
-    _inherits(MidpointAgent, _Trader3);
+var MidpointAgent = exports.MidpointAgent = function (_Trader5) {
+    _inherits(MidpointAgent, _Trader5);
 
     function MidpointAgent(options) {
         _classCallCheck(this, MidpointAgent);
@@ -842,8 +908,8 @@ var MidpointAgent = exports.MidpointAgent = function (_Trader3) {
  *      for discussion of Kaplan's Sniper traders on pp. 4-5
  */
 
-var KaplanSniperAgent = exports.KaplanSniperAgent = function (_Trader4) {
-    _inherits(KaplanSniperAgent, _Trader4);
+var KaplanSniperAgent = exports.KaplanSniperAgent = function (_Trader6) {
+    _inherits(KaplanSniperAgent, _Trader6);
 
     /**
      * Create KaplanSniperAgent

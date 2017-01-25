@@ -4,7 +4,7 @@ import assert from 'assert';
 import "should";
 import * as MarketAgents from "../src/index.js";
 
-const {Agent,ZIAgent,Pool,UnitAgent,OneupmanshipAgent,MidpointAgent,KaplanSniperAgent} = MarketAgents;
+const {Agent,ZIAgent,Pool,UnitAgent,OneupmanshipAgent,MidpointAgent,TruthfulAgent,HoarderAgent,KaplanSniperAgent} = MarketAgents;
 
 /**  @test {MarketAgents} */
 
@@ -835,6 +835,63 @@ describe('new MidpointAgent', function(){
     });
 });
 
+
+describe('new TruthfulAgent', function(){
+    it('should not bid if marginalValue is undefined', function(){
+        const bid = new TruthfulAgent().bidPrice(undefined);
+        assert.ok(typeof(bid)==='undefined');
+    });
+    it('should bid 30 if marginalValue is 30', function(){
+        new TruthfulAgent().bidPrice(30).should.equal(30);
+    });
+    it('should bid 40 if marginalValue is 40', function(){
+        new TruthfulAgent().bidPrice(40).should.equal(40);
+    });
+    it('should bid 50 if marginalValue is 50', function(){
+        new TruthfulAgent().bidPrice(50).should.equal(50);
+    });
+    it('should bid 44.5 if marginalValue is 44.5 and integer is false', function(){
+        new TruthfulAgent({integer:false}).bidPrice(44.5).should.equal(44.5);
+    });
+    it('should bid 44 if marginalValue is 44.5 and integer is true', function(){
+        new TruthfulAgent({integer:true}).bidPrice(44.5).should.equal(44);
+    });
+    it('should ask 30 if marginalCost is 30', function(){
+        new TruthfulAgent().askPrice(30).should.equal(30);
+    });
+    it('should ask 40 if marginalCost is 40', function(){
+        new TruthfulAgent().askPrice(40).should.equal(40);
+    });
+    it('should ask 50 if marginalCost is 50', function(){
+        new TruthfulAgent().askPrice(50).should.equal(50);
+    });
+    it('should ask 56 if marginalCost is 55.25 and integer is true', function(){
+        new TruthfulAgent({integer:true}).askPrice(55.25).should.equal(56);
+    });
+    it('should ask 55.25 if marginalCost is 55.25 and integer is false', function(){
+        new TruthfulAgent({integer:false}).askPrice(55.25).should.equal(55.25);
+    });
+});
+
+describe('new HoarderAgent', function(){
+    it('should not bid if currentAskPrice is undefined', function(){
+        const bid = (new HoarderAgent()
+                     .bidPrice(100, {currentAskPrice:(()=>undefined)})
+                    );
+        assert.ok(typeof(bid)==='undefined');
+    });
+    it('should bid 75 if market.currentAskPrice is 75 even if marginalValue is 50', function(){
+        const bid = (new HoarderAgent()
+                     .bidPrice(50, {currentAskPrice:(()=>75)})
+                    );
+        bid.should.equal(75);
+    });
+    it('should return undefined for ask', function(){
+        const ask = (new HoarderAgent()
+                     .askPrice(20));
+        assert.ok(typeof(ask)==='undefined');
+    });
+});
 
 describe('new KaplanSniperAgent', function(){
     // eslint-disable-next-line max-params

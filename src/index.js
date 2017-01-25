@@ -3,6 +3,7 @@ import {EventEmitter} from 'events';
 import * as ProbJS from 'prob.js';
 
 let privateNextId = 1;
+
 function nextId(){ return privateNextId++; }
 
 function sum(a){
@@ -436,6 +437,56 @@ export class Trader extends Agent {
  *    Gode,  Dhananjay  K.,  and  S.  Sunder.  [1997a].  ‘What  makes  markets  allocationally  efficient?’  Quarterly Journal of Economics, vol. 112 (May), pp.603-630. 
  * 
  */
+
+export class TruthfulAgent extends Trader {
+
+    /**
+     * creates "Truthful" robot agent that always sends bids at marginalValue or asks at marginalCost
+     *
+     * @param {Object} [options] passed to Trader and Agent constructors
+     *
+     */
+    
+    constructor(options){
+        super(Object.assign({}, {description: 'Truthful Agent bids=value or asks=cost'}, options));
+    }
+
+    bidPrice(marginalValue){
+        if (typeof(marginalValue)!=='number') return undefined;
+        return (this.integer)? Math.floor(marginalValue): marginalValue;
+    }
+
+    askPrice(marginalCost){
+        if (typeof(marginalCost)!=='number') return undefined;
+        return (this.integer)? Math.ceil(marginalCost): marginalCost;
+    }
+    
+}
+
+export class HoarderAgent extends Trader {
+
+    /**
+     * creates "Hoarder" robot agent that always buys 1 unit at the current asking price.
+     * Hoarder agent never sells units, and disregards marginalValue, and so will sometimes overpay relative to value.
+     * Hoarder does not interact with an empty market.
+     *
+     */
+
+    constructor(options){
+        super(Object.assign({}, {description: 'Hoarder Agent always bids the current asking price and never asks'}, options));
+    }
+
+    bidPrice(marginalValue, market){
+        const currentAskPrice = market.currentAskPrice();
+        if (currentAskPrice>0)
+            return currentAskPrice; // Hoarder will send order to buy 1 unit at the current asking price
+    }
+
+    askPrice(){
+        return undefined; // Hoarder never sells
+    }
+}
+    
 
 export class ZIAgent extends Trader {
 
