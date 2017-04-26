@@ -425,19 +425,6 @@ export class Trader extends Agent {
 
 }
 
-/**
- * a reimplementation of Gode and Sunder's "Zero Intelligence" robots, as described in the economics research literature.
- * 
- * see 
- *
- *    Gode,  Dhananjay  K.,  and  S.  Sunder.  [1993].  ‘Allocative  efficiency  of  markets  with  zero-intelligence  traders:  Market  as  a  partial  substitute  for  individual  rationality.’    Journal  of  Political  Economy, vol. 101, pp.119-137. 
- *
- *    Gode, Dhananjay K., and S. Sunder. [1993b]. ‘Lower bounds for efficiency of surplus extraction in double auctions.’  In  Friedman,  D.  and  J.  Rust  (eds).  The  Double  Auction  Market:  Institutions,  Theories,  and Evidence,  pp. 199-219.
- *
- *    Gode,  Dhananjay  K.,  and  S.  Sunder.  [1997a].  ‘What  makes  markets  allocationally  efficient?’  Quarterly Journal of Economics, vol. 112 (May), pp.603-630. 
- * 
- */
-
 export class TruthfulAgent extends Trader {
 
     /**
@@ -486,7 +473,19 @@ export class HoarderAgent extends Trader {
         return undefined; // Hoarder never sells
     }
 }
-    
+
+/**
+ * a reimplementation of Gode and Sunder's "Zero Intelligence" robots, as described in the economics research literature.
+ * 
+ * see 
+ *
+ *    Gode,  Dhananjay  K.,  and  S.  Sunder.  [1993].  ‘Allocative  efficiency  of  markets  with  zero-intelligence  traders:  Market  as  a  partial  substitute  for  individual  rationality.’    Journal  of  Political  Economy, vol. 101, pp.119-137. 
+ *
+ *    Gode, Dhananjay K., and S. Sunder. [1993b]. ‘Lower bounds for efficiency of surplus extraction in double auctions.’  In  Friedman,  D.  and  J.  Rust  (eds).  The  Double  Auction  Market:  Institutions,  Theories,  and Evidence,  pp. 199-219.
+ *
+ *    Gode,  Dhananjay  K.,  and  S.  Sunder.  [1997a].  ‘What  makes  markets  allocationally  efficient?’  Quarterly Journal of Economics, vol. 112 (May), pp.603-630. 
+ * 
+ */
 
 export class ZIAgent extends Trader {
 
