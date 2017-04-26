@@ -1,6 +1,6 @@
 {
   "name": "market-agents",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "pool of heterogeneous robot trading agents for economic or financial simulations",
   "main": "build/index.js",
   "jsnext:main": "src/index.js",
