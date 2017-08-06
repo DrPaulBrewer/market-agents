@@ -905,8 +905,13 @@ describe('new KaplanSniperAgent', function(){
             "correct: "+correctValue;
         market.currentBidPrice = function(){ return agentInfo.currentBidPrice; };
         market.currentAskPrice = function(){ return agentInfo.currentAskPrice; };
-        a.getJuicyBidPrice = function(){ return agentInfo.juicyBidPrice; };
-        a.getJuicyAskPrice = function(){ return agentInfo.juicyAskPrice; };
+        market.previousPeriod = function(prop){
+            if (prop==='high')
+                return agentInfo.juicyBidPrice;
+            if (prop==='low')
+                return agentInfo.juicyAskPrice;
+            return undefined;
+        };
         if (correctValue===undefined)
             assert.strictEqual(typeof(a[call](param, market)), "undefined", message);
         else
@@ -1025,9 +1030,10 @@ describe('new KaplanSniperAgent', function(){
         let market = {
             currentBidPrice(){ return undefined; },
 
-            currentAskPrice(){ return 70; }
+            currentAskPrice(){ return 70; },
+
+            previousPeriod(prop){ if (prop==='high') return 150; }
         };
-        a.getJuicyBidPrice = function(){ return 150; };
         for(let i=1,l=100;i<l;++i)
             assert(typeof(a.askPrice(i, market))==='undefined');
     });
@@ -1277,10 +1283,12 @@ describe('new Pool', function(){
         let market =  {
             goods: "X",
             currentBidPrice(){ return currentBid; },
-            currentAskPrice(){ return currentAsk; }
+            currentAskPrice(){ return currentAsk; },
+            previousPeriod(prop){
+                if (prop==='high') return 101;
+                if (prop==='low') return 1;
+            }
         };
-        function getJuicyBidPrice(){ return 101; }
-        function getJuicyAskPrice(){ return 1; }
         function ask(mymarket, price){ 
             askCount++;
             mymarket.goods.should.equal("X");
@@ -1307,8 +1315,6 @@ describe('new Pool', function(){
                     costs: {'X': [2*i+1] }
                 }
             );
-            A[i].getJuicyBidPrice = getJuicyBidPrice;
-            A[i].getJuicyAskPrice = getJuicyAskPrice;
             A[i].bid = bid;
             A[i].ask = ask;
             A[i].id.should.equal(i);
@@ -1325,8 +1331,6 @@ describe('new Pool', function(){
                     values: {'X': [2*(i-50)+1]}
                 }
             );
-            A[i].getJuicyBidPrice = getJuicyBidPrice;
-            A[i].getJuicyAskPrice = getJuicyAskPrice;
             A[i].bid = bid;
             A[i].ask = ask;
             A[i].id.should.equal(i);
@@ -1345,7 +1349,7 @@ describe('new Pool', function(){
         agentAskLog.forEach(function(L,j){
             if (j===0) return;
             if (j<50){ 
-                let minT = 2000-(3.0/A[j].rate);
+                let minT = 2000-(A[j].nearEndOfPeriod/A[j].rate);
                 L.forEach(function(tAsk){ 
                     tAsk.should.be.above(minT);
                 });
@@ -1358,7 +1362,7 @@ describe('new Pool', function(){
             if (j<50){ 
                 L.length.should.equal(0); 
             } else {
-                let minT = 2000-(3.0/A[j].rate);
+                let minT = 2000-(A[j].nearEndOfPeriod/A[j].rate);
                 L.forEach(function(tBid){ 
                     tBid.should.be.above(minT);
                 });

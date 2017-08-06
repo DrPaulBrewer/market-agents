@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-exports.Pool = exports.KaplanSniperAgent = exports.MidpointAgent = exports.OneupmanshipAgent = exports.UnitAgent = exports.ZIAgent = exports.HoarderAgent = exports.TruthfulAgent = exports.Trader = exports.Agent = undefined;
+exports.Pool = exports.KaplanSniperAgent = exports.Sniper = exports.MidpointAgent = exports.OneupmanshipAgent = exports.UnitAgent = exports.ZIAgent = exports.HoarderAgent = exports.TruthfulAgent = exports.Trader = exports.Agent = undefined;
 
 var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
 
@@ -897,6 +897,54 @@ var MidpointAgent = exports.MidpointAgent = function (_Trader5) {
     return MidpointAgent;
 }(Trader);
 
+var Sniper = exports.Sniper = function (_Trader6) {
+    _inherits(Sniper, _Trader6);
+
+    function Sniper(options) {
+        _classCallCheck(this, Sniper);
+
+        var defaults = {
+            buyOnCloseTime: 0,
+            sellOnCloseTime: 0
+        };
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(Sniper).call(this, Object.assign({}, defaults, options)));
+    }
+
+    _createClass(Sniper, [{
+        key: 'buyNow',
+        value: function buyNow() {
+            throw new Error("buyNow() remains abstract");
+        }
+    }, {
+        key: 'sellNow',
+        value: function sellNow() {
+            throw new Error("sellNow() remains abstract");
+        }
+    }, {
+        key: 'bidPrice',
+        value: function bidPrice(marginalValue, market) {
+            if (typeof marginalValue !== 'number') return undefined;
+            var currentAsk = market.currentAskPrice();
+            if (currentAsk <= marginalValue) {
+                if (this.buyNow(marginalValue, market)) return currentAsk;
+                if (this.buyOnCloseTime > 0 && this.wakeTime >= this.buyOnCloseTime) return currentAsk;
+            }
+        }
+    }, {
+        key: 'askPrice',
+        value: function askPrice(marginalCost, market) {
+            if (typeof marginalCost !== 'number') return undefined;
+            var currentBid = market.currentBidPrice();
+            if (currentBid >= marginalCost) {
+                if (this.sellNow(marginalCost, market)) return currentBid;
+                if (this.sellOnCloseTime > 0 && this.wakeTime >= this.sellOnCloseTime) return currentBid;
+            }
+        }
+    }]);
+
+    return Sniper;
+}(Trader);
+
 /**
  * a reimplementation of a Kaplan Sniper Agent (JavaScript implementation by Paul Brewer)
  *
@@ -908,8 +956,8 @@ var MidpointAgent = exports.MidpointAgent = function (_Trader5) {
  *      for discussion of Kaplan's Sniper traders on pp. 4-5
  */
 
-var KaplanSniperAgent = exports.KaplanSniperAgent = function (_Trader6) {
-    _inherits(KaplanSniperAgent, _Trader6);
+var KaplanSniperAgent = exports.KaplanSniperAgent = function (_Sniper) {
+    _inherits(KaplanSniperAgent, _Sniper);
 
     /**
      * Create KaplanSniperAgent
@@ -923,7 +971,8 @@ var KaplanSniperAgent = exports.KaplanSniperAgent = function (_Trader6) {
 
         var defaults = {
             description: "Kaplan's snipers, trade on 'juicy' price, or low spread, or end of period",
-            desiredSpread: 10
+            desiredSpread: 10,
+            nearEndOfPeriod: 10
         };
         return _possibleConstructorReturn(this, Object.getPrototypeOf(KaplanSniperAgent).call(this, Object.assign({}, defaults, options)));
     }
@@ -937,73 +986,35 @@ var KaplanSniperAgent = exports.KaplanSniperAgent = function (_Trader6) {
      * (B) when spread = (market ask price - market bid price) is less than or equal to agent's desiredSpread (default: 10)
      * (C) when period is ending
      *
-     * @param {number} marginalValue The marginal value of redeeming the next unit.  Sets the maximum price for trading.
-     * @param {Object} market The market for which a bid is being prepared.  An object with currentBidPrice() and currentAskPrice() methods.
-     * @return {number|undefined} agent's buy prce or undefined
      */
 
     _createClass(KaplanSniperAgent, [{
-        key: 'bidPrice',
-        value: function bidPrice(marginalValue, market) {
-            if (typeof marginalValue !== 'number') return undefined;
+        key: 'isLowSpread',
+        value: function isLowSpread(market) {
             var currentBid = market.currentBidPrice();
             var currentAsk = market.currentAskPrice();
-
-            // a trade can only occur if currentAsk <= marginalValue
-            if (currentAsk <= marginalValue) {
-
-                // snipe if ask price is less than or equal to juicy ask price
-                var juicyPrice = this.getJuicyAskPrice();
-                if (juicyPrice > 0 && currentAsk <= juicyPrice) return currentAsk;
-
-                // snipe if low bid ask spread 
-                if (currentAsk > 0 && currentBid > 0 && currentAsk - currentBid <= this.desiredSpread) return currentAsk;
-
-                // snipe if period end is three wakes away or less
-                if (this.poissonWakesRemainingInPeriod() <= 3) return currentAsk;
-            }
-            // otherwise return undefined
+            return currentAsk > 0 && currentBid > 0 && currentAsk - currentBid <= this.desiredSpread;
         }
-
-        /**
-         * Calculates price this agent is willing to accept.
-         * The returned price always equals either undefined or the price of market.currentBid(), triggering an immediate trade.
-         * 
-         * The KaplanSniperAgent will sell, if marginalCost<=market.currentBidPrice,  during one of three conditions:
-         * (A) market bid price is greater than or equal to .getJuicyBidPrice(), which needs to be set at the simulation level to the previous period high trade price
-         * (B) when spread = (market ask price - market bid price) is less than or equal to agent's desiredSpread (default: 10)
-         * (C) when period is ending
-         *
-         * @param {number} marginalCost The marginal cost of producing the next unit.  Sets the minimum price for trading.
-         * @param {Object} market The market for which an ask is being prepared.  An object with currentBidPrice() and currentAskPrice() methods.
-         * @return {number|undefined} agent's sell price or undefined
-         */
-
     }, {
-        key: 'askPrice',
-        value: function askPrice(marginalCost, market) {
-            if (typeof marginalCost !== 'number') return undefined;
-            var currentBid = market.currentBidPrice();
-            var currentAsk = market.currentAskPrice();
-            // only trade if currentBid >= marginalCost
-            if (currentBid >= marginalCost) {
-
-                // snipe if bid price is greater than or equal to juicy bid price
-                var juicyPrice = this.getJuicyBidPrice();
-                if (juicyPrice > 0 && currentBid >= juicyPrice) return currentBid;
-
-                // snipe if low bid ask spread
-                if (currentAsk > 0 && currentBid > 0 && currentAsk - currentBid <= this.desiredSpread) return currentBid;
-
-                // snipe if period end is three wakes away or less
-                if (this.poissonWakesRemainingInPeriod() <= 3) return currentBid;
-            }
-            // otherwise return undefined
+        key: 'buyNow',
+        value: function buyNow(marginalValue, market) {
+            var isJuicyPrice = market.currentAskPrice() <= market.previousPeriod('low');
+            if (isJuicyPrice) return true;
+            if (this.isLowSpread(market)) return true;
+            if (this.poissonWakesRemainingInPeriod() <= this.nearEndOfPeriod) return true;
+        }
+    }, {
+        key: 'sellNow',
+        value: function sellNow(marginalCost, market) {
+            var isJuicyPrice = market.currentBidPrice() >= market.previousPeriod('high');
+            if (isJuicyPrice) return true;
+            if (this.isLowSpread(market)) return true;
+            if (this.poissonWakesRemainingInPeriod() <= this.nearEndOfPeriod) return true;
         }
     }]);
 
     return KaplanSniperAgent;
-}(Trader);
+}(Sniper);
 
 /**
  * Pool for managing a collection of agents.  

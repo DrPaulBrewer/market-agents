@@ -789,6 +789,43 @@ export class MidpointAgent extends Trader {
 }
 
 
+export class Sniper extends Trader {
+    constructor(options){
+        const defaults = {
+            buyOnCloseTime: 0,
+            sellOnCloseTime: 0
+        };
+        super(Object.assign({}, defaults, options));
+    }
+
+    buyNow(){
+        throw new Error("buyNow() remains abstract");
+    }
+
+    sellNow(){
+        throw new Error("sellNow() remains abstract");
+    }
+
+    bidPrice(marginalValue, market){
+        if (typeof(marginalValue)!=='number') return undefined;
+        const currentAsk = market.currentAskPrice();
+        if (currentAsk <= marginalValue){
+            if (this.buyNow(marginalValue, market)) return currentAsk;
+            if ((this.buyOnCloseTime>0) && (this.wakeTime>=this.buyOnCloseTime)) return currentAsk;
+        }
+    }
+
+    askPrice(marginalCost, market){
+        if (typeof(marginalCost)!=='number') return undefined;
+        const currentBid = market.currentBidPrice();
+        if (currentBid >= marginalCost){
+            if (this.sellNow(marginalCost, market)) return currentBid;
+            if ((this.sellOnCloseTime>0) && (this.wakeTime>=this.sellOnCloseTime)) return currentBid;
+        }
+    }
+
+}
+
 /**
  * a reimplementation of a Kaplan Sniper Agent (JavaScript implementation by Paul Brewer)
  *
@@ -800,7 +837,7 @@ export class MidpointAgent extends Trader {
  *      for discussion of Kaplan's Sniper traders on pp. 4-5
  */
 
-export class KaplanSniperAgent extends Trader {
+export class KaplanSniperAgent extends Sniper {
 
     /**
      * Create KaplanSniperAgent
@@ -812,7 +849,8 @@ export class KaplanSniperAgent extends Trader {
     constructor(options){
         const defaults = {
             description: "Kaplan's snipers, trade on 'juicy' price, or low spread, or end of period",
-            desiredSpread: 10
+            desiredSpread: 10,
+            nearEndOfPeriod: 10
         };
         super(Object.assign({}, defaults, options));
     }
@@ -826,71 +864,28 @@ export class KaplanSniperAgent extends Trader {
      * (B) when spread = (market ask price - market bid price) is less than or equal to agent's desiredSpread (default: 10)
      * (C) when period is ending
      *
-     * @param {number} marginalValue The marginal value of redeeming the next unit.  Sets the maximum price for trading.
-     * @param {Object} market The market for which a bid is being prepared.  An object with currentBidPrice() and currentAskPrice() methods.
-     * @return {number|undefined} agent's buy prce or undefined
      */
+
+    isLowSpread(market){
+        const currentBid = market.currentBidPrice();
+        const currentAsk = market.currentAskPrice();
+        return ((currentAsk>0) && (currentBid>0) && ((currentAsk-currentBid)<=this.desiredSpread));
+    }
     
-    bidPrice(marginalValue, market){
-        if (typeof(marginalValue)!=='number') return undefined;
-        const currentBid = market.currentBidPrice();
-        const currentAsk = market.currentAskPrice();
-        
-        // a trade can only occur if currentAsk <= marginalValue
-        if (currentAsk <= marginalValue){
-            
-            // snipe if ask price is less than or equal to juicy ask price
-            const juicyPrice = this.getJuicyAskPrice();
-            if ((juicyPrice>0) && (currentAsk<=juicyPrice))
-                return currentAsk;
-
-            // snipe if low bid ask spread 
-            if ((currentAsk>0) && (currentBid>0) && ((currentAsk-currentBid)<=this.desiredSpread))
-                return currentAsk;
-
-            // snipe if period end is three wakes away or less
-            if (this.poissonWakesRemainingInPeriod()<=3)
-                return currentAsk;
-        }
-        // otherwise return undefined
+    buyNow(marginalValue, market){
+        const isJuicyPrice = (market.currentAskPrice() <= market.previousPeriod('low'));
+        if (isJuicyPrice) return true;
+        if (this.isLowSpread(market)) return true;
+	if (this.poissonWakesRemainingInPeriod()<=this.nearEndOfPeriod) return true;
+    }   
+    
+    sellNow(marginalCost, market){
+        const isJuicyPrice = (market.currentBidPrice() >= market.previousPeriod('high'));
+        if (isJuicyPrice) return true;
+        if (this.isLowSpread(market)) return true;
+	if (this.poissonWakesRemainingInPeriod()<=this.nearEndOfPeriod) return true;
     }
-
-    /**
-     * Calculates price this agent is willing to accept.
-     * The returned price always equals either undefined or the price of market.currentBid(), triggering an immediate trade.
-     * 
-     * The KaplanSniperAgent will sell, if marginalCost<=market.currentBidPrice,  during one of three conditions:
-     * (A) market bid price is greater than or equal to .getJuicyBidPrice(), which needs to be set at the simulation level to the previous period high trade price
-     * (B) when spread = (market ask price - market bid price) is less than or equal to agent's desiredSpread (default: 10)
-     * (C) when period is ending
-     *
-     * @param {number} marginalCost The marginal cost of producing the next unit.  Sets the minimum price for trading.
-     * @param {Object} market The market for which an ask is being prepared.  An object with currentBidPrice() and currentAskPrice() methods.
-     * @return {number|undefined} agent's sell price or undefined
-     */
-
-    askPrice(marginalCost, market){
-        if (typeof(marginalCost)!=='number') return undefined;
-        const currentBid = market.currentBidPrice();
-        const currentAsk = market.currentAskPrice();
-        // only trade if currentBid >= marginalCost
-        if (currentBid >= marginalCost){
-            
-            // snipe if bid price is greater than or equal to juicy bid price
-            const juicyPrice = this.getJuicyBidPrice();
-            if ((juicyPrice>0) && (currentBid>=juicyPrice))
-                return currentBid;
-
-            // snipe if low bid ask spread
-            if ((currentAsk>0) && (currentBid>0) && ((currentAsk-currentBid)<=this.desiredSpread))
-                return currentBid;
-
-            // snipe if period end is three wakes away or less
-            if (this.poissonWakesRemainingInPeriod()<=3)
-                return currentBid;
-        }
-        // otherwise return undefined
-    }
+ 
 }
 
 /**
