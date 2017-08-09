@@ -4,7 +4,7 @@ import assert from 'assert';
 import "should";
 import * as MarketAgents from "../src/index.js";
 
-const {Agent,ZIAgent,Pool,UnitAgent,OneupmanshipAgent,MidpointAgent,TruthfulAgent,HoarderAgent,KaplanSniperAgent} = MarketAgents;
+const {Agent,ZIAgent,Pool,UnitAgent,OneupmanshipAgent,MidpointAgent,TruthfulAgent,HoarderAgent,KaplanSniperAgent, MedianSniperAgent} = MarketAgents;
 
 /**  @test {MarketAgents} */
 
@@ -14,7 +14,7 @@ describe('MarketAgents', function(){
         MarketAgents.should.be.type('object');
     });
 
-    let props = ['Agent','ZIAgent','UnitAgent','MidpointAgent','KaplanSniperAgent','Pool'];
+    let props = ['Agent','ZIAgent','UnitAgent','MidpointAgent','KaplanSniperAgent','MedianSniperAgent','Pool'];
 
     it('should have properties '+props.join(" "), function(){
         MarketAgents.should.have.properties(props);
