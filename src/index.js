@@ -888,6 +888,35 @@ export class KaplanSniperAgent extends Sniper {
  
 }
 
+export class MedianSniperAgent extends Sniper {
+
+    /**
+     * Create MedianSniperAgent
+     *
+     * @param {Object} [options] options passed to Trader and Agent constructors
+     */
+
+    constructor(options){
+        const defaults = {
+            description: "Median snipers, trade on price better than previous period median, or at end of period",
+            nearEndOfPeriod: 10
+        };
+        super(Object.assign({}, defaults, options));
+    }
+    
+    buyNow(marginalValue, market){
+        if (market.currentAskPrice() <= market.previousPeriod('median')) return true;
+	if (this.poissonWakesRemainingInPeriod()<=this.nearEndOfPeriod) return true;
+    }   
+    
+    sellNow(marginalCost, market){
+	if (market.currentBidPrice() >= market.previousPeriod('median')) return true;
+	if (this.poissonWakesRemainingInPeriod()<=this.nearEndOfPeriod) return true;
+    }
+ 
+}
+
+
 /**
  * Pool for managing a collection of agents.  
  * Agents may belong to multiple pools.

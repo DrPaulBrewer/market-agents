@@ -4,7 +4,7 @@ import assert from 'assert';
 import "should";
 import * as MarketAgents from "../src/index.js";
 
-const {Agent,ZIAgent,Pool,UnitAgent,OneupmanshipAgent,MidpointAgent,TruthfulAgent,HoarderAgent,KaplanSniperAgent} = MarketAgents;
+const {Agent,ZIAgent,Pool,UnitAgent,OneupmanshipAgent,MidpointAgent,TruthfulAgent,HoarderAgent,KaplanSniperAgent, MedianSniperAgent} = MarketAgents;
 
 /**  @test {MarketAgents} */
 
@@ -14,7 +14,7 @@ describe('MarketAgents', function(){
         MarketAgents.should.be.type('object');
     });
 
-    let props = ['Agent','ZIAgent','UnitAgent','MidpointAgent','KaplanSniperAgent','Pool'];
+    let props = ['Agent','ZIAgent','UnitAgent','MidpointAgent','KaplanSniperAgent','MedianSniperAgent','Pool'];
 
     it('should have properties '+props.join(" "), function(){
         MarketAgents.should.have.properties(props);
@@ -1077,6 +1077,149 @@ describe('new KaplanSniperAgent', function(){
     });
 });
     
+describe('new MedianSniperAgent', function(){
+    // eslint-disable-next-line max-params
+    function testMedianSniperAgent(agentConfig, agentInfo, call, param, correctValue){
+        let a = new MedianSniperAgent(agentConfig);
+        let market = {};
+        let message = "config: "+JSON.stringify(agentConfig)+"\n"+
+            "info: "+JSON.stringify(agentInfo)+"\n"+
+            "call: "+call+"\n"+
+            "param: "+param+"\n"+
+            "correct: "+correctValue;
+        market.currentBidPrice = function(){ return agentInfo.currentBidPrice; };
+        market.currentAskPrice = function(){ return agentInfo.currentAskPrice; };
+        market.previousPeriod = function(prop){
+            if (prop==='median') return agentInfo.previousMedian;
+            return undefined;
+        };
+        if (correctValue===undefined)
+            assert.strictEqual(typeof(a[call](param, market)), "undefined", message);
+        else
+            assert.strictEqual(a[call](param, market), correctValue, message);
+    }
+
+   it('should have properties id, description, inventory, wakeTime, rate, nextWake, period with proper types',
+       function(){ 
+           let myAgent = new MedianSniperAgent();
+           myAgent.should.be.type('object');
+           myAgent.should.have.properties('id','description','inventory','wakeTime','rate','nextWake','period');
+           myAgent.id.should.be.type('number');
+           myAgent.description.should.be.type('string');
+           myAgent.inventory.should.be.type('object');
+           myAgent.wakeTime.should.be.type('number');
+           myAgent.rate.should.be.type('number');
+           myAgent.nextWake.should.be.type('function');
+           myAgent.period.should.be.type('object');
+       });
+    
+    it('should have properties markets, values, costs, minPrice, maxPrice with proper types', function(){
+        let a = new MedianSniperAgent();
+        a.should.have.properties('markets','values','costs','minPrice','maxPrice');
+        a.markets.should.be.type('object');
+        a.values.should.be.type('object');
+        a.costs.should.be.type('object');
+        a.minPrice.should.be.type('number');
+        a.maxPrice.should.be.type('number');
+    });
+
+    it('should not call this.bid() or this.ask() on this.wake() if values and costs not configured', function(){
+        let a = new MedianSniperAgent();
+        let wakes=0,bids=0,asks=0;
+        a.on('wake', function(){ wakes++; });
+        a.bid = function(){ bids++; };
+        a.ask = function(){ asks++; };
+        a.wake();
+        wakes.should.equal(1);
+        bids.should.equal(0);
+        asks.should.equal(0);
+    });
+
+    it('this.bidPrice and this.askPrice return undefined if input value is undefined, irregardless of integer setting',
+       function(){
+           let flags = [0,1];
+           flags.forEach(function(f){
+               let a = new MedianSniperAgent({minPrice:10, maxPrice:90, integer:f});
+               assert.ok(typeof(a.bidPrice())==='undefined');
+               assert.ok(typeof(a.askPrice())==='undefined');
+           });
+       });
+
+    it('this.bidPrice and this.askPrice should throw on valid input if special getter functions do not exist', function(){
+        function callBidPriceWithNoGetters(){
+            let a = new MedianSniperAgent({minPrice:10, maxPrice:90});
+            a.bidPrice(50);
+        }
+        function callAskPriceWithNoGetters(){
+            let a = new MedianSniperAgent({minPrice:10, maxPrice:90});
+            a.askPrice(60);
+        }
+        callBidPriceWithNoGetters.should.throw(); 
+        callAskPriceWithNoGetters.should.throw(); 
+    });
+
+    it('.bidPrice is undefined if currentAsk undefined', function(){
+        for(let i=1,l=100;i<l;++i)
+            testMedianSniperAgent({},
+                                  {
+                                      currentBidPrice: 10,
+                                      previousMedian: 40
+                                  },
+                                  "bidPrice",
+                                  i,
+                                  undefined);
+    });
+
+    it('.bidPrice(MV) equals currentAsk===50 iff 50<=previousMedian and 50<=MV',function(){
+        let shouldBe50;
+        for(let marginalValue=1;marginalValue<100;++marginalValue)
+            for(let previousMedian=1;previousMedian<100;++previousMedian){
+                shouldBe50 = (50<=previousMedian) && (50<=marginalValue); // eslint-disable-line yoda
+                testMedianSniperAgent({},
+                                      {
+                                          currentAskPrice: 50,
+                                          previousMedian
+                                      },
+                                      "bidPrice",
+                                      marginalValue,
+                                      (shouldBe50? 50: undefined)
+                                     );
+            }
+    }); 
+
+
+    it('.askPrice is undefined if currentBid undefined', function(){
+        let a = new KaplanSniperAgent();
+        let market = {
+            currentBidPrice(){ return undefined; },
+
+            currentAskPrice(){ return 70; },
+
+            previousPeriod(prop){ if (prop==='median') return 150; }
+        };
+        for(let i=1,l=100;i<l;++i)
+            assert(typeof(a.askPrice(i, market))==='undefined');
+    });
+
+    it('.askPrice(MC) equals currentBid===60 iff previousMedian>=60 and MC<=60',function(){
+        let shouldBe60;
+        for(let marginalCost=1;marginalCost<100;++marginalCost)
+            for(let previousMedian=1;previousMedian<100;++previousMedian){
+                shouldBe60 = (previousMedian<=60) && (marginalCost<=60);
+                testMedianSniperAgent({},
+                                      {
+                                          currentBidPrice: 60,
+                                          previousMedian
+                                      },
+                                      "askPrice",
+                                      marginalCost,
+                                      (shouldBe60? 60: undefined)
+                                     );
+            }
+    }); 
+});
+
+
 describe('new Pool', function(){
     it('new Pool() initially has no agents', function(){
         let myPool = new Pool();
