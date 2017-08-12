@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-exports.Pool = exports.KaplanSniperAgent = exports.Sniper = exports.MidpointAgent = exports.OneupmanshipAgent = exports.UnitAgent = exports.ZIAgent = exports.HoarderAgent = exports.TruthfulAgent = exports.Trader = exports.Agent = undefined;
+exports.Pool = exports.MedianSniperAgent = exports.KaplanSniperAgent = exports.Sniper = exports.MidpointAgent = exports.OneupmanshipAgent = exports.UnitAgent = exports.ZIAgent = exports.HoarderAgent = exports.TruthfulAgent = exports.Trader = exports.Agent = undefined;
 
 var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
 
@@ -1014,6 +1014,42 @@ var KaplanSniperAgent = exports.KaplanSniperAgent = function (_Sniper) {
     }]);
 
     return KaplanSniperAgent;
+}(Sniper);
+
+var MedianSniperAgent = exports.MedianSniperAgent = function (_Sniper2) {
+    _inherits(MedianSniperAgent, _Sniper2);
+
+    /**
+     * Create MedianSniperAgent
+     *
+     * @param {Object} [options] options passed to Trader and Agent constructors
+     */
+
+    function MedianSniperAgent(options) {
+        _classCallCheck(this, MedianSniperAgent);
+
+        var defaults = {
+            description: "Median snipers, trade on price better than previous period median, or at end of period",
+            nearEndOfPeriod: 10
+        };
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(MedianSniperAgent).call(this, Object.assign({}, defaults, options)));
+    }
+
+    _createClass(MedianSniperAgent, [{
+        key: 'buyNow',
+        value: function buyNow(marginalValue, market) {
+            if (market.currentAskPrice() <= market.previousPeriod('median')) return true;
+            if (this.poissonWakesRemainingInPeriod() <= this.nearEndOfPeriod) return true;
+        }
+    }, {
+        key: 'sellNow',
+        value: function sellNow(marginalCost, market) {
+            if (market.currentBidPrice() >= market.previousPeriod('median')) return true;
+            if (this.poissonWakesRemainingInPeriod() <= this.nearEndOfPeriod) return true;
+        }
+    }]);
+
+    return MedianSniperAgent;
 }(Sniper);
 
 /**
