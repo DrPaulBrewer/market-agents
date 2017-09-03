@@ -905,15 +905,14 @@ export class MedianSniperAgent extends Sniper {
     }
     
     buyNow(marginalValue, market){
-        if (market.currentAskPrice() <= market.previousPeriod('median')) return true;
+        if (market.currentAskPrice() <= market.previousPeriod('medianPrice')) return true;
 	if (this.poissonWakesRemainingInPeriod()<=this.nearEndOfPeriod) return true;
     }   
     
     sellNow(marginalCost, market){
-	if (market.currentBidPrice() >= market.previousPeriod('median')) return true;
+	if (market.currentBidPrice() >= market.previousPeriod('medianPrice')) return true;
 	if (this.poissonWakesRemainingInPeriod()<=this.nearEndOfPeriod) return true;
-    }
- 
+    } 
 }
 
 

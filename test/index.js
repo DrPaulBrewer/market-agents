@@ -1090,7 +1090,7 @@ describe('new MedianSniperAgent', function(){
         market.currentBidPrice = function(){ return agentInfo.currentBidPrice; };
         market.currentAskPrice = function(){ return agentInfo.currentAskPrice; };
         market.previousPeriod = function(prop){
-            if (prop==='median') return agentInfo.previousMedian;
+            if (prop==='medianPrice') return agentInfo.previousMedian;
             return undefined;
         };
         if (correctValue===undefined)
@@ -1195,7 +1195,7 @@ describe('new MedianSniperAgent', function(){
 
             currentAskPrice(){ return 70; },
 
-            previousPeriod(prop){ if (prop==='median') return 150; }
+            previousPeriod(prop){ if (prop==='medianPrice') return 150; }
         };
         for(let i=1,l=100;i<l;++i)
             assert(typeof(a.askPrice(i, market))==='undefined');

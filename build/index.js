@@ -1038,13 +1038,13 @@ var MedianSniperAgent = exports.MedianSniperAgent = function (_Sniper2) {
     _createClass(MedianSniperAgent, [{
         key: 'buyNow',
         value: function buyNow(marginalValue, market) {
-            if (market.currentAskPrice() <= market.previousPeriod('median')) return true;
+            if (market.currentAskPrice() <= market.previousPeriod('medianPrice')) return true;
             if (this.poissonWakesRemainingInPeriod() <= this.nearEndOfPeriod) return true;
         }
     }, {
         key: 'sellNow',
         value: function sellNow(marginalCost, market) {
-            if (market.currentBidPrice() >= market.previousPeriod('median')) return true;
+            if (market.currentBidPrice() >= market.previousPeriod('medianPrice')) return true;
             if (this.poissonWakesRemainingInPeriod() <= this.nearEndOfPeriod) return true;
         }
     }]);
