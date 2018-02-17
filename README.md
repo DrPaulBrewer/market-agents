@@ -10,16 +10,16 @@ market-agents
 
 Provides EventEmitter Agent framework for robot trading in economic and financial simulations
 
-##Documentation
+## Documentation
 
 The [ESDoc hosted documentation for market-agents](https://doc.esdoc.org/github.com/DrPaulBrewer/market-agents/) may be preferable as it should
 include both this information and documentation automatically generated from the source code and source code comments.
 
-##Installation
+## Installation
 
     npm install market-agents --save
 
-##Initialization
+## Initialization
 
     import * as MarketAgents from 'market-agents'; // ES6 
     // or
@@ -27,11 +27,11 @@ include both this information and documentation automatically generated from the
     // unpack some constructors
     const { Agent, ZIAgent, Pool } = MarketAgents;
 
-##Agent classes, methods, etc.
+## Agent classes, methods, etc.
 
 See the [ESDoc hosted documentation for market-agents](https://doc.esdoc.org/github.com/DrPaulBrewer/market-agents/)
 
-##Agent Event Reference
+## Agent Event Reference
 
 *wake*
 
@@ -124,24 +124,17 @@ When: after a production transfer has been processed and added to the agent's in
 
 Use this for: logging production amounts, taking other actions after production
 
-##Trader Events
+## Trader Events
 
 Trader registers ziAgent.Prototype.sendBidsAndAsks as the first responder to the Agent *Wake* event.
 
-##Trader subclasses (e.g. ZIAgent, etc.)
+## Trader subclasses (e.g. ZIAgent, etc.)
 
 inherit Agent and Trader events and behavior
 
-##Pool Events
+## Pool Events
 
 Pool is not an EventEmitter of its own.  
 
 Instead, several Pool methods call methods on all agents in the Pool, triggering related Agent events.
-
-
-
-
-
-
-
 
