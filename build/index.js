@@ -7,7 +7,7 @@ exports.Pool = exports.MedianSniperAgent = exports.KaplanSniperAgent = exports.S
 
 var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
 
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -92,7 +92,7 @@ var Agent = exports.Agent = function (_EventEmitter) {
     function Agent(options) {
         _classCallCheck(this, Agent);
 
-        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Agent).call(this));
+        var _this = _possibleConstructorReturn(this, (Agent.__proto__ || Object.getPrototypeOf(Agent)).call(this));
 
         var defaults = {
             id: nextId(),
@@ -387,7 +387,7 @@ var Trader = exports.Trader = function (_Agent) {
             maxPrice: 1000
         };
 
-        var _this2 = _possibleConstructorReturn(this, Object.getPrototypeOf(Trader).call(this, Object.assign({}, defaults, options)));
+        var _this2 = _possibleConstructorReturn(this, (Trader.__proto__ || Object.getPrototypeOf(Trader)).call(this, Object.assign({}, defaults, options)));
 
         _this2.on('wake', _this2.sendBidsAndAsks);
         return _this2;
@@ -506,7 +506,7 @@ var TruthfulAgent = exports.TruthfulAgent = function (_Trader) {
     function TruthfulAgent(options) {
         _classCallCheck(this, TruthfulAgent);
 
-        return _possibleConstructorReturn(this, Object.getPrototypeOf(TruthfulAgent).call(this, Object.assign({}, { description: 'Truthful Agent bids=value or asks=cost' }, options)));
+        return _possibleConstructorReturn(this, (TruthfulAgent.__proto__ || Object.getPrototypeOf(TruthfulAgent)).call(this, Object.assign({}, { description: 'Truthful Agent bids=value or asks=cost' }, options)));
     }
 
     _createClass(TruthfulAgent, [{
@@ -539,7 +539,7 @@ var HoarderAgent = exports.HoarderAgent = function (_Trader2) {
     function HoarderAgent(options) {
         _classCallCheck(this, HoarderAgent);
 
-        return _possibleConstructorReturn(this, Object.getPrototypeOf(HoarderAgent).call(this, Object.assign({}, { description: 'Hoarder Agent always bids the current asking price and never asks' }, options)));
+        return _possibleConstructorReturn(this, (HoarderAgent.__proto__ || Object.getPrototypeOf(HoarderAgent)).call(this, Object.assign({}, { description: 'Hoarder Agent always bids the current asking price and never asks' }, options)));
     }
 
     _createClass(HoarderAgent, [{
@@ -584,7 +584,7 @@ var ZIAgent = exports.ZIAgent = function (_Trader3) {
     function ZIAgent(options) {
         _classCallCheck(this, ZIAgent);
 
-        return _possibleConstructorReturn(this, Object.getPrototypeOf(ZIAgent).call(this, Object.assign({}, { description: 'Gode and Sunder Style ZI Agent' }, options)));
+        return _possibleConstructorReturn(this, (ZIAgent.__proto__ || Object.getPrototypeOf(ZIAgent)).call(this, Object.assign({}, { description: 'Gode and Sunder Style ZI Agent' }, options)));
     }
 
     /**
@@ -681,7 +681,7 @@ var UnitAgent = exports.UnitAgent = function (_ZIAgent) {
         var defaults = {
             description: "Paul Brewer's UNIT agent that bids/asks within 1 price unit of previous price"
         };
-        return _possibleConstructorReturn(this, Object.getPrototypeOf(UnitAgent).call(this, Object.assign({}, defaults, options)));
+        return _possibleConstructorReturn(this, (UnitAgent.__proto__ || Object.getPrototypeOf(UnitAgent)).call(this, Object.assign({}, defaults, options)));
     }
 
     /**
@@ -723,7 +723,7 @@ var UnitAgent = exports.UnitAgent = function (_ZIAgent) {
             var p = void 0;
             if (typeof marginalValue !== 'number') return undefined;
             var previous = market.lastTradePrice();
-            if (previous) p = previous + this.randomDelta();else p = _get(Object.getPrototypeOf(UnitAgent.prototype), 'bidPrice', this).call(this, marginalValue);
+            if (previous) p = previous + this.randomDelta();else p = _get(UnitAgent.prototype.__proto__ || Object.getPrototypeOf(UnitAgent.prototype), 'bidPrice', this).call(this, marginalValue);
             if (p > marginalValue || p > this.maxPrice || p < this.minPrice) return undefined;
             return p && this.integer ? Math.floor(p) : p;
         }
@@ -746,7 +746,7 @@ var UnitAgent = exports.UnitAgent = function (_ZIAgent) {
             if (typeof marginalCost !== 'number') return undefined;
             var p = void 0;
             var previous = market.lastTradePrice();
-            if (previous) p = previous + this.randomDelta();else p = _get(Object.getPrototypeOf(UnitAgent.prototype), 'askPrice', this).call(this, marginalCost);
+            if (previous) p = previous + this.randomDelta();else p = _get(UnitAgent.prototype.__proto__ || Object.getPrototypeOf(UnitAgent.prototype), 'askPrice', this).call(this, marginalCost);
             if (p < marginalCost || p > this.maxPrice || p < this.minPrice) return undefined;
             return p && this.integer ? Math.floor(p) : p;
         }
@@ -775,7 +775,7 @@ var OneupmanshipAgent = exports.OneupmanshipAgent = function (_Trader4) {
         var defaults = {
             description: "Brewer's OneupmanshipAgent that increases the market bid or decreases the market ask by one price unit, if profitable to do so according to MV or MC"
         };
-        return _possibleConstructorReturn(this, Object.getPrototypeOf(OneupmanshipAgent).call(this, Object.assign({}, defaults, options)));
+        return _possibleConstructorReturn(this, (OneupmanshipAgent.__proto__ || Object.getPrototypeOf(OneupmanshipAgent)).call(this, Object.assign({}, defaults, options)));
     }
 
     /**
@@ -839,7 +839,7 @@ var MidpointAgent = exports.MidpointAgent = function (_Trader5) {
         var defaults = {
             description: "Brewer's MidpointAgent bids/asks halfway between the bid and ask, if profitable to do according to MC or MV"
         };
-        return _possibleConstructorReturn(this, Object.getPrototypeOf(MidpointAgent).call(this, Object.assign({}, defaults, options)));
+        return _possibleConstructorReturn(this, (MidpointAgent.__proto__ || Object.getPrototypeOf(MidpointAgent)).call(this, Object.assign({}, defaults, options)));
     }
 
     /**
@@ -907,7 +907,7 @@ var Sniper = exports.Sniper = function (_Trader6) {
             buyOnCloseTime: 0,
             sellOnCloseTime: 0
         };
-        return _possibleConstructorReturn(this, Object.getPrototypeOf(Sniper).call(this, Object.assign({}, defaults, options)));
+        return _possibleConstructorReturn(this, (Sniper.__proto__ || Object.getPrototypeOf(Sniper)).call(this, Object.assign({}, defaults, options)));
     }
 
     _createClass(Sniper, [{
@@ -974,7 +974,7 @@ var KaplanSniperAgent = exports.KaplanSniperAgent = function (_Sniper) {
             desiredSpread: 10,
             nearEndOfPeriod: 10
         };
-        return _possibleConstructorReturn(this, Object.getPrototypeOf(KaplanSniperAgent).call(this, Object.assign({}, defaults, options)));
+        return _possibleConstructorReturn(this, (KaplanSniperAgent.__proto__ || Object.getPrototypeOf(KaplanSniperAgent)).call(this, Object.assign({}, defaults, options)));
     }
 
     /**
@@ -1032,7 +1032,7 @@ var MedianSniperAgent = exports.MedianSniperAgent = function (_Sniper2) {
             description: "Median snipers, trade on price better than previous period median, or at end of period",
             nearEndOfPeriod: 10
         };
-        return _possibleConstructorReturn(this, Object.getPrototypeOf(MedianSniperAgent).call(this, Object.assign({}, defaults, options)));
+        return _possibleConstructorReturn(this, (MedianSniperAgent.__proto__ || Object.getPrototypeOf(MedianSniperAgent)).call(this, Object.assign({}, defaults, options)));
     }
 
     _createClass(MedianSniperAgent, [{
