@@ -931,11 +931,11 @@ describe('new KaplanSniperAgent', function () {
     market.currentBidPrice = function () { return agentInfo.currentBidPrice; };
     market.currentAskPrice = function () { return agentInfo.currentAskPrice; };
     market.previousPeriod = function (prop) {
-      if (prop === 'high')
+      if (prop === 'highPrice')
         return agentInfo.juicyBidPrice;
-      if (prop === 'low')
+      if (prop === 'lowPrice')
         return agentInfo.juicyAskPrice;
-      return undefined;
+	throw new Error("no property "+prop);
     };
     if (correctValue === undefined)
       assert.strictEqual(typeof(a[call](param, market)), "undefined", message);
@@ -1056,7 +1056,7 @@ describe('new KaplanSniperAgent', function () {
 
       currentAskPrice() { return 70; },
 
-      previousPeriod(prop) { if (prop === 'high') return 150; }
+      previousPeriod(prop) { if (prop === 'highPrice') return 150; }
     };
     for (let i = 1, l = 100;i < l;++i)
       assert(typeof(a.askPrice(i, market)) === 'undefined');
@@ -1456,8 +1456,8 @@ describe('new Pool', function () {
       currentBidPrice() { return currentBid; },
       currentAskPrice() { return currentAsk; },
       previousPeriod(prop) {
-        if (prop === 'high') return 101;
-        if (prop === 'low') return 1;
+        if (prop === 'highPrice') return 101;
+        if (prop === 'lowPrice') return 1;
       }
     };
 

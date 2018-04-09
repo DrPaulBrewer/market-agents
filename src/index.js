@@ -873,16 +873,16 @@ export class KaplanSniperAgent extends Sniper {
     }
     
     buyNow(marginalValue, market){
-        const isJuicyPrice = (market.currentAskPrice() <= market.previousPeriod('low'));
+        const isJuicyPrice = (market.currentAskPrice() <= market.previousPeriod('lowPrice'));
         if (isJuicyPrice) return true;
-        if (this.isLowSpread(market)) return true;
+	if (this.isLowSpread(market)) return true;
 	if (this.poissonWakesRemainingInPeriod()<=this.nearEndOfPeriod) return true;
     }   
     
     sellNow(marginalCost, market){
-        const isJuicyPrice = (market.currentBidPrice() >= market.previousPeriod('high'));
+        const isJuicyPrice = (market.currentBidPrice() >= market.previousPeriod('highPrice'));
         if (isJuicyPrice) return true;
-        if (this.isLowSpread(market)) return true;
+	if (this.isLowSpread(market)) return true;
 	if (this.poissonWakesRemainingInPeriod()<=this.nearEndOfPeriod) return true;
     }
  
