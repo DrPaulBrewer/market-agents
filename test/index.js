@@ -4,7 +4,7 @@ import assert from 'assert';
 import "should";
 import * as MarketAgents from "../src/index.js";
 
-const { Agent, ZIAgent, Pool, UnitAgent, OneupmanshipAgent, MidpointAgent, TruthfulAgent, HoarderAgent, KaplanSniperAgent, MedianSniperAgent } = MarketAgents;
+const { Agent, ZIAgent, Pool, UnitAgent, OneupmanshipAgent, MidpointAgent, DoNothingAgent, TruthfulAgent, HoarderAgent, KaplanSniperAgent, MedianSniperAgent } = MarketAgents;
 
 /**  @test {MarketAgents} */
 
@@ -860,6 +860,17 @@ describe('new MidpointAgent', function () {
   });
 });
 
+describe('new DoNothingAgent', function(){
+    const testvalues = [10,20,30,50,50,100,129,198,999,-50];
+    it('should not bid', function(){
+	assert.ok(new DoNothingAgent().bidPrice()===undefined);
+	testvalues.forEach((v)=>(assert.ok((new DoNothingAgent().bidPrice(v))===undefined)));
+    });
+    it('should not ask', function(){
+	assert.ok(new DoNothingAgent().askPrice()===undefined);
+	testvalues.forEach((v)=>(assert.ok((new DoNothingAgent().askPrice(v))===undefined)));
+    });
+});
 
 describe('new TruthfulAgent', function () {
   it('should not bid if marginalValue is undefined', function () {

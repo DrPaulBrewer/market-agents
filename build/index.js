@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-exports.Pool = exports.MedianSniperAgent = exports.KaplanSniperAgent = exports.Sniper = exports.MidpointAgent = exports.OneupmanshipAgent = exports.UnitAgent = exports.ZIAgent = exports.HoarderAgent = exports.TruthfulAgent = exports.Trader = exports.Agent = undefined;
+exports.Pool = exports.MedianSniperAgent = exports.KaplanSniperAgent = exports.Sniper = exports.MidpointAgent = exports.OneupmanshipAgent = exports.UnitAgent = exports.ZIAgent = exports.HoarderAgent = exports.TruthfulAgent = exports.DoNothingAgent = exports.Trader = exports.Agent = undefined;
 
 var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
 
@@ -493,8 +493,37 @@ var Trader = exports.Trader = function (_Agent) {
     return Trader;
 }(Agent);
 
-var TruthfulAgent = exports.TruthfulAgent = function (_Trader) {
-    _inherits(TruthfulAgent, _Trader);
+var DoNothingAgent = exports.DoNothingAgent = function (_Trader) {
+    _inherits(DoNothingAgent, _Trader);
+
+    /**
+     * creates do-nothing agent that never sends any bids or asks
+     * @param {Object} [options] optional parameter ignored
+     */
+
+    function DoNothingAgent() {
+        _classCallCheck(this, DoNothingAgent);
+
+        return _possibleConstructorReturn(this, (DoNothingAgent.__proto__ || Object.getPrototypeOf(DoNothingAgent)).call(this, { description: "DoNothing agent never bids or asks" }));
+    }
+
+    _createClass(DoNothingAgent, [{
+        key: 'bidPrice',
+        value: function bidPrice() {
+            return undefined;
+        }
+    }, {
+        key: 'askPrice',
+        value: function askPrice() {
+            return undefined;
+        }
+    }]);
+
+    return DoNothingAgent;
+}(Trader);
+
+var TruthfulAgent = exports.TruthfulAgent = function (_Trader2) {
+    _inherits(TruthfulAgent, _Trader2);
 
     /**
      * creates "Truthful" robot agent that always sends bids at marginalValue or asks at marginalCost
@@ -526,8 +555,8 @@ var TruthfulAgent = exports.TruthfulAgent = function (_Trader) {
     return TruthfulAgent;
 }(Trader);
 
-var HoarderAgent = exports.HoarderAgent = function (_Trader2) {
-    _inherits(HoarderAgent, _Trader2);
+var HoarderAgent = exports.HoarderAgent = function (_Trader3) {
+    _inherits(HoarderAgent, _Trader3);
 
     /**
      * creates "Hoarder" robot agent that always buys 1 unit at the current asking price.
@@ -571,8 +600,8 @@ var HoarderAgent = exports.HoarderAgent = function (_Trader2) {
  * 
  */
 
-var ZIAgent = exports.ZIAgent = function (_Trader3) {
-    _inherits(ZIAgent, _Trader3);
+var ZIAgent = exports.ZIAgent = function (_Trader4) {
+    _inherits(ZIAgent, _Trader4);
 
     /**
      * creates "Zero Intelligence" robot agent similar to those described in Gode and Sunder (1993)
@@ -760,8 +789,8 @@ var UnitAgent = exports.UnitAgent = function (_ZIAgent) {
  *
  */
 
-var OneupmanshipAgent = exports.OneupmanshipAgent = function (_Trader4) {
-    _inherits(OneupmanshipAgent, _Trader4);
+var OneupmanshipAgent = exports.OneupmanshipAgent = function (_Trader5) {
+    _inherits(OneupmanshipAgent, _Trader5);
 
     /**
      * create OneupmanshipAgent 
@@ -830,8 +859,8 @@ var OneupmanshipAgent = exports.OneupmanshipAgent = function (_Trader4) {
  * 
  */
 
-var MidpointAgent = exports.MidpointAgent = function (_Trader5) {
-    _inherits(MidpointAgent, _Trader5);
+var MidpointAgent = exports.MidpointAgent = function (_Trader6) {
+    _inherits(MidpointAgent, _Trader6);
 
     function MidpointAgent(options) {
         _classCallCheck(this, MidpointAgent);
@@ -897,8 +926,8 @@ var MidpointAgent = exports.MidpointAgent = function (_Trader5) {
     return MidpointAgent;
 }(Trader);
 
-var Sniper = exports.Sniper = function (_Trader6) {
-    _inherits(Sniper, _Trader6);
+var Sniper = exports.Sniper = function (_Trader7) {
+    _inherits(Sniper, _Trader7);
 
     function Sniper(options) {
         _classCallCheck(this, Sniper);
