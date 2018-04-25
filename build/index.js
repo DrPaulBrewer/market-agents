@@ -498,13 +498,13 @@ var DoNothingAgent = exports.DoNothingAgent = function (_Trader) {
 
     /**
      * creates do-nothing agent that never sends any bids or asks
-     * @param {Object} [options] optional parameter ignored
+     * @param {Object} [options] passed to Trader and Agent constructors
      */
 
-    function DoNothingAgent() {
+    function DoNothingAgent(options) {
         _classCallCheck(this, DoNothingAgent);
 
-        return _possibleConstructorReturn(this, (DoNothingAgent.__proto__ || Object.getPrototypeOf(DoNothingAgent)).call(this, { description: "DoNothing agent never bids or asks" }));
+        return _possibleConstructorReturn(this, (DoNothingAgent.__proto__ || Object.getPrototypeOf(DoNothingAgent)).call(this, Object.assign({}, { description: 'DoNothing agent never bids or asks' }, options)));
     }
 
     _createClass(DoNothingAgent, [{

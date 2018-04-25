@@ -429,11 +429,11 @@ export class DoNothingAgent extends Trader {
 
     /**
      * creates do-nothing agent that never sends any bids or asks
-     * @param {Object} [options] optional parameter ignored
+     * @param {Object} [options] passed to Trader and Agent constructors
      */
 
-    constructor(){
-	super({description: "DoNothing agent never bids or asks"});
+    constructor(options){
+	super(Object.assign({}, {description: 'DoNothing agent never bids or asks'}, options));
     }
 
     bidPrice(){
