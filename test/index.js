@@ -1,5 +1,6 @@
 /* eslint-env node, mocha */
 
+import "@babel/polyfill";
 import assert from 'assert';
 import "should";
 import * as MarketAgents from "../src/index.js";

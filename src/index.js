@@ -37,13 +37,13 @@ function poissonWake(){
 /**
  * Agent with Poisson-distributed opportunities to act, with period managment,  optional inventory, unit values and costs, and end-of-period production and consumption to satisfy trades
  *
- */ 
+ */
 
 export class Agent extends EventEmitter {
 
     /**
      * creates an Agent with clone of specified options and initializes with .init().
-     *   Option properties are stored directly on the created agent's this.  
+     *   Option properties are stored directly on the created agent's this.
      *
      * @param {Object} options Agent creation options
      * @param {string} [options.description] text description of agent, optional
@@ -54,9 +54,9 @@ export class Agent extends EventEmitter {
      * @param {number} [options.wakeTime=0] initial wake-up time for agent, adjusted by this.init() to first poisson-based wake with .nextWake()
      * @param {number} [options.rate=1] Poisson-arrival rate of agent wake events
      * @param {function():number} [options.nextWake=poissonWake] calculates next Agent wake-up time
-     * 
+     *
      */
-    
+
     constructor(options){
         super();
         const defaults = {
@@ -69,7 +69,7 @@ export class Agent extends EventEmitter {
             wakeTime: 0,
             rate: 1,
             period: {
-                number:0, 
+                number:0,
                 duration:1000,
                 equalDuration: true
             },
@@ -78,7 +78,7 @@ export class Agent extends EventEmitter {
         Object.assign(this, defaults, clone(options, false));
         this.init();
     }
-    
+
     /**
      * initialize an agent to new settings
      * @param {Object} [newSettings] see constructor
@@ -92,9 +92,9 @@ export class Agent extends EventEmitter {
             let mySettings = Object.assign({}, newSettings);
             // copy new values to inventory.  do not reset other inventory values
             Object.assign(this.inventory, mySettings.inventory);
-            // reset non-inventory as specified, completely overwriting previous 
+            // reset non-inventory as specified, completely overwriting previous
             // to execute this reset, first: delete the inventory settings, then apply the remainder
-            delete mySettings.inventory; 
+            delete mySettings.inventory;
             Object.assign(this, mySettings);
         }
         // if this.money is defined but is not in inventory, zero the inventory of this.money
@@ -105,13 +105,13 @@ export class Agent extends EventEmitter {
          * time, in JS ms since epoch, of agent wake
          * @type {number} this.wakeTime
          */
-        
+
         this.wakeTime = this.nextWake();
     }
-    
-    /** 
+
+    /**
      * re-initialize agent to the beginning of a new simulation period
-     * 
+     *
      * @param {number|Object} period A period initialization object, or a number indicating a new period using the previous period's initialization object
      * @param {number} period.number A number, usually sequential, identifying the next period, e.g. 1,2,3,4,5,...
      * @param {boolean} [period.equalDuration=false] with positive period.duration, autogenerates startTime and endTime as n or n+1 times period.duration
@@ -148,15 +148,15 @@ export class Agent extends EventEmitter {
      *
      * @emits {post-period} when period ends, always, but after first completing any production/redemption
      */
-    
+
     endPeriod(){
         if (typeof(this.produce)==='function') this.produce();
         if (typeof(this.redeem)==='function') this.redeem();
         this.emit('post-period');
     }
 
-    /** 
-     * percent of period used 
+    /**
+     * percent of period used
      *
      * @return {number} proportion of period time used as a number from 0.0, at beginning of period, to 1.0 at end of period.
      *
@@ -171,9 +171,9 @@ export class Agent extends EventEmitter {
 
     /**
      * guess at number of random Poisson wakes remaining in period
-     * 
+     *
      * @return {number} "expected" number of remaining random Poisson wakes, calculated as (this.period.endTime-this.wakeTime)*rate
-     * 
+     *
      */
 
     poissonWakesRemainingInPeriod(){
@@ -183,17 +183,17 @@ export class Agent extends EventEmitter {
     }
 
     /**
-     * wakes agent so it can act, emitting wake, and sets next wakeTime from this.nextWake() unless period.endTime exceeded 
+     * wakes agent so it can act, emitting wake, and sets next wakeTime from this.nextWake() unless period.endTime exceeded
      *
      * @param {Object} [info] optional info passed to this.emit('wake', info)
      * @emits {wake(info)} immediately
      */
-    
+
     wake(info){
         this.emit('wake', info);
         const nextTime = this.nextWake();
         if (this.period.endTime){
-            if (nextTime<this.period.endTime) 
+            if (nextTime<this.period.endTime)
                 this.wakeTime = nextTime;
             else
                 this.wakeTime = undefined;
@@ -202,15 +202,15 @@ export class Agent extends EventEmitter {
         }
     }
 
-    /** 
+    /**
      * increases or decreases agent's inventories of one or more goods and/or money
-     * 
+     *
      * @param {Object} myTransfers object with goods as keys and changes in inventory as number values
      * @param {Object} [memo] optional memo passed to event listeners
      * @emits {pre-transfer(myTransfers, memo)} before transfer takes place, modifications to myTransfers will change transfer
      * @emits {post-transfer(myTransfers, memo)} after transfer takes place
      */
-    
+
     transfer(myTransfers, memo){
         if (myTransfers){
             this.emit('pre-transfer', myTransfers, memo);
@@ -225,14 +225,14 @@ export class Agent extends EventEmitter {
         }
     }
 
-    /** 
+    /**
      * agent's marginal cost of producing next unit
      *
      * @param {String} good (e.g. "X", "Y")
-     * @param {Object} hypotheticalInventory object with goods as keys and values as numeric levels of inventory 
+     * @param {Object} hypotheticalInventory object with goods as keys and values as numeric levels of inventory
      * @return {number} marginal unit cost of next unit, at given (negative) hypothetical inventory, using agent's configured costs
      */
-    
+
     unitCostFunction(good, hypotheticalInventory){
         const costs = this.costs[good];
         if ((Array.isArray(costs)) && (hypotheticalInventory[good] <= 0)){
@@ -244,7 +244,7 @@ export class Agent extends EventEmitter {
      * agent's marginal value for redeeming next unit
      *
      * @param {String} good (e.g. "X", "Y")
-     * @param {Object} hypotheticalInventory object with goods as keys and values as numeric levels of inventory 
+     * @param {Object} hypotheticalInventory object with goods as keys and values as numeric levels of inventory
      * @return {number} marginal unit value of next unit, at given (positive) hypothetical inventory, using agent's configured values
      */
 
@@ -255,14 +255,14 @@ export class Agent extends EventEmitter {
         }
     }
 
-    /** 
+    /**
      * redeems units in positive inventory with configured values, usually called automatically at end-of-period.
-     * transfer uses memo object {isRedeem:1} 
-     * 
+     * transfer uses memo object {isRedeem:1}
+     *
      * @emits {pre-redeem(transferAmounts)} before calling .transfer, can modify transferAmounts
      * @emits {post-redeem(transferAmounts)} after calling .transfer
      */
-    
+
     redeem(){
         if (this.values){
             const trans = {};
@@ -281,16 +281,16 @@ export class Agent extends EventEmitter {
         }
     }
 
-    /** 
+    /**
      * produces units in negative inventory with configured costs, usually called automatically at end-of-period.
      * transfer uses memo object {isProduce:1}
-     * 
+     *
      * @emits {pre-redeem(transferAmounts)} before calling .transfer, can modify transferAmounts
      * @emits {post-redeem(transferAmounts)} after calling .transfer
      */
 
     produce(){
-        if (this.costs){ 
+        if (this.costs){
             const trans = {};
             const goods = Object.keys(this.costs);
             trans[this.money] = 0;
@@ -319,11 +319,11 @@ export class Trader extends Agent {
 
     /**
      * @param {Object} [options] passed to Agent constructor(); Trader specific properties detailed below
-     * @param {Array<Object>} [options.markets=[]] list of market objects where this agent acts on wake 
-     * @param {number} [options.minPrice=0] minimum price when submitting limit orders to buy 
+     * @param {Array<Object>} [options.markets=[]] list of market objects where this agent acts on wake
+     * @param {number} [options.minPrice=0] minimum price when submitting limit orders to buy
      * @param {number} [options.maxPrice=1000] maximum price when submitting sell limit orders to sell
      * @param {boolean} [options.ignoreBudgetConstraint=false] ignore budget constraint, substituting maxPrice for unit value when bidding, and minPrice for unit cost when selling
-     * @listens {wake} to trigger sendBidsAndAsks()  
+     * @listens {wake} to trigger sendBidsAndAsks()
      *
      */
 
@@ -337,27 +337,27 @@ export class Trader extends Agent {
         super(Object.assign({}, defaults, options));
         this.on('wake', this.sendBidsAndAsks);
     }
-    
+
     /** send a limit order to buy one unit to the indicated market at myPrice. Placeholder throws error. Must be overridden and implemented in other code.
      * @abstract
-     * @param {Object} market 
+     * @param {Object} market
      * @param {number} myPrice
      * @throws {Error} when calling placeholder
-     */     
-    
+     */
+
     // eslint-disable-next-line no-unused-vars
     bid(market, myPrice){
         throw new Error("called placeholder for abstract method .bid(market,myPrice) -- you must implement this method");
     }
 
-    /** 
-     * send a limit order to sell one unit to the indicated market at myPrice. Placeholder throws error. Must be overridden and implemented in other code. 
-     * @abstract 
-     * @param {Object} market 
+    /**
+     * send a limit order to sell one unit to the indicated market at myPrice. Placeholder throws error. Must be overridden and implemented in other code.
+     * @abstract
+     * @param {Object} market
      * @param {number} myPrice
-     * @throws {Error} when calling placeholder 
-     */     
-    
+     * @throws {Error} when calling placeholder
+     */
+
     // eslint-disable-next-line no-unused-vars
     ask(market, myPrice){
         throw new Error("called placeholder for abstract method .ask(market,myPrice) -- you must implement this method");
@@ -365,7 +365,7 @@ export class Trader extends Agent {
 
     /**
      * calculate price this agent is willing to pay.  Placeholder throws error.  Must be overridden and implemented in other code.
-     * 
+     *
      * @abstract
      * @param {number} marginalValue The marginal value of redeeming the next unit.
      * @param {Object} market For requesting current market conditions, previous trade price, etc.
@@ -379,9 +379,9 @@ export class Trader extends Agent {
     }
 
     /**
-     * calculate price this agent is willing to accept. Placeholder throws error. Must be overridden and implemented in other code. 
-     * 
-     * 
+     * calculate price this agent is willing to accept. Placeholder throws error. Must be overridden and implemented in other code.
+     *
+     *
      * @abstract
      * @param {number} marginalCost The marginal cost of producing the next unit.
      * @param {Object} market For requesting current market conditions, previous trade price, etc.
@@ -397,10 +397,10 @@ export class Trader extends Agent {
     /**
      * For each market in agent's configured markets, calculates agent's price strategy for buy or sell prices and then sends limit orders for 1 unit at those prices.
      * Normally you do not need to explicltly call this function: the wake listener set in the constructor of Trader and subclasses calls sendBidsAndAsks() automatcally on each wake event.
-     * 
-     * 
+     *
+     *
      */
-    
+
     sendBidsAndAsks(){
         for(let i=0,l=this.markets.length;i<l;++i){
             let market = this.markets[i];
@@ -444,7 +444,7 @@ export class DoNothingAgent extends Trader {
 	return undefined;
     }
 }
-	
+
 export class TruthfulAgent extends Trader {
 
     /**
@@ -453,7 +453,7 @@ export class TruthfulAgent extends Trader {
      * @param {Object} [options] passed to Trader and Agent constructors
      *
      */
-    
+
     constructor(options){
         super(Object.assign({}, {description: 'Truthful Agent bids=value or asks=cost'}, options));
     }
@@ -467,7 +467,7 @@ export class TruthfulAgent extends Trader {
         if (typeof(marginalCost)!=='number') return undefined;
         return (this.integer)? Math.ceil(marginalCost): marginalCost;
     }
-    
+
 }
 
 export class HoarderAgent extends Trader {
@@ -496,22 +496,22 @@ export class HoarderAgent extends Trader {
 
 /**
  * a reimplementation of Gode and Sunder's "Zero Intelligence" robots, as described in the economics research literature.
- * 
- * see 
  *
- *    Gode,  Dhananjay  K.,  and  S.  Sunder.  [1993].  ‘Allocative  efficiency  of  markets  with  zero-intelligence  traders:  Market  as  a  partial  substitute  for  individual  rationality.’    Journal  of  Political  Economy, vol. 101, pp.119-137. 
+ * see
+ *
+ *    Gode,  Dhananjay  K.,  and  S.  Sunder.  [1993].  ‘Allocative  efficiency  of  markets  with  zero-intelligence  traders:  Market  as  a  partial  substitute  for  individual  rationality.’    Journal  of  Political  Economy, vol. 101, pp.119-137.
  *
  *    Gode, Dhananjay K., and S. Sunder. [1993b]. ‘Lower bounds for efficiency of surplus extraction in double auctions.’  In  Friedman,  D.  and  J.  Rust  (eds).  The  Double  Auction  Market:  Institutions,  Theories,  and Evidence,  pp. 199-219.
  *
- *    Gode,  Dhananjay  K.,  and  S.  Sunder.  [1997a].  ‘What  makes  markets  allocationally  efficient?’  Quarterly Journal of Economics, vol. 112 (May), pp.603-630. 
- * 
+ *    Gode,  Dhananjay  K.,  and  S.  Sunder.  [1997a].  ‘What  makes  markets  allocationally  efficient?’  Quarterly Journal of Economics, vol. 112 (May), pp.603-630.
+ *
  */
 
 export class ZIAgent extends Trader {
 
     /**
      * creates "Zero Intelligence" robot agent similar to those described in Gode and Sunder (1993)
-     * 
+     *
      * @param {Object} [options] passed to Trader and Agent constructors()
      * @param {boolean} [options.integer] true instructs pricing routines to use positive integer prices, false allows positive real number prices
      */
@@ -519,13 +519,13 @@ export class ZIAgent extends Trader {
     constructor(options){
         super(Object.assign({}, {description: 'Gode and Sunder Style ZI Agent'} , options));
     }
-    
+
     /**
      * calculate price this agent is willing to pay as a uniform random number ~ U[minPrice, marginalValue] inclusive.
      * If this.integer is true, the returned price will be an integer.
-     * 
-     * 
-     * @param {number} marginalValue the marginal value of redeeming the next unit. sets the maximum price for random price generation 
+     *
+     *
+     * @param {number} marginalValue the marginal value of redeeming the next unit. sets the maximum price for random price generation
      * @return {number|undefined} randomized buy price or undefined if marginalValue non-numeric or less than this.minPrice
      */
 
@@ -552,7 +552,7 @@ export class ZIAgent extends Trader {
     /**
      * calculate price this agent is willing to accept as a uniform random number ~ U[marginalCost, maxPrice] inclusive.
      * If this.integer is true, the returned price will be an integer.
-     * 
+     *
      *
      * @param {number} marginalCost the marginal coat of producing the next unit. sets the minimum price for random price generation
      * @return {number|undefined} randomized sell price or undefined if marginalCost non-numeric or greater than this.maxPrice
@@ -590,15 +590,15 @@ const um1p1 = ProbJS.uniform(-1,1);
  * Chapter available on Google Books at https://books.google.com search for "Handbook of Experimental Economics Results" and go to pp. 31-45.
  * or on Science Direct (paywall) at http://www.sciencedirect.com/science/article/pii/S1574072207000042
  *
- * 
- * 
+ *
+ *
  */
 
 export class UnitAgent extends ZIAgent {
-   
+
     /**
      * creates "Unit" robot agent similar to those described in Brewer(2008)
-     * 
+     *
      * @param {Object} [options] passed to Trader and Agent constructors()
      */
 
@@ -627,19 +627,19 @@ export class UnitAgent extends ZIAgent {
         }
         return delta;
     }
-    
+
     /**
      * Calculate price this agent is willing to pay.
      * The returned price is within one price unit of the previous market trade price, or uses the ZIAgent random algorithm if there is no previous market trade price.
      * Undefined (no bid) is returned if the propsed price would exceed the marginalValue parameter
      * If this.integer is true, the returned price will be an integer.
-     * 
-     * 
-     * @param {number} marginalValue the marginal value of redeeming the next unit. sets the maximum price for allowable random price generation 
-     * @param {Object} market The market for which a bid is being prepared.  An object with lastTradePrice() method. 
+     *
+     *
+     * @param {number} marginalValue the marginal value of redeeming the next unit. sets the maximum price for allowable random price generation
+     * @param {Object} market The market for which a bid is being prepared.  An object with lastTradePrice() method.
      * @return {number|undefined} agent's buy price or undefined
      */
-    
+
     bidPrice(marginalValue, market){
         let p;
         if (typeof(marginalValue)!=='number') return undefined;
@@ -657,13 +657,13 @@ export class UnitAgent extends ZIAgent {
      * The returned price is within one price unit of the previous market trade price, or uses the ZIAgent random algorithm if there is no previous market trade price.
      * Undefined (no ask) is returned if the propsed price would be lower than the marginalCost parameter
      * If this.integer is true, the returned price will be an integer.
-     * 
-     * 
+     *
+     *
      * @param {number} marginalCost the marginal cost of producing the next unit. sets the minimum price for allowable random price generation
-     * @param {Object} market The market for which a bid is being prepared.  An object with lastTradePrice() method. 
+     * @param {Object} market The market for which a bid is being prepared.  An object with lastTradePrice() method.
      * @return {number|undefined} agent's buy price or undefined
      */
-    
+
     askPrice(marginalCost, market){
         if (typeof(marginalCost)!=='number') return undefined;
         let p;
@@ -683,9 +683,9 @@ export class UnitAgent extends ZIAgent {
  */
 
 export class OneupmanshipAgent extends Trader {
-    
+
     /**
-     * create OneupmanshipAgent 
+     * create OneupmanshipAgent
      * @param {Object} [options] Passed to Trader and Agent constructors
      *
      */
@@ -696,20 +696,20 @@ export class OneupmanshipAgent extends Trader {
         };
         super(Object.assign({}, defaults, options));
     }
-    
+
     /**
      * Calculate price this agent is willing to pay.
      * The returned price is either this.minPrice (no bidding), or market.currentBidPrice()+1, or undefined.
      * Undefined (no bid) is returned if the propsed price would exceed the marginalValue parameter
      * this.integer is ignored
-     * 
-     * 
-     * @param {number} marginalValue the marginal value of redeeming the next unit. sets the maximum price for allowable bidding 
+     *
+     *
+     * @param {number} marginalValue the marginal value of redeeming the next unit. sets the maximum price for allowable bidding
      * @param {Object} market The market for which a bid is being prepared.  An object with currentBidPrice() and currentAskPrice() methods.
      * @return {number|undefined} agent's buy price or undefined
      */
 
-    bidPrice(marginalValue, market){ 
+    bidPrice(marginalValue, market){
         if (typeof(marginalValue)!=='number') return undefined;
         const currentBid = market.currentBidPrice();
         if (!currentBid)
@@ -723,14 +723,14 @@ export class OneupmanshipAgent extends Trader {
      * The returned price is either this.maxPrice (no asks), or market.currentAskPrice()-1, or undefined.
      * Undefined (no bid) is returned if the propsed price is less than the marginalCost parameter
      * this.integer is ignored
-     * 
-     * 
-     * @param {number} marginalCost the marginal cost of producing the next unit. sets the minimum price for allowable bidding 
+     *
+     *
+     * @param {number} marginalCost the marginal cost of producing the next unit. sets the minimum price for allowable bidding
      * @param {Object} market The market for which a bid is being prepared.  An object with currentBidPrice() and currentAskPrice() methods.
      * @return {number|undefined} agent's buy price or undefined
      */
 
-    askPrice(marginalCost, market){ 
+    askPrice(marginalCost, market){
         if (typeof(marginalCost)!=='number') return undefined;
         const currentAsk = market.currentAskPrice();
         if (!currentAsk)
@@ -738,13 +738,13 @@ export class OneupmanshipAgent extends Trader {
         if (currentAsk>(marginalCost+1))
             return currentAsk-1;
     }
-            
+
 }
 
 /**
- * MidpointAgent - An agent that bids/asks halfway between the current bid and current ask.  
+ * MidpointAgent - An agent that bids/asks halfway between the current bid and current ask.
  *   When there is no current bid or current ask, the agent bids minPrice or asks maxPrice.
- * 
+ *
  */
 
 export class MidpointAgent extends Trader {
@@ -754,23 +754,23 @@ export class MidpointAgent extends Trader {
         };
         super(Object.assign({}, defaults, options));
     }
-    
+
     /**
      * Calculate price this agent is willing to pay.
-     * The returned price is either the min price, the midpoint of the bid/ask, or undefined.  
+     * The returned price is either the min price, the midpoint of the bid/ask, or undefined.
      * Undefined (no bid) is returned if the propsed price would exceed the marginalValue parameter
-     * this.integer==true  causes midpoint prices to be rounded up to the next integer before comparison with marginalValue 
+     * this.integer==true  causes midpoint prices to be rounded up to the next integer before comparison with marginalValue
      *
-     * @param {number} marginalValue the marginal value of redeeming the next unit. sets the maximum price for allowable bidding 
+     * @param {number} marginalValue the marginal value of redeeming the next unit. sets the maximum price for allowable bidding
      * @param {Object} market The market for which a bid is being prepared.  An object with currentBidPrice() and currentAskPrice() methods.
      * @return {number|undefined} agent's buy price or undefined
      */
 
-    bidPrice(marginalValue, market){ 
+    bidPrice(marginalValue, market){
         if (typeof(marginalValue)!=='number') return undefined;
         const currentBid = market.currentBidPrice();
         if (!currentBid)
-            return (this.minPrice <= marginalValue)? this.minPrice: undefined;      
+            return (this.minPrice <= marginalValue)? this.minPrice: undefined;
         const currentAsk = market.currentAskPrice();
         if (currentAsk){
             const midpoint = (currentBid+currentAsk)/2;
@@ -782,17 +782,17 @@ export class MidpointAgent extends Trader {
 
     /**
      * Calculate price this agent is willing to accept.
-     * The returned price is either the max price, the midpoint of the bid/ask, or undefined.  
+     * The returned price is either the max price, the midpoint of the bid/ask, or undefined.
      * Undefined (no ask) is returned if the propsed price is less than the marginalCost parameter
-     * this.integer==true  causes midpoint prices to be rounded up to the next integer before comparison with marginalValue 
-     * 
-     * 
-     * @param {number} marginalCost the marginal cost of producing the next unit. sets the minimum price for allowable bidding 
+     * this.integer==true  causes midpoint prices to be rounded up to the next integer before comparison with marginalValue
+     *
+     *
+     * @param {number} marginalCost the marginal cost of producing the next unit. sets the minimum price for allowable bidding
      * @param {Object} market The market for which a bid is being prepared.  An object with currentBidPrice() and currentAskPrice() methods.
      * @return {number|undefined} agent's buy price or undefined
      */
 
-    askPrice(marginalCost, market){ 
+    askPrice(marginalCost, market){
         if (typeof(marginalCost)!=='number') return undefined;
         const currentAsk = market.currentAskPrice();
         if (!currentAsk)
@@ -805,7 +805,7 @@ export class MidpointAgent extends Trader {
                 return myAsk;
         }
     }
-    
+
 }
 
 
@@ -849,8 +849,8 @@ export class Sniper extends Trader {
 /**
  * a reimplementation of a Kaplan Sniper Agent (JavaScript implementation by Paul Brewer)
  *
- * see e.g. "High Performance Bidding Agents for the Continuous Double Auction" 
- *                Gerald Tesauro and Rajarshi Das, Institute for Advanced Commerce, IBM 
+ * see e.g. "High Performance Bidding Agents for the Continuous Double Auction"
+ *                Gerald Tesauro and Rajarshi Das, Institute for Advanced Commerce, IBM
  *
  *  http://researcher.watson.ibm.com/researcher/files/us-kephart/dblauc.pdf
  *
@@ -878,7 +878,7 @@ export class KaplanSniperAgent extends Sniper {
     /**
      * Calculates price this agent is willing to pay.
      * The returned price always equals either undefined or the price of market.currentAsk(), triggering an immediate trade.
-     * 
+     *
      * The KaplanSniperAgent will buy, if market.currentAskPrice<=marginalValue,  during one of three conditions:
      * (A) market ask price is less than or equal to .getJuicyAskPrice(), which needs to be set at the simulation level to the previous period low trade price
      * (B) when spread = (market ask price - market bid price) is less than or equal to agent's desiredSpread (default: 10)
@@ -891,21 +891,21 @@ export class KaplanSniperAgent extends Sniper {
         const currentAsk = market.currentAskPrice();
         return ((currentAsk>0) && (currentBid>0) && ((currentAsk-currentBid)<=this.desiredSpread));
     }
-    
+
     buyNow(marginalValue, market){
         const isJuicyPrice = (market.currentAskPrice() <= market.previousPeriod('lowPrice'));
         if (isJuicyPrice) return true;
 	if (this.isLowSpread(market)) return true;
 	if (this.poissonWakesRemainingInPeriod()<=this.nearEndOfPeriod) return true;
-    }   
-    
+    }
+
     sellNow(marginalCost, market){
         const isJuicyPrice = (market.currentBidPrice() >= market.previousPeriod('highPrice'));
         if (isJuicyPrice) return true;
 	if (this.isLowSpread(market)) return true;
 	if (this.poissonWakesRemainingInPeriod()<=this.nearEndOfPeriod) return true;
     }
- 
+
 }
 
 export class MedianSniperAgent extends Sniper {
@@ -923,26 +923,26 @@ export class MedianSniperAgent extends Sniper {
         };
         super(Object.assign({}, defaults, options));
     }
-    
+
     buyNow(marginalValue, market){
         if (market.currentAskPrice() <= market.previousPeriod('medianPrice')) return true;
 	if (this.poissonWakesRemainingInPeriod()<=this.nearEndOfPeriod) return true;
-    }   
-    
+    }
+
     sellNow(marginalCost, market){
 	if (market.currentBidPrice() >= market.previousPeriod('medianPrice')) return true;
 	if (this.poissonWakesRemainingInPeriod()<=this.nearEndOfPeriod) return true;
-    } 
+    }
 }
 
 
 /**
- * Pool for managing a collection of agents.  
+ * Pool for managing a collection of agents.
  * Agents may belong to multiple pools.
  *
  */
 
-export class Pool { 
+export class Pool {
     constructor(){
         this.agents = [];
         this.agentsById = {};
@@ -952,7 +952,7 @@ export class Pool {
      * Add an agent to the Pool
      * @param {Object} agent to add to pool.  Should be instanceof Agent, including subclasses.
      */
-    
+
     push(agent){
         if (!(agent instanceof Agent))
             throw new Error("Pool.push(agent), agent is not an instance of Agent or descendents");
@@ -964,7 +964,7 @@ export class Pool {
 
     /**
      * finds agent from Pool with lowest wakeTime
-     * @return {Object} 
+     * @return {Object}
      */
 
     next(){
@@ -981,7 +981,7 @@ export class Pool {
         return result;
     }
 
-    /** 
+    /**
      * wakes agent in Pool with lowest wakeTime
      */
 
@@ -996,7 +996,7 @@ export class Pool {
 
     /**
      * finds latest period.endTime of all agent in Pool
-     * @return {number} max of agents period.endTime  
+     * @return {number} max of agents period.endTime
      */
 
     endTime(){
@@ -1040,7 +1040,7 @@ export class Pool {
      *
      * @param {number} untilTime Stop time for this run
      * @param {number} [limitCalls] Stop run once this number of agent wake up calls have been executed.
-     * 
+     *
      */
 
     syncRun(untilTime, limitCalls){
@@ -1053,9 +1053,9 @@ export class Pool {
         }
     }
 
-    /** 
+    /**
      * calls .initPeriod for all agents in the Pool
-     * 
+     *
      * @param {Object|number} param passed to each agent's .initPeriod()
      */
 
@@ -1090,20 +1090,20 @@ export class Pool {
      * @param {number[]} tradeSpec.buyQ the number bought by the corresponding agent in .buyId
      * @param {number[]} tradeSpec.sellId the agent id of a seller in a trade
      * @param {number[]} tradeSPec.sellQ the number bought by he corresponding agent in .sellId
-     * @throws {Error} when accounting identities do not balance or trade invalid 
+     * @throws {Error} when accounting identities do not balance or trade invalid
      */
-    
+
     trade(tradeSpec){
         let i,l,buyerTransfer,sellerTransfer;
         if (typeof(tradeSpec)!=='object') return;
         if ( (tradeSpec.bs) &&
              (tradeSpec.goods) &&
              (tradeSpec.money) &&
-             (Array.isArray(tradeSpec.prices)) && 
+             (Array.isArray(tradeSpec.prices)) &&
              (Array.isArray(tradeSpec.buyQ)) &&
              (Array.isArray(tradeSpec.sellQ)) &&
              (Array.isArray(tradeSpec.buyId)) &&
-             (Array.isArray(tradeSpec.sellId)) ){   
+             (Array.isArray(tradeSpec.sellId)) ){
             if (tradeSpec.bs==='b'){
                 if (tradeSpec.buyId.length!==1)
                     throw new Error("Pool.trade expected tradeSpec.buyId.length===1, got:"+tradeSpec.buyId.length);
@@ -1142,7 +1142,7 @@ export class Pool {
      * distribute an aggregate setting of buyer Values or seller Costs to a pool of sellers, by giving each agent a successive value from the array without replacement
      *
      * @param {string} field "values" or "costs"
-     * @param {good} good name of good for agents inventories. 
+     * @param {good} good name of good for agents inventories.
      * @param {number[]} aggregateArray list of numeric values or costs reflecting the aggregate pool values or costs
      * @throws {Error} when field is invalid or aggregateArray is wrong type
      */
@@ -1152,7 +1152,7 @@ export class Pool {
         let myCopy;
         if (Array.isArray(aggregateArray)){
             myCopy = aggregateArray.slice();
-        } else {            
+        } else {
             throw new Error("Error: Pool.prototype.distribute: expected aggregate to be Array, got: "+typeof(aggregateArray));
         }
         if ((field!=='values') && (field!=='costs'))
@@ -1170,4 +1170,3 @@ export class Pool {
         }
     }
 }
-
