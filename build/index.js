@@ -49,30 +49,34 @@ function sum(a) {
       total = 0;
 
   for (i = 0, l = a.length; i < l; ++i) {
-    total += a[i];
+    total += +a[i];
   }
 
   return total;
 }
+/* ignore this function in test coverage stats */
+
+/* istanbul ignore next */
+
 
 function dot(a, b) {
   var i,
       l,
       total = 0;
-  /* istanbul ignore next */
-
   if (a.length !== b.length) throw new Error("market-agents: vector dimensions do not match in dot(a,b)");
 
   for (i = 0, l = a.length; i < l; ++i) {
-    if (b[i]) total += a[i] * b[i];
+    if (a[i] && b[i]) total += a[i] * b[i];
   }
 
   return total;
 }
 
 function poissonWake() {
-  var delta = ProbJS.exponential(this.rate)();
-  var result = this.wakeTime + delta;
+  var delta = ProbJS.exponential(this.rate)(); // undefined is a valid this.wakeTime
+
+  var result = this.wakeTime + delta; // block NaN and negative values
+
   if (result > 0) return result;
 }
 /**
@@ -1093,6 +1097,8 @@ function (_Sniper) {
       var isJuicyPrice = market.currentAskPrice() <= market.previousPeriod('lowPrice');
       if (isJuicyPrice) return true;
       if (this.isLowSpread(market)) return true;
+      /* istanbul ignore else */
+
       if (this.poissonWakesRemainingInPeriod() <= this.nearEndOfPeriod) return true;
     }
   }, {
@@ -1101,6 +1107,8 @@ function (_Sniper) {
       var isJuicyPrice = market.currentBidPrice() >= market.previousPeriod('highPrice');
       if (isJuicyPrice) return true;
       if (this.isLowSpread(market)) return true;
+      /* istanbul ignore else */
+
       if (this.poissonWakesRemainingInPeriod() <= this.nearEndOfPeriod) return true;
     }
   }]);
@@ -1134,12 +1142,16 @@ function (_Sniper2) {
     key: "buyNow",
     value: function buyNow(marginalValue, market) {
       if (market.currentAskPrice() <= market.previousPeriod('medianPrice')) return true;
+      /* istanbul ignore else */
+
       if (this.poissonWakesRemainingInPeriod() <= this.nearEndOfPeriod) return true;
     }
   }, {
     key: "sellNow",
     value: function sellNow(marginalCost, market) {
       if (market.currentBidPrice() >= market.previousPeriod('medianPrice')) return true;
+      /* istanbul ignore else */
+
       if (this.poissonWakesRemainingInPeriod() <= this.nearEndOfPeriod) return true;
     }
   }]);
@@ -1175,10 +1187,12 @@ function () {
     value: function push(agent) {
       if (!(agent instanceof Agent)) throw new Error("Pool.push(agent), agent is not an instance of Agent or descendents");
 
-      if (!this.agentsById[agent.id]) {
-        this.agents.push(agent);
-        this.agentsById[agent.id] = agent;
+      if (this.agentsById[agent.id]) {
+        throw new Error("Pool.push(agent), conflict: new agent has id of existing agent");
       }
+
+      this.agents.push(agent);
+      this.agentsById[agent.id] = agent;
     }
     /**
      * finds agent from Pool with lowest wakeTime
@@ -1216,6 +1230,7 @@ function () {
     key: "wake",
     value: function wake() {
       var A = this.next();
+      /* istanbul ignore else */
 
       if (A) {
         A.wake(); // wipe nextCache
@@ -1255,11 +1270,15 @@ function () {
       return new Promise(function (resolve, reject) {
         function loop() {
           var nextAgent = 0;
+          /* can not test catch() block so drop from test coverage */
 
           try {
             pool.syncRun(untilTime, batch || 1);
             nextAgent = pool.next();
-          } catch (e) {
+          } catch (e)
+          /* istanbul ignore next */
+          {
+            // eslint-disable-line brace-style
             return reject(e);
           }
 
@@ -1339,9 +1358,9 @@ function () {
     key: "trade",
     value: function trade(tradeSpec) {
       var i, l, buyerTransfer, sellerTransfer;
-      if (_typeof(tradeSpec) !== 'object') return;
+      if (typeof tradeSpec === 'undefined') return;
 
-      if (tradeSpec.bs && tradeSpec.goods && tradeSpec.money && Array.isArray(tradeSpec.prices) && Array.isArray(tradeSpec.buyQ) && Array.isArray(tradeSpec.sellQ) && Array.isArray(tradeSpec.buyId) && Array.isArray(tradeSpec.sellId)) {
+      if (_typeof(tradeSpec) === 'object' && tradeSpec.bs && tradeSpec.goods && tradeSpec.money && Array.isArray(tradeSpec.prices) && Array.isArray(tradeSpec.buyQ) && Array.isArray(tradeSpec.sellQ) && Array.isArray(tradeSpec.buyId) && Array.isArray(tradeSpec.sellId)) {
         if (tradeSpec.bs === 'b') {
           if (tradeSpec.buyId.length !== 1) throw new Error("Pool.trade expected tradeSpec.buyId.length===1, got:" + tradeSpec.buyId.length);
           if (tradeSpec.buyQ[0] !== sum(tradeSpec.sellQ)) throw new Error("Pool.trade invalid buy -- tradeSpec buyQ[0] != sum(sellQ)");
@@ -1382,7 +1401,11 @@ function () {
               isBuyAccepted: 1
             });
           }
+        } else {
+          throw new Error("Pool.trade tradeSpec.bs must be b or s, got:" + tradeSpec.bs);
         }
+      } else {
+        throw new Error("Pool.trade tradeSpec object not in correct format");
       }
     }
     /**
@@ -1409,6 +1432,9 @@ function () {
       if (field !== 'values' && field !== 'costs') throw new Error("Pool.distribute(field,good,aggArray) field should be 'values' or 'costs', got:" + field);
 
       for (i = 0, l = this.agents.length; i < l; ++i) {
+        // the if statement probably would never be satisfied -- but better to fix missing field than throw an error
+
+        /* istanbul ignore next */
         if (typeof this.agents[i][field] === 'undefined') this.agents[i][field] = {};
         this.agents[i][field][good] = [];
       }

@@ -48,6 +48,12 @@ describe('new Agent', function () {
     assert.ok(agent2.id > agent1.id);
   });
 
+  it('.nextWake() should yield undefined when .wakeTime is set undefined', function(){
+    let a = new Agent();
+    a.wakeTime = undefined;
+    assert.strictEqual(a.nextWake(),undefined);
+  });
+
   it('test 100 wakes, should have ascending wake times', function () {
     let agent = new Agent();
     let i, l;
@@ -257,6 +263,20 @@ describe('new Agent', function () {
       agents[1].inventory.Y.should.equal(1);
       agents[0].inventory.money.should.equal(-500);
       agents[1].inventory.money.should.equal(700);
+    });
+  });
+});
+
+/** @test {Trader} */
+describe('new Trader', function(){
+  it('should initialize properties markets, minPrice, maxPrice', function(){
+    const a = new MarketAgents.Trader({});
+    a.should.have.properties({markets:[],minPrice:0,maxPrice:1000});
+  });
+  it('.bid, .ask, .bidPrice, .askPrice are abstract methods', function(){
+    const a = new MarketAgents.Trader({});
+    ['bid','ask','bidPrice','askPrice'].forEach((method)=>{
+      a[method].should.throw(/abstract/);
     });
   });
 });
@@ -635,6 +655,24 @@ describe('new UnitAgent', function () {
     callAskPriceWithNoGetPreviousPrice.should.throw();
   });
 
+  it('this.bidPrice(50) is between 1 and 50 inclusive if market.lastTradePrice() is undefined', function(){
+    let a = new UnitAgent({minPrice:1, maxPrice:100, integer: true});
+    const market = {
+      lastTradePrice(){ return undefined; }
+    };
+    for(let i=0;i<1000;++i)
+      a.bidPrice(50, market).should.be.within(1,50);
+  });
+
+  it('this.askPrice(50) is between 50 and 100 inclusive if market.lastTradePrice() is undefined', function(){
+    let a = new UnitAgent({minPrice:1, maxPrice:100, integer: true});
+    const market = {
+      lastTradePrice(){ return undefined; }
+    };
+    for(let i=0;i<1000;++i)
+      a.askPrice(50, market).should.be.within(50,100);
+  });
+
   it('this.bidPrice(50) is undefined if market.lastTradePrice()===51.01', function () {
     let a = new UnitAgent({ minPrice: 10, maxPrice: 90 });
     let market = {
@@ -928,6 +966,25 @@ describe('new HoarderAgent', function () {
       .askPrice(20));
     assert.ok(typeof(ask) === 'undefined');
   });
+});
+
+describe('new Sniper', function(){
+  // Sniper is meant to be an Abstract Class so should not normally be instantiated
+  it('should have properties buyOnCloseTime, sellOnCloseTime equal to zero', function(){
+    let a = new MarketAgents.Sniper({});
+    a.should.have.properties({
+      buyOnCloseTime: 0,
+      sellOnCloseTime: 0
+    });
+   });
+   it('.buyNow throws /abstract/', function(){
+     let a = new MarketAgents.Sniper({});
+     a.buyNow.should.throw(/abstract/);
+   });
+   it('.sellNow throws /abstract/', function(){
+     let a = new MarketAgents.Sniper({});
+     a.sellNow.should.throw(/abstract/);
+   });
 });
 
 describe('new KaplanSniperAgent', function () {
@@ -1272,6 +1329,11 @@ describe('new Pool', function () {
     );
   });
 
+  it('pool with no agents, .endTime() is undefined', function(){
+    let pool = new Pool();
+    assert.strictEqual(typeof(pool.endTime()),"undefined");
+  });
+
   it('should not accept invalid agents:  pool.push(a) should throw an error if a is not Agent-related', function () {
     let myPool = new Pool();
 
@@ -1279,6 +1341,16 @@ describe('new Pool', function () {
       myPool.push({});
     }
     doNotDoThis.should.throw();
+  });
+
+  it('pool.push should not accept duplicate agents, throws /conflict/', function(){
+    const pool = new Pool();
+    const a = new Agent();
+    pool.push(a);
+    function bad(){
+      pool.push(a);
+    }
+    bad.should.throw(/conflict/);
   });
 
   it('pool.agentsById has entry for each id from pool.agents', function () {
@@ -1690,6 +1762,54 @@ describe('new Pool', function () {
       });
     });
 
+    it('pool with 10 agents, pool.Trade agent 2 sells 1 X@175 to agent 6, 2 X@150 to agent 4, tradeSpec.bs invalid, throws',
+      function () {
+        let pool = new Pool();
+        for (let i = 0, l = 10;i < l;++i)
+          pool.push(new Agent());
+        pool.agents.forEach(function (A) {
+          A.inventory.should.deepEqual({ money: 0 });
+        });
+        let tradeSpec = {
+          bs: 'w',
+          goods: 'X',
+          money: 'money',
+          buyQ: [1, 2],
+          sellQ: [3],
+          buyId: [pool.agents[6].id, pool.agents[4].id],
+          sellId: [pool.agents[2].id],
+          prices: [175, 150]
+        };
+        function bad(){
+          pool.trade(tradeSpec);
+        }
+        bad.should.throw(/must be b or s/);
+      });
+
+  it('pool.trade() undefined tradespec is ignored', function(){
+    const pool = new Pool();
+    assert(pool.trade()===undefined);
+  });
+
+  it("pool.trade(badObject) should throw /format/", function(){
+      const badObjects = [
+        {},
+        [],
+        23,
+        false,
+        true,
+        new Date()
+      ];
+      badObjects.forEach((tradeSpec)=>{
+        const a = new Pool();
+        function bad(){
+          a.trade(tradeSpec);
+        }
+        bad.should.throw(/format/);
+      });
+    });
+  });
+
   function badTradeTest(bs, invalidSum) {
     let i, l;
     let pool = new Pool();
@@ -1747,6 +1867,14 @@ describe('new Pool', function () {
       badTradeTest('s', true);
     });
 
+  it("pool.distribute('foo','X',[100,50,30]) should throw /field/", function(){
+    const myPool = new Pool();
+    function bad(){
+      myPool.distribute('foo','X',[100,50,30]);
+    }
+    bad.should.throw(/field/);
+  });
+
   it("pool.distribute('values','X',[100,80,60,50,40,30,20,10]) over 5 agents", function () {
     let myPool = new Pool();
     [1, 2, 3, 4, 5].forEach(function () { myPool.push(new Agent()); });
@@ -1783,4 +1911,3 @@ describe('new Pool', function () {
     myPool.agents[8].values.X.should.deepEqual([]);
     myPool.agents[9].values.X.should.deepEqual([]);
   });
-});
