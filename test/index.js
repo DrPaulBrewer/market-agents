@@ -5,7 +5,23 @@ import assert from 'assert';
 import "should";
 import * as MarketAgents from "../src/index.js";
 
-const { Agent, ZIAgent, Pool, UnitAgent, OneupmanshipAgent, MidpointAgent, DoNothingAgent, TruthfulAgent, HoarderAgent, KaplanSniperAgent, MedianSniperAgent } = MarketAgents;
+const {
+  Agent,
+  ZIAgent,
+  Pool,
+  UnitAgent,
+  OneupmanshipAgent,
+  MidpointAgent,
+  DoNothingAgent,
+  TruthfulAgent,
+  HoarderAgent,
+  KaplanSniperAgent,
+  MedianSniperAgent,
+  AcceptSniperAgent,
+  RandomAcceptSniperAgent,
+  FallingAskSniperAgent,
+  RisingBidSniperAgent
+} = MarketAgents;
 
 /**  @test {MarketAgents} */
 
@@ -69,7 +85,7 @@ describe('new Agent', function () {
     assert.ok(wakes === 100);
   });
 
-  it('test 100 wakes, agent with rate 2 should use between 1/3 and 2/3 the time of agent with rate 1', function () {
+  it('test 100 wakes, agent with rate 2 should use between 1/4 and 3/4 the time of agent with rate 1', function () {
     let agent1 = new Agent();
     let agent2 = new Agent({ rate: 2 });
     let i, l;
@@ -83,8 +99,8 @@ describe('new Agent', function () {
     }
     assert.ok(wakes1 === 100);
     assert.ok(wakes2 === 100);
-    assert.ok(agent2.wakeTime > (0.33 * agent1.wakeTime), `${agent1.wakeTime} ${agent2.wakeTime}`);
-    assert.ok(agent2.wakeTime < (0.67 * agent1.wakeTime), `${agent1.wakeTime} ${agent2.wakeTime}`);
+    assert.ok(agent2.wakeTime > (0.25 * agent1.wakeTime), `${agent1.wakeTime} ${agent2.wakeTime}`);
+    assert.ok(agent2.wakeTime < (0.75 * agent1.wakeTime), `${agent1.wakeTime} ${agent2.wakeTime}`);
   });
 
   it('with period.endTime set wake up to 10000 times until wakeTime is undefined; .wakeTime, .pctPeriod increasing, .poissonWakesRemainingInPeriod decreasing, check formulas for pct, wakes', function () {
@@ -987,34 +1003,38 @@ describe('new Sniper', function(){
    });
 });
 
-describe('new KaplanSniperAgent', function () {
-  // eslint-disable-next-line max-params
-  function testKaplanSniperAgent(agentConfig, agentInfo, call, param, correctValue) {
-    let a = new KaplanSniperAgent(agentConfig);
-    let market = {};
-    let message = "config: " + JSON.stringify(agentConfig) + "\n" +
-      "info: " + JSON.stringify(agentInfo) + "\n" +
-      "call: " + call + "\n" +
-      "param: " + param + "\n" +
-      "correct: " + correctValue;
-    market.currentBidPrice = function () { return agentInfo.currentBidPrice; };
-    market.currentAskPrice = function () { return agentInfo.currentAskPrice; };
-    market.previousPeriod = function (prop) {
-      if (prop === 'highPrice')
-        return agentInfo.juicyBidPrice;
-      if (prop === 'lowPrice')
-        return agentInfo.juicyAskPrice;
-	throw new Error("no property "+prop);
-    };
-    if (correctValue === undefined)
-      assert.strictEqual(typeof(a[call](param, market)), "undefined", message);
-    else
-      assert.strictEqual(a[call](param, market), correctValue, message);
-  }
+function testSniperAgent({
+    SniperType,
+    agentConfig={},
+    marketInfo,
+    call,
+    param,
+    correctValue
+}){
+  const a = new SniperType(agentConfig);
+  const message = "config: " + JSON.stringify(agentConfig) + "\n" +
+    "info: " + JSON.stringify(marketInfo) + "\n" +
+    "call: " + call + "\n" +
+    "param: " + param + "\n" +
+    "correct: " + correctValue;
+  const market = {
+    currentBidPrice() { return marketInfo.currentBidPrice; },
+    currentAskPrice() { return marketInfo.currentAskPrice; },
+    lastTradePrice() { return marketInfo.lastTradePrice; },
+    previousPeriod(prop) {
+      return (marketInfo.previousPeriod && marketInfo.previousPeriod[prop]);
+    }
+  };
+  if (correctValue === undefined)
+    assert.strictEqual(typeof(a[call](param, market)), "undefined", message);
+  else
+    assert.strictEqual(a[call](param, market), correctValue, message);
+}
 
+function generalSniperTests(SniperType){
   it('should have properties id, description, inventory, wakeTime, rate, nextWake, period with proper types',
     function () {
-      let myAgent = new KaplanSniperAgent();
+      let myAgent = new SniperType();
       myAgent.should.be.type('object');
       myAgent.should.have.properties('id', 'description', 'inventory', 'wakeTime', 'rate', 'nextWake', 'period');
       myAgent.id.should.be.type('number');
@@ -1027,7 +1047,7 @@ describe('new KaplanSniperAgent', function () {
     });
 
   it('should have properties markets, values, costs, minPrice, maxPrice with proper types', function () {
-    let a = new KaplanSniperAgent();
+    let a = new SniperType();
     a.should.have.properties('markets', 'values', 'costs', 'minPrice', 'maxPrice');
     a.markets.should.be.type('object');
     a.values.should.be.type('object');
@@ -1037,7 +1057,7 @@ describe('new KaplanSniperAgent', function () {
   });
 
   it('should not call this.bid() or this.ask() on this.wake() if values and costs not configured', function () {
-    let a = new KaplanSniperAgent();
+    let a = new SniperType();
     let wakes = 0,
       bids = 0,
       asks = 0;
@@ -1054,7 +1074,7 @@ describe('new KaplanSniperAgent', function () {
     function () {
       let flags = [0, 1];
       flags.forEach(function (f) {
-        let a = new KaplanSniperAgent({ minPrice: 10, maxPrice: 90, integer: f });
+        let a = new SniperType({ minPrice: 10, maxPrice: 90, integer: f });
         assert.ok(typeof(a.bidPrice()) === 'undefined');
         assert.ok(typeof(a.askPrice()) === 'undefined');
       });
@@ -1062,12 +1082,12 @@ describe('new KaplanSniperAgent', function () {
 
   it('this.bidPrice and this.askPrice should throw on valid input if special getter functions do not exist', function () {
     function callBidPriceWithNoGetters() {
-      let a = new KaplanSniperAgent({ minPrice: 10, maxPrice: 90 });
+      let a = new SniperType({ minPrice: 10, maxPrice: 90 });
       a.bidPrice(50);
     }
 
     function callAskPriceWithNoGetters() {
-      let a = new KaplanSniperAgent({ minPrice: 10, maxPrice: 90 });
+      let a = new SniperType({ minPrice: 10, maxPrice: 90 });
       a.askPrice(60);
     }
     callBidPriceWithNoGetters.should.throw();
@@ -1076,28 +1096,64 @@ describe('new KaplanSniperAgent', function () {
 
   it('.bidPrice is undefined if currentAsk undefined', function () {
     for (let i = 1, l = 100;i < l;++i)
-      testKaplanSniperAgent({}, {
-          currentBidPrice: 10,
-          juicyAskPrice: 40
+      testSniperAgent({
+        SniperType,
+        marketInfo: {
+            currentBidPrice: 10,
+            lastTradePrice: 51,
+            previousPeriod: {
+              lowPrice: 40,
+              medianPrice: 50,
+              highPrice: 60
+            }
         },
-        "bidPrice",
-        i,
-        undefined);
+        call: "bidPrice",
+        param: i,
+        correctValue: undefined
+      });
   });
+
+  it('.askPrice is undefined if currentBid undefined', function () {
+    for (let i = 1, l = 100;i < l;++i)
+      testSniperAgent({
+        SniperType,
+        marketInfo: {
+            currentAskPrice: 70,
+            lastTradePrice: 51,
+            previousPeriod: {
+              lowPrice: 40,
+              medianPrice: 50,
+              highPrice: 60
+            }
+        },
+        call: "askPrice",
+        param: i,
+        correctValue: undefined
+      });
+  });
+
+}
+
+describe('new KaplanSniperAgent', function () {
+  generalSniperTests(KaplanSniperAgent);
 
   it('.bidPrice(MV) equals currentAsk===50 iff 50<=juicyAskPrice and 50<=MV', function () {
     let shouldBe50;
     for (let marginalValue = 1;marginalValue < 100;++marginalValue)
       for (let juicyAskPrice = 1;juicyAskPrice < 100;++juicyAskPrice) {
         shouldBe50 = (50 <= juicyAskPrice) && (50 <= marginalValue); // eslint-disable-line yoda
-        testKaplanSniperAgent({}, {
-            currentAskPrice: 50,
-            juicyAskPrice
-          },
-          "bidPrice",
-          marginalValue,
-          (shouldBe50 ? 50 : undefined)
-        );
+        testSniperAgent({
+            SniperType: KaplanSniperAgent,
+            marketInfo: {
+              currentAskPrice: 50,
+              previousPeriod: {
+                lowPrice: juicyAskPrice
+              }
+            },
+            call: "bidPrice",
+            param: marginalValue,
+            correctValue: (shouldBe50 ? 50 : undefined)
+          });
       }
   });
 
@@ -1106,29 +1162,19 @@ describe('new KaplanSniperAgent', function () {
     for (cBid = 1;cBid < 50;cBid++)
       for (dSpread = 1;dSpread < 40;dSpread++)
         for (MV = 40;MV < 60;MV++)
-          testKaplanSniperAgent({
+          testSniperAgent({
+            SniperType: KaplanSniperAgent,
+            agentConfig:{
               desiredSpread: dSpread
-            }, {
+            },
+            marketInfo: {
               currentBidPrice: cBid,
               currentAskPrice: 50
             },
-            "bidPrice",
-            MV,
-            (((MV >= 50) && ((50 - cBid) <= dSpread)) ? 50 : undefined)
-          );
-  });
-
-  it('.askPrice is undefined if currentBid undefined', function () {
-    let a = new KaplanSniperAgent();
-    let market = {
-      currentBidPrice() { return undefined; },
-
-      currentAskPrice() { return 70; },
-
-      previousPeriod(prop) { if (prop === 'highPrice') return 150; }
-    };
-    for (let i = 1, l = 100;i < l;++i)
-      assert(typeof(a.askPrice(i, market)) === 'undefined');
+            call: "bidPrice",
+            param: MV,
+            correctValue: (((MV >= 50) && ((50 - cBid) <= dSpread)) ? 50 : undefined)
+          });
   });
 
   it('.askPrice(MC) equals currentBid===60 iff juicyBidPrice>=60 and MC<=60', function () {
@@ -1136,14 +1182,18 @@ describe('new KaplanSniperAgent', function () {
     for (let marginalCost = 1;marginalCost < 100;++marginalCost)
       for (let juicyBidPrice = 1;juicyBidPrice < 100;++juicyBidPrice) {
         shouldBe60 = (juicyBidPrice <= 60) && (marginalCost <= 60);
-        testKaplanSniperAgent({}, {
+        testSniperAgent({
+          SniperType: KaplanSniperAgent,
+          marketInfo: {
             currentBidPrice: 60,
-            juicyBidPrice
+            previousPeriod: {
+              highPrice: juicyBidPrice
+            }
           },
-          "askPrice",
-          marginalCost,
-          (shouldBe60 ? 60 : undefined)
-        );
+          call: "askPrice",
+          param: marginalCost,
+          correctValue: (shouldBe60 ? 60 : undefined)
+        });
       }
   });
 
@@ -1152,144 +1202,45 @@ describe('new KaplanSniperAgent', function () {
       for (let currentAsk = currentBid + 1;currentAsk < (currentBid + 30);currentAsk++)
         for (let desiredSpread = 1;desiredSpread < 15;desiredSpread++)
           for (let mc = 50;mc < 70;mc++)
-            testKaplanSniperAgent({
+            testSniperAgent({
+              SniperType: KaplanSniperAgent,
+              agentConfig: {
                 desiredSpread
-              }, {
-                currentBidPrice: currentBid,
-                currentAskPrice: currentAsk,
-                juicyBidPrice: 200,
-                juicyAskPrice: 10
               },
-              "askPrice",
-              mc,
-              (((mc <= currentBid) && ((currentAsk - currentBid) <= desiredSpread)) ? currentBid : undefined)
-            );
+              marketInfo: {
+                  currentBidPrice: currentBid,
+                  currentAskPrice: currentAsk,
+                  previousPeriod: {
+                    highPrice: 200,
+                    lowPrice: 10
+                  }
+              },
+              call: "askPrice",
+              param: mc,
+              correctValue: (((mc <= currentBid) && ((currentAsk - currentBid) <= desiredSpread)) ? currentBid : undefined)
+            });
   });
 });
 
 describe('new MedianSniperAgent', function () {
-  // eslint-disable-next-line max-params
-  function testMedianSniperAgent(agentConfig, agentInfo, call, param, correctValue) {
-    let a = new MedianSniperAgent(agentConfig);
-    let market = {};
-    let message = "config: " + JSON.stringify(agentConfig) + "\n" +
-      "info: " + JSON.stringify(agentInfo) + "\n" +
-      "call: " + call + "\n" +
-      "param: " + param + "\n" +
-      "correct: " + correctValue;
-    market.currentBidPrice = function () { return agentInfo.currentBidPrice; };
-    market.currentAskPrice = function () { return agentInfo.currentAskPrice; };
-    market.previousPeriod = function (prop) {
-      if (prop === 'medianPrice') return agentInfo.previousMedian;
-      return undefined;
-    };
-    if (correctValue === undefined)
-      assert.strictEqual(typeof(a[call](param, market)), "undefined", message);
-    else
-      assert.strictEqual(a[call](param, market), correctValue, message);
-  }
-
-  it('should have properties id, description, inventory, wakeTime, rate, nextWake, period with proper types',
-    function () {
-      let myAgent = new MedianSniperAgent();
-      myAgent.should.be.type('object');
-      myAgent.should.have.properties('id', 'description', 'inventory', 'wakeTime', 'rate', 'nextWake', 'period');
-      myAgent.id.should.be.type('number');
-      myAgent.description.should.be.type('string');
-      myAgent.inventory.should.be.type('object');
-      myAgent.wakeTime.should.be.type('number');
-      myAgent.rate.should.be.type('number');
-      myAgent.nextWake.should.be.type('function');
-      myAgent.period.should.be.type('object');
-    });
-
-  it('should have properties markets, values, costs, minPrice, maxPrice with proper types', function () {
-    let a = new MedianSniperAgent();
-    a.should.have.properties('markets', 'values', 'costs', 'minPrice', 'maxPrice');
-    a.markets.should.be.type('object');
-    a.values.should.be.type('object');
-    a.costs.should.be.type('object');
-    a.minPrice.should.be.type('number');
-    a.maxPrice.should.be.type('number');
-  });
-
-  it('should not call this.bid() or this.ask() on this.wake() if values and costs not configured', function () {
-    let a = new MedianSniperAgent();
-    let wakes = 0,
-      bids = 0,
-      asks = 0;
-    a.on('wake', function () { wakes++; });
-    a.bid = function () { bids++; };
-    a.ask = function () { asks++; };
-    a.wake();
-    wakes.should.equal(1);
-    bids.should.equal(0);
-    asks.should.equal(0);
-  });
-
-  it('this.bidPrice and this.askPrice return undefined if input value is undefined, irregardless of integer setting',
-    function () {
-      let flags = [0, 1];
-      flags.forEach(function (f) {
-        let a = new MedianSniperAgent({ minPrice: 10, maxPrice: 90, integer: f });
-        assert.ok(typeof(a.bidPrice()) === 'undefined');
-        assert.ok(typeof(a.askPrice()) === 'undefined');
-      });
-    });
-
-  it('this.bidPrice and this.askPrice should throw on valid input if special getter functions do not exist', function () {
-    function callBidPriceWithNoGetters() {
-      let a = new MedianSniperAgent({ minPrice: 10, maxPrice: 90 });
-      a.bidPrice(50);
-    }
-
-    function callAskPriceWithNoGetters() {
-      let a = new MedianSniperAgent({ minPrice: 10, maxPrice: 90 });
-      a.askPrice(60);
-    }
-    callBidPriceWithNoGetters.should.throw();
-    callAskPriceWithNoGetters.should.throw();
-  });
-
-  it('.bidPrice is undefined if currentAsk undefined', function () {
-    for (let i = 1, l = 100;i < l;++i)
-      testMedianSniperAgent({}, {
-          currentBidPrice: 10,
-          previousMedian: 40
-        },
-        "bidPrice",
-        i,
-        undefined);
-  });
+  generalSniperTests(MedianSniperAgent);
 
   it('.bidPrice(MV) equals currentAsk===50 iff 50<=previousMedian and 50<=MV', function () {
     let shouldBe50;
     for (let marginalValue = 1;marginalValue < 100;++marginalValue)
       for (let previousMedian = 1;previousMedian < 100;++previousMedian) {
         shouldBe50 = (50 <= previousMedian) && (50 <= marginalValue); // eslint-disable-line yoda
-        testMedianSniperAgent({}, {
-            currentAskPrice: 50,
-            previousMedian
+        testSniperAgent({
+          SniperType: MedianSniperAgent,
+          marketInfo: {
+              currentAskPrice: 50,
+              previousPeriod: { medianPrice: previousMedian }
           },
-          "bidPrice",
-          marginalValue,
-          (shouldBe50 ? 50 : undefined)
-        );
+          call: "bidPrice",
+          param: marginalValue,
+          correctValue: (shouldBe50 ? 50 : undefined)
+        });
       }
-  });
-
-
-  it('.askPrice is undefined if currentBid undefined', function () {
-    let a = new KaplanSniperAgent();
-    let market = {
-      currentBidPrice() { return undefined; },
-
-      currentAskPrice() { return 70; },
-
-      previousPeriod(prop) { if (prop === 'medianPrice') return 150; }
-    };
-    for (let i = 1, l = 100;i < l;++i)
-      assert(typeof(a.askPrice(i, market)) === 'undefined');
   });
 
   it('.askPrice(MC) equals currentBid===60 iff previousMedian>=60 and MC<=60', function () {
@@ -1297,18 +1248,172 @@ describe('new MedianSniperAgent', function () {
     for (let marginalCost = 1;marginalCost < 100;++marginalCost)
       for (let previousMedian = 1;previousMedian < 100;++previousMedian) {
         shouldBe60 = (previousMedian <= 60) && (marginalCost <= 60);
-        testMedianSniperAgent({}, {
-            currentBidPrice: 60,
-            previousMedian
+        testSniperAgent({
+          SniperType: MedianSniperAgent,
+          marketInfo: {
+              currentBidPrice: 60,
+              previousPeriod: { medianPrice: previousMedian }
           },
-          "askPrice",
-          marginalCost,
-          (shouldBe60 ? 60 : undefined)
-        );
+          call: "askPrice",
+          param: marginalCost,
+          correctValue: (shouldBe60 ? 60 : undefined)
+        });
       }
   });
 });
 
+function noNegativeProfitSniperTest(SniperType){
+  for(let marginalCost=21;marginalCost<100;marginalCost++){
+    testSniperAgent({
+      SniperType,
+      marketInfo: {
+        currentBidPrice: 20,
+        currentAskPrice: 80,
+        lastTradePrice: 55
+      },
+      call: "askPrice",
+      param: marginalCost,
+      correctValue: undefined
+    });
+    testSniperAgent({
+      SniperType,
+      marketInfo: {
+        lastTradePrice: 10,
+        currentBidPrice: 15,
+        currentAskPrice: 90
+      },
+      call: "askPrice",
+      param: marginalCost,
+      correctValue: undefined
+    });
+  }
+  for(let marginalValue=1;marginalValue<70;marginalValue++){
+    testSniperAgent({
+      SniperType,
+      marketInfo: {
+        currentBidPrice: 70,
+        currentAskPrice: 80,
+        lastTradePrice: 75
+      },
+      call: "bidPrice",
+      param: marginalValue,
+      correctValue: undefined
+    });
+    testSniperAgent({
+      SniperType,
+      marketInfo: {
+        lastTradePrice: 80,
+        currentBidPrice: 70,
+        currentAskPrice: 71
+      },
+      call: "bidPrice",
+      param: marginalValue,
+      correctValue: undefined
+    });
+  }
+}
+
+describe('new AcceptSniperAgent', function(){
+  generalSniperTests(AcceptSniperAgent);
+  noNegativeProfitSniperTest(AcceptSniperAgent);
+  for(let marginalValue=61;marginalValue<100;marginalValue++)
+    testSniperAgent({
+      SniperType: AcceptSniperAgent,
+      marketInfo: {
+        currentBidPrice: 40,
+        currentAskPrice: 60
+      },
+      call: "bidPrice",
+      param: marginalValue,
+      correctValue: 60
+    });
+  for(let marginalCost=1;marginalCost<40;marginalCost++)
+    testSniperAgent({
+      SniperType: AcceptSniperAgent,
+      marketInfo: {
+        currentBidPrice: 40,
+        currentAskPrice: 60
+      },
+      call: "askPrice",
+      param: marginalCost,
+      correctValue: 40
+    });
+});
+
+describe('new RandomAcceptSniperAgent', function(){
+  generalSniperTests(RandomAcceptSniperAgent);
+  for(let i=0;i<100;++i) noNegativeProfitSniperTest(RandomAcceptSniperAgent);
+});
+
+describe('new FallingAskSniperAgent', function(){
+  generalSniperTests(FallingAskSniperAgent);
+  noNegativeProfitSniperTest(FallingAskSniperAgent);
+  for(let marginalCost=1;marginalCost<40;marginalCost++)
+    for(let lastTradePrice=30;lastTradePrice<70;lastTradePrice++){
+      const shouldAsk = (lastTradePrice>60);
+      testSniperAgent({
+        SniperType: FallingAskSniperAgent,
+        marketInfo: {
+          lastTradePrice,
+          currentBidPrice: 40,
+          currentAskPrice: 60
+        },
+        call: "askPrice",
+        param: marginalCost,
+        correctValue: (shouldAsk? 40: undefined)
+      });
+    }
+  for(let marginalValue=61;marginalValue<100;marginalValue++)
+    for(let lastTradePrice=30;lastTradePrice<70;lastTradePrice++){
+      const shouldBid = (lastTradePrice>60);
+      testSniperAgent({
+        SniperType: FallingAskSniperAgent,
+        marketInfo: {
+          lastTradePrice,
+          currentBidPrice: 40,
+          currentAskPrice: 60
+        },
+        call: "bidPrice",
+        param: marginalValue,
+        correctValue: (shouldBid? 60: undefined)
+      });
+    }
+});
+
+describe('new RisingBidSniperAgent', function(){
+  generalSniperTests(RisingBidSniperAgent);
+  noNegativeProfitSniperTest(RisingBidSniperAgent);
+  for(let marginalCost=1;marginalCost<40;marginalCost++)
+    for(let lastTradePrice=30;lastTradePrice<70;lastTradePrice++){
+      const shouldAsk = (lastTradePrice<40);
+      testSniperAgent({
+        SniperType: RisingBidSniperAgent,
+        marketInfo: {
+          lastTradePrice,
+          currentBidPrice: 40,
+          currentAskPrice: 60
+        },
+        call: "askPrice",
+        param: marginalCost,
+        correctValue: (shouldAsk? 40: undefined)
+      });
+    }
+  for(let marginalValue=61;marginalValue<100;marginalValue++)
+    for(let lastTradePrice=30;lastTradePrice<70;lastTradePrice++){
+      const shouldBid = (lastTradePrice<40);
+      testSniperAgent({
+        SniperType: RisingBidSniperAgent,
+        marketInfo: {
+          lastTradePrice,
+          currentBidPrice: 40,
+          currentAskPrice: 60
+        },
+        call: "bidPrice",
+        param: marginalValue,
+        correctValue: (shouldBid? 60: undefined)
+      });
+    }
+});
 
 describe('new Pool', function () {
   it('new Pool() initially has no agents', function () {

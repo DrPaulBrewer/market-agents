@@ -940,6 +940,92 @@ export class MedianSniperAgent extends Sniper {
   }
 }
 
+export class AcceptSniperAgent extends Sniper {
+
+  /**
+    * Create AcceptSniperAgent from Sniper
+    * @param {Object} [options] to Trader and Agent constructors
+    */
+
+  constructor(options){
+    const defaults = {
+      description: "AcceptSniperAgent, accepts any bid/ask from other side of market that meets no-loss constraint but does not make bids/asks"
+    };
+    super(Object.assign({},defaults,options));
+  }
+
+  buyNow(){ return true; }
+
+  sellNow(){ return true; }
+
+}
+
+
+export class RandomAcceptSniperAgent extends Sniper {
+
+  /**
+    * Create RandomAcceptSniperAgent from Sniper
+    * @param {Object} [options] to Trader and Agent constructors
+    */
+
+  constructor(options){
+    const defaults = {
+      description: "RandomAcceptSniperAgent, at a probability between 0-1 (also determined randomly, once, at initialization) randomly accepts any bid/ask from other side of market that meets no-loss constraint. Does not make bids/asks"
+    };
+    super(Object.assign({},defaults,options));
+    this.acceptRate = ProbJS.uniform(0.0,1.0);
+  }
+
+  accept(){
+    const r = ProbJS.uniform(0.0,1.0);
+    if (r<=this.acceptRate) return true;
+    return false;
+  }
+
+  buyNow(){
+    return this.accept();
+  }
+
+  sellNow(){
+    return this.accept();
+  }
+}
+
+export class FallingAskSniperAgent extends Sniper {
+
+  isFallingAsk(market){
+    const last = market.lastTradePrice();
+    const ask = market.currentAskPrice();
+    return ((last>0) && (ask>0) && (ask<last));
+  }
+
+  buyNow(marginalValue,market){
+    return this.isFallingAsk(market);
+  }
+
+  sellNow(marginalCost,market){
+    return this.isFallingAsk(market);
+  }
+
+}
+
+export class RisingBidSniperAgent extends Sniper {
+
+  isRisingBid(market){
+    const last = market.lastTradePrice();
+    const bid = market.currentBidPrice();
+    return ((last>0) && (bid>0) && (bid>last));
+  }
+
+  buyNow(marginalValue,market){
+    return this.isRisingBid(market);
+  }
+
+  sellNow(marginalCost,market){
+    return this.isRisingBid(market);
+  }
+
+}
 
 /**
  * Pool for managing a collection of agents.

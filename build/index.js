@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.Pool = exports.MedianSniperAgent = exports.KaplanSniperAgent = exports.Sniper = exports.MidpointAgent = exports.OneupmanshipAgent = exports.UnitAgent = exports.ZIAgent = exports.HoarderAgent = exports.TruthfulAgent = exports.DoNothingAgent = exports.Trader = exports.Agent = void 0;
+exports.Pool = exports.RisingBidSniperAgent = exports.FallingAskSniperAgent = exports.RandomAcceptSniperAgent = exports.AcceptSniperAgent = exports.MedianSniperAgent = exports.KaplanSniperAgent = exports.Sniper = exports.MidpointAgent = exports.OneupmanshipAgent = exports.UnitAgent = exports.ZIAgent = exports.HoarderAgent = exports.TruthfulAgent = exports.DoNothingAgent = exports.Trader = exports.Agent = void 0;
 
 var _clone = _interopRequireDefault(require("clone"));
 
@@ -1160,6 +1160,157 @@ function (_Sniper2) {
 
   return MedianSniperAgent;
 }(Sniper);
+
+exports.MedianSniperAgent = MedianSniperAgent;
+
+var AcceptSniperAgent =
+/*#__PURE__*/
+function (_Sniper3) {
+  _inherits(AcceptSniperAgent, _Sniper3);
+
+  /**
+    * Create AcceptSniperAgent from Sniper
+    * @param {Object} [options] to Trader and Agent constructors
+    */
+  function AcceptSniperAgent(options) {
+    _classCallCheck(this, AcceptSniperAgent);
+
+    var defaults = {
+      description: "AcceptSniperAgent, accepts any bid/ask from other side of market that meets no-loss constraint but does not make bids/asks"
+    };
+    return _possibleConstructorReturn(this, _getPrototypeOf(AcceptSniperAgent).call(this, Object.assign({}, defaults, options)));
+  }
+
+  _createClass(AcceptSniperAgent, [{
+    key: "buyNow",
+    value: function buyNow() {
+      return true;
+    }
+  }, {
+    key: "sellNow",
+    value: function sellNow() {
+      return true;
+    }
+  }]);
+
+  return AcceptSniperAgent;
+}(Sniper);
+
+exports.AcceptSniperAgent = AcceptSniperAgent;
+
+var RandomAcceptSniperAgent =
+/*#__PURE__*/
+function (_Sniper4) {
+  _inherits(RandomAcceptSniperAgent, _Sniper4);
+
+  /**
+    * Create RandomAcceptSniperAgent from Sniper
+    * @param {Object} [options] to Trader and Agent constructors
+    */
+  function RandomAcceptSniperAgent(options) {
+    var _this3;
+
+    _classCallCheck(this, RandomAcceptSniperAgent);
+
+    var defaults = {
+      description: "RandomAcceptSniperAgent, at a probability between 0-1 (also determined randomly, once, at initialization) randomly accepts any bid/ask from other side of market that meets no-loss constraint. Does not make bids/asks"
+    };
+    _this3 = _possibleConstructorReturn(this, _getPrototypeOf(RandomAcceptSniperAgent).call(this, Object.assign({}, defaults, options)));
+    _this3.acceptRate = ProbJS.uniform(0.0, 1.0);
+    return _this3;
+  }
+
+  _createClass(RandomAcceptSniperAgent, [{
+    key: "accept",
+    value: function accept() {
+      var r = ProbJS.uniform(0.0, 1.0);
+      if (r <= this.acceptRate) return true;
+      return false;
+    }
+  }, {
+    key: "buyNow",
+    value: function buyNow() {
+      return this.accept();
+    }
+  }, {
+    key: "sellNow",
+    value: function sellNow() {
+      return this.accept();
+    }
+  }]);
+
+  return RandomAcceptSniperAgent;
+}(Sniper);
+
+exports.RandomAcceptSniperAgent = RandomAcceptSniperAgent;
+
+var FallingAskSniperAgent =
+/*#__PURE__*/
+function (_Sniper5) {
+  _inherits(FallingAskSniperAgent, _Sniper5);
+
+  function FallingAskSniperAgent() {
+    _classCallCheck(this, FallingAskSniperAgent);
+
+    return _possibleConstructorReturn(this, _getPrototypeOf(FallingAskSniperAgent).apply(this, arguments));
+  }
+
+  _createClass(FallingAskSniperAgent, [{
+    key: "isFallingAsk",
+    value: function isFallingAsk(market) {
+      var last = market.lastTradePrice();
+      var ask = market.currentAskPrice();
+      return last > 0 && ask > 0 && ask < last;
+    }
+  }, {
+    key: "buyNow",
+    value: function buyNow(marginalValue, market) {
+      return this.isFallingAsk(market);
+    }
+  }, {
+    key: "sellNow",
+    value: function sellNow(marginalCost, market) {
+      return this.isFallingAsk(market);
+    }
+  }]);
+
+  return FallingAskSniperAgent;
+}(Sniper);
+
+exports.FallingAskSniperAgent = FallingAskSniperAgent;
+
+var RisingBidSniperAgent =
+/*#__PURE__*/
+function (_Sniper6) {
+  _inherits(RisingBidSniperAgent, _Sniper6);
+
+  function RisingBidSniperAgent() {
+    _classCallCheck(this, RisingBidSniperAgent);
+
+    return _possibleConstructorReturn(this, _getPrototypeOf(RisingBidSniperAgent).apply(this, arguments));
+  }
+
+  _createClass(RisingBidSniperAgent, [{
+    key: "isRisingBid",
+    value: function isRisingBid(market) {
+      var last = market.lastTradePrice();
+      var bid = market.currentBidPrice();
+      return last > 0 && bid > 0 && bid > last;
+    }
+  }, {
+    key: "buyNow",
+    value: function buyNow(marginalValue, market) {
+      return this.isRisingBid(market);
+    }
+  }, {
+    key: "sellNow",
+    value: function sellNow(marginalCost, market) {
+      return this.isRisingBid(market);
+    }
+  }]);
+
+  return RisingBidSniperAgent;
+}(Sniper);
 /**
  * Pool for managing a collection of agents.
  * Agents may belong to multiple pools.
@@ -1167,7 +1318,7 @@ function (_Sniper2) {
  */
 
 
-exports.MedianSniperAgent = MedianSniperAgent;
+exports.RisingBidSniperAgent = RisingBidSniperAgent;
 
 var Pool =
 /*#__PURE__*/
