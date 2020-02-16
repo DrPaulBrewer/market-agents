@@ -434,7 +434,7 @@ export class DoNothingAgent extends Trader {
    */
 
   constructor(options) {
-    super(Object.assign({}, { description: 'DoNothing agent never bids or asks' }, options));
+    super(Object.assign({}, { description: 'DoNothing agent never bids or asks', color:"black" }, options));
   }
 
   bidPrice() {
@@ -456,7 +456,7 @@ export class TruthfulAgent extends Trader {
    */
 
   constructor(options) {
-    super(Object.assign({}, { description: 'Truthful Agent bids=value or asks=cost' }, options));
+    super(Object.assign({}, { description: 'Truthful Agent bids=value or asks=cost', color:"turquoise" }, options));
   }
 
   bidPrice(marginalValue) {
@@ -481,7 +481,7 @@ export class HoarderAgent extends Trader {
    */
 
   constructor(options) {
-    super(Object.assign({}, { description: 'Hoarder Agent always bids the current asking price and never asks' }, options));
+    super(Object.assign({}, { description: 'Hoarder Agent always bids the current asking price and never asks', color:"hotpink" }, options));
   }
 
   bidPrice(marginalValue, market) {
@@ -518,7 +518,7 @@ export class ZIAgent extends Trader {
    */
 
   constructor(options) {
-    super(Object.assign({}, { description: 'Gode and Sunder Style ZI Agent' }, options));
+    super(Object.assign({}, { description: 'Gode and Sunder Style ZI Agent', color:"gold" }, options));
   }
 
   /**
@@ -605,7 +605,8 @@ export class UnitAgent extends ZIAgent {
 
   constructor(options) {
     const defaults = {
-      description: "Paul Brewer's UNIT agent that bids/asks within 1 price unit of previous price"
+      description: "Paul Brewer's UNIT agent that bids/asks within 1 price unit of previous price",
+      color: 'violet'
     };
     super(Object.assign({}, defaults, options));
   }
@@ -693,7 +694,8 @@ export class OneupmanshipAgent extends Trader {
 
   constructor(options) {
     const defaults = {
-      description: "Brewer's OneupmanshipAgent that increases the market bid or decreases the market ask by one price unit, if profitable to do so according to MV or MC"
+      description: "Brewer's OneupmanshipAgent that increases the market bid or decreases the market ask by one price unit, if profitable to do so according to MV or MC",
+      color: 'orange'
     };
     super(Object.assign({}, defaults, options));
   }
@@ -751,7 +753,8 @@ export class OneupmanshipAgent extends Trader {
 export class MidpointAgent extends Trader {
   constructor(options) {
     const defaults = {
-      description: "Brewer's MidpointAgent bids/asks halfway between the bid and ask, if profitable to do according to MC or MV"
+      description: "Brewer's MidpointAgent bids/asks halfway between the bid and ask, if profitable to do according to MC or MV",
+      color: 'mintcream'
     };
     super(Object.assign({}, defaults, options));
   }
@@ -871,7 +874,8 @@ export class KaplanSniperAgent extends Sniper {
     const defaults = {
       description: "Kaplan's snipers, trade on 'juicy' price, or low spread, or end of period",
       desiredSpread: 10,
-      nearEndOfPeriod: 10
+      nearEndOfPeriod: 10,
+      color: 'khaki'
     };
     super(Object.assign({}, defaults, options));
   }
@@ -922,7 +926,8 @@ export class MedianSniperAgent extends Sniper {
   constructor(options) {
     const defaults = {
       description: "Median snipers, trade on price better than previous period median, or at end of period",
-      nearEndOfPeriod: 10
+      nearEndOfPeriod: 10,
+      color: 'magenta'
     };
     super(Object.assign({}, defaults, options));
   }
@@ -949,7 +954,8 @@ export class AcceptSniperAgent extends Sniper {
 
   constructor(options){
     const defaults = {
-      description: "AcceptSniperAgent, accepts any bid/ask from other side of market that meets no-loss constraint but does not make bids/asks"
+      description: "AcceptSniperAgent, accepts any bid/ask from other side of market that meets no-loss constraint but does not make bids/asks",
+      color: 'antiquewhite'
     };
     super(Object.assign({},defaults,options));
   }
@@ -970,7 +976,8 @@ export class RandomAcceptSniperAgent extends Sniper {
 
   constructor(options){
     const defaults = {
-      description: "RandomAcceptSniperAgent, at a probability between 0-1 (also determined randomly, once, at initialization) randomly accepts any bid/ask from other side of market that meets no-loss constraint. Does not make bids/asks"
+      description: "RandomAcceptSniperAgent, at a probability between 0-1 (also determined randomly, once, at initialization) randomly accepts any bid/ask from other side of market that meets no-loss constraint. Does not make bids/asks",
+      color: 'red'
     };
     super(Object.assign({},defaults,options));
     this.acceptRate = ProbJS.uniform(0.0,1.0);
@@ -993,6 +1000,14 @@ export class RandomAcceptSniperAgent extends Sniper {
 
 export class FallingAskSniperAgent extends Sniper {
 
+  constructor(options){
+    const defaults = {
+      description: 'Sniper waits for Ask below previous trade price',
+      color: 'forestgreen'
+    };
+    super(Object.assign({},defaults,options));
+  }
+
   isFallingAsk(market){
     const last = market.lastTradePrice();
     const ask = market.currentAskPrice();
@@ -1010,6 +1025,13 @@ export class FallingAskSniperAgent extends Sniper {
 }
 
 export class RisingBidSniperAgent extends Sniper {
+  constructor(options){
+    const defaults = {
+      description: 'Sniper waits for Bid above previous trade price',
+      color: 'rosybrown'
+    };
+    super(Object.assign({},defaults,options));
+  }
 
   isRisingBid(market){
     const last = market.lastTradePrice();

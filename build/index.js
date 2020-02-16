@@ -539,7 +539,8 @@ function (_Trader) {
     _classCallCheck(this, DoNothingAgent);
 
     return _possibleConstructorReturn(this, _getPrototypeOf(DoNothingAgent).call(this, Object.assign({}, {
-      description: 'DoNothing agent never bids or asks'
+      description: 'DoNothing agent never bids or asks',
+      color: "black"
     }, options)));
   }
 
@@ -575,7 +576,8 @@ function (_Trader2) {
     _classCallCheck(this, TruthfulAgent);
 
     return _possibleConstructorReturn(this, _getPrototypeOf(TruthfulAgent).call(this, Object.assign({}, {
-      description: 'Truthful Agent bids=value or asks=cost'
+      description: 'Truthful Agent bids=value or asks=cost',
+      color: "turquoise"
     }, options)));
   }
 
@@ -613,7 +615,8 @@ function (_Trader3) {
     _classCallCheck(this, HoarderAgent);
 
     return _possibleConstructorReturn(this, _getPrototypeOf(HoarderAgent).call(this, Object.assign({}, {
-      description: 'Hoarder Agent always bids the current asking price and never asks'
+      description: 'Hoarder Agent always bids the current asking price and never asks',
+      color: "hotpink"
     }, options)));
   }
 
@@ -663,7 +666,8 @@ function (_Trader4) {
     _classCallCheck(this, ZIAgent);
 
     return _possibleConstructorReturn(this, _getPrototypeOf(ZIAgent).call(this, Object.assign({}, {
-      description: 'Gode and Sunder Style ZI Agent'
+      description: 'Gode and Sunder Style ZI Agent',
+      color: "gold"
     }, options)));
   }
   /**
@@ -761,7 +765,8 @@ function (_ZIAgent) {
     _classCallCheck(this, UnitAgent);
 
     var defaults = {
-      description: "Paul Brewer's UNIT agent that bids/asks within 1 price unit of previous price"
+      description: "Paul Brewer's UNIT agent that bids/asks within 1 price unit of previous price",
+      color: 'violet'
     };
     return _possibleConstructorReturn(this, _getPrototypeOf(UnitAgent).call(this, Object.assign({}, defaults, options)));
   }
@@ -858,7 +863,8 @@ function (_Trader5) {
     _classCallCheck(this, OneupmanshipAgent);
 
     var defaults = {
-      description: "Brewer's OneupmanshipAgent that increases the market bid or decreases the market ask by one price unit, if profitable to do so according to MV or MC"
+      description: "Brewer's OneupmanshipAgent that increases the market bid or decreases the market ask by one price unit, if profitable to do so according to MV or MC",
+      color: 'orange'
     };
     return _possibleConstructorReturn(this, _getPrototypeOf(OneupmanshipAgent).call(this, Object.assign({}, defaults, options)));
   }
@@ -925,7 +931,8 @@ function (_Trader6) {
     _classCallCheck(this, MidpointAgent);
 
     var defaults = {
-      description: "Brewer's MidpointAgent bids/asks halfway between the bid and ask, if profitable to do according to MC or MV"
+      description: "Brewer's MidpointAgent bids/asks halfway between the bid and ask, if profitable to do according to MC or MV",
+      color: 'mintcream'
     };
     return _possibleConstructorReturn(this, _getPrototypeOf(MidpointAgent).call(this, Object.assign({}, defaults, options)));
   }
@@ -1070,7 +1077,8 @@ function (_Sniper) {
     var defaults = {
       description: "Kaplan's snipers, trade on 'juicy' price, or low spread, or end of period",
       desiredSpread: 10,
-      nearEndOfPeriod: 10
+      nearEndOfPeriod: 10,
+      color: 'khaki'
     };
     return _possibleConstructorReturn(this, _getPrototypeOf(KaplanSniperAgent).call(this, Object.assign({}, defaults, options)));
   }
@@ -1135,7 +1143,8 @@ function (_Sniper2) {
 
     var defaults = {
       description: "Median snipers, trade on price better than previous period median, or at end of period",
-      nearEndOfPeriod: 10
+      nearEndOfPeriod: 10,
+      color: 'magenta'
     };
     return _possibleConstructorReturn(this, _getPrototypeOf(MedianSniperAgent).call(this, Object.assign({}, defaults, options)));
   }
@@ -1176,7 +1185,8 @@ function (_Sniper3) {
     _classCallCheck(this, AcceptSniperAgent);
 
     var defaults = {
-      description: "AcceptSniperAgent, accepts any bid/ask from other side of market that meets no-loss constraint but does not make bids/asks"
+      description: "AcceptSniperAgent, accepts any bid/ask from other side of market that meets no-loss constraint but does not make bids/asks",
+      color: 'antiquewhite'
     };
     return _possibleConstructorReturn(this, _getPrototypeOf(AcceptSniperAgent).call(this, Object.assign({}, defaults, options)));
   }
@@ -1213,7 +1223,8 @@ function (_Sniper4) {
     _classCallCheck(this, RandomAcceptSniperAgent);
 
     var defaults = {
-      description: "RandomAcceptSniperAgent, at a probability between 0-1 (also determined randomly, once, at initialization) randomly accepts any bid/ask from other side of market that meets no-loss constraint. Does not make bids/asks"
+      description: "RandomAcceptSniperAgent, at a probability between 0-1 (also determined randomly, once, at initialization) randomly accepts any bid/ask from other side of market that meets no-loss constraint. Does not make bids/asks",
+      color: 'red'
     };
     _this3 = _possibleConstructorReturn(this, _getPrototypeOf(RandomAcceptSniperAgent).call(this, Object.assign({}, defaults, options)));
     _this3.acceptRate = ProbJS.uniform(0.0, 1.0);
@@ -1249,10 +1260,14 @@ var FallingAskSniperAgent =
 function (_Sniper5) {
   _inherits(FallingAskSniperAgent, _Sniper5);
 
-  function FallingAskSniperAgent() {
+  function FallingAskSniperAgent(options) {
     _classCallCheck(this, FallingAskSniperAgent);
 
-    return _possibleConstructorReturn(this, _getPrototypeOf(FallingAskSniperAgent).apply(this, arguments));
+    var defaults = {
+      description: 'Sniper waits for Ask below previous trade price',
+      color: 'forestgreen'
+    };
+    return _possibleConstructorReturn(this, _getPrototypeOf(FallingAskSniperAgent).call(this, Object.assign({}, defaults, options)));
   }
 
   _createClass(FallingAskSniperAgent, [{
@@ -1284,10 +1299,14 @@ var RisingBidSniperAgent =
 function (_Sniper6) {
   _inherits(RisingBidSniperAgent, _Sniper6);
 
-  function RisingBidSniperAgent() {
+  function RisingBidSniperAgent(options) {
     _classCallCheck(this, RisingBidSniperAgent);
 
-    return _possibleConstructorReturn(this, _getPrototypeOf(RisingBidSniperAgent).apply(this, arguments));
+    var defaults = {
+      description: 'Sniper waits for Bid above previous trade price',
+      color: 'rosybrown'
+    };
+    return _possibleConstructorReturn(this, _getPrototypeOf(RisingBidSniperAgent).call(this, Object.assign({}, defaults, options)));
   }
 
   _createClass(RisingBidSniperAgent, [{
