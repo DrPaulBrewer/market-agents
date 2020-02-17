@@ -577,7 +577,7 @@ function (_Trader2) {
 
     return _possibleConstructorReturn(this, _getPrototypeOf(TruthfulAgent).call(this, Object.assign({}, {
       description: 'Truthful Agent bids=value or asks=cost',
-      color: "turquoise"
+      color: "rosybrown"
     }, options)));
   }
 
@@ -667,7 +667,7 @@ function (_Trader4) {
 
     return _possibleConstructorReturn(this, _getPrototypeOf(ZIAgent).call(this, Object.assign({}, {
       description: 'Gode and Sunder Style ZI Agent',
-      color: "gold"
+      color: "green"
     }, options)));
   }
   /**
@@ -766,7 +766,7 @@ function (_ZIAgent) {
 
     var defaults = {
       description: "Paul Brewer's UNIT agent that bids/asks within 1 price unit of previous price",
-      color: 'violet'
+      color: 'lime'
     };
     return _possibleConstructorReturn(this, _getPrototypeOf(UnitAgent).call(this, Object.assign({}, defaults, options)));
   }
@@ -864,7 +864,7 @@ function (_Trader5) {
 
     var defaults = {
       description: "Brewer's OneupmanshipAgent that increases the market bid or decreases the market ask by one price unit, if profitable to do so according to MV or MC",
-      color: 'orange'
+      color: 'orangered'
     };
     return _possibleConstructorReturn(this, _getPrototypeOf(OneupmanshipAgent).call(this, Object.assign({}, defaults, options)));
   }
@@ -932,7 +932,7 @@ function (_Trader6) {
 
     var defaults = {
       description: "Brewer's MidpointAgent bids/asks halfway between the bid and ask, if profitable to do according to MC or MV",
-      color: 'mintcream'
+      color: 'goldenrod'
     };
     return _possibleConstructorReturn(this, _getPrototypeOf(MidpointAgent).call(this, Object.assign({}, defaults, options)));
   }
@@ -1078,7 +1078,7 @@ function (_Sniper) {
       description: "Kaplan's snipers, trade on 'juicy' price, or low spread, or end of period",
       desiredSpread: 10,
       nearEndOfPeriod: 10,
-      color: 'khaki'
+      color: 'navy'
     };
     return _possibleConstructorReturn(this, _getPrototypeOf(KaplanSniperAgent).call(this, Object.assign({}, defaults, options)));
   }
@@ -1144,7 +1144,7 @@ function (_Sniper2) {
     var defaults = {
       description: "Median snipers, trade on price better than previous period median, or at end of period",
       nearEndOfPeriod: 10,
-      color: 'magenta'
+      color: 'aqua'
     };
     return _possibleConstructorReturn(this, _getPrototypeOf(MedianSniperAgent).call(this, Object.assign({}, defaults, options)));
   }
@@ -1186,7 +1186,7 @@ function (_Sniper3) {
 
     var defaults = {
       description: "AcceptSniperAgent, accepts any bid/ask from other side of market that meets no-loss constraint but does not make bids/asks",
-      color: 'antiquewhite'
+      color: 'purple'
     };
     return _possibleConstructorReturn(this, _getPrototypeOf(AcceptSniperAgent).call(this, Object.assign({}, defaults, options)));
   }
@@ -1224,7 +1224,7 @@ function (_Sniper4) {
 
     var defaults = {
       description: "RandomAcceptSniperAgent, at a probability between 0-1 (also determined randomly, once, at initialization) randomly accepts any bid/ask from other side of market that meets no-loss constraint. Does not make bids/asks",
-      color: 'red'
+      color: 'darkred'
     };
     _this3 = _possibleConstructorReturn(this, _getPrototypeOf(RandomAcceptSniperAgent).call(this, Object.assign({}, defaults, options)));
     _this3.acceptRate = ProbJS.uniform(0.0, 1.0);
@@ -1265,7 +1265,7 @@ function (_Sniper5) {
 
     var defaults = {
       description: 'Sniper waits for Ask below previous trade price',
-      color: 'forestgreen'
+      color: 'saddlebrown'
     };
     return _possibleConstructorReturn(this, _getPrototypeOf(FallingAskSniperAgent).call(this, Object.assign({}, defaults, options)));
   }
@@ -1304,7 +1304,7 @@ function (_Sniper6) {
 
     var defaults = {
       description: 'Sniper waits for Bid above previous trade price',
-      color: 'rosybrown'
+      color: 'darkslategrey'
     };
     return _possibleConstructorReturn(this, _getPrototypeOf(RisingBidSniperAgent).call(this, Object.assign({}, defaults, options)));
   }
