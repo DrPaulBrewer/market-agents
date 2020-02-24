@@ -49,6 +49,8 @@ function dot(a, b) {
 }
 
 function poissonWake() {
+  if (this.rate <= 0) return +Infinity; // if the rate is zero or negative the agent never acts
+
   const delta = ProbJS.exponential(this.rate)(); // undefined is a valid this.wakeTime
 
   const result = this.wakeTime + delta; // block NaN and negative values
@@ -1137,12 +1139,14 @@ class Pool {
         l = this.agents.length,
         A = this.agents,
         t = 0,
-        result = 0;
+        result = 0,
+        endPeriod;
 
     for (; i < l; i++) {
       t = A[i].wakeTime;
+      endPeriod = A[i].period && A[i].period.endTime;
 
-      if (t > 0 && t < tMin) {
+      if (t > 0 && t < tMin && (endPeriod === undefined || endPeriod > 0 && t < endPeriod)) {
         result = A[i];
         tMin = t;
       }

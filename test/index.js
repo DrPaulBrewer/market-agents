@@ -1591,8 +1591,16 @@ describe('new Pool', function () {
     }
   }
 
+  it('pool with two agents, rate 1 and 1e-12, wakes about 1000 and 0 times with .syncRun(1000)', function(){
+    poolAgentRateTest([1,1e-12], Agent);
+  });
+
   it('pool with one agent, rate 1, wakes about 1000 times with .syncRun(1000) ', function () {
     poolAgentRateTest([1], Agent);
+  });
+
+  it('pool with two agents, rate 1 and 1e-12, wakes about 1000 and 0 times (runAsPromise)', function(done){
+    poolAgentRateTest([1,1e-12], Agent, done);
   });
 
   it('pool with one agent, rate 1, wakes about 1000 times by t=1000 (runAsPromise) ', function (done) {

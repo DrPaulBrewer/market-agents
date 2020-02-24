@@ -1089,10 +1089,19 @@ export class Pool {
       l = this.agents.length,
       A = this.agents,
       t = 0,
-      result = 0;
+      result = 0,
+      endPeriod;
     for (; i < l;i++) {
       t = A[i].wakeTime;
-      if ((t > 0) && (t < tMin)) {
+      endPeriod = A[i].period && A[i].period.endTime;
+      if (
+        (t > 0) &&
+        (t < tMin) &&
+        (
+          (endPeriod===undefined) ||
+          ((endPeriod > 0) && (t < endPeriod))
+        )
+      ) {
         result = A[i];
         tMin = t;
       }
