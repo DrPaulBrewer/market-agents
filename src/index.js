@@ -1083,7 +1083,7 @@ export class Pool {
    */
 
   next() {
-    if (this.nextCache) return this.nextCache;
+    if (this.nextCache!==undefined) return this.nextCache;
     let tMin = 1e20,
       i = 0,
       l = this.agents.length,
@@ -1193,6 +1193,8 @@ export class Pool {
    */
 
   initPeriod(param) {
+    // clear the nextCache since the agent wakeTimes will be reset
+    delete this.nextCache;
     // passing param to all the agents is safe because Agent.initPeriod does a deep clone
     if (Array.isArray(param) && (param.length > 0)) {
       for (let i = 0, l = this.agents.length;i < l;i++)

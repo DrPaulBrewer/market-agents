@@ -1538,6 +1538,22 @@ describe('new Pool', function () {
     myPool.agents[2].color.should.equal('blue');
   });
 
+  it("initPeriod clears this.nextCache, next/nextCache behaves as expected", function(){
+    let myPool = new Pool();
+    [1,2].forEach(function(){ myPool.push(new Agent());});
+    myPool.initPeriod(1);
+    assert.ok(myPool.nextCache===undefined,"this.nextCache should be undefined");
+    myPool.syncRun(2000);
+    let next = myPool.next();
+    next.should.equal(0);
+    myPool.nextCache.should.equal(0);
+    myPool.next().should.equal(0);
+    myPool.initPeriod(2);
+    assert.ok(myPool.nextCache===undefined,"this.nextCache should be undefined");
+    myPool.next().should.be.instanceOf(Agent);
+    myPool.nextCache.should.deepEqual(myPool.next());
+  });
+
   it('pool.endPeriod with 2 agents in pool calls .endPeriod on each agent', function () {
     let myPool = new Pool();
     let agent0 = new Agent();
