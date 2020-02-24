@@ -103,6 +103,11 @@ describe('new Agent', function () {
     assert.ok(agent2.wakeTime < (0.75 * agent1.wakeTime), `${agent1.wakeTime} ${agent2.wakeTime}`);
   });
 
+  it('agent with rate 0, wakes at +Infinity', function(){
+    const a = new Agent({rate: 0});
+    a.wakeTime.should.equal(+Infinity);
+  });
+
   it('with period.endTime set wake up to 10000 times until wakeTime is undefined; .wakeTime, .pctPeriod increasing, .poissonWakesRemainingInPeriod decreasing, check formulas for pct, wakes', function () {
     // set rate to something other than 1 to test as 1/1===1 and reciprocal error could creep in
     let agent = new Agent({ rate: 2.7 });

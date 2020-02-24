@@ -27,6 +27,7 @@ function dot(a, b) {
 
 
 function poissonWake() {
+  if (this.rate<=0) return +Infinity; // if the rate is zero or negative the agent never acts
   const delta = ProbJS.exponential(this.rate)();
   // undefined is a valid this.wakeTime
   const result = this.wakeTime + delta;
