@@ -1231,47 +1231,48 @@ export class Pool {
   trade(tradeSpec) {
     let i, l, buyerTransfer, sellerTransfer;
     if (typeof(tradeSpec) === 'undefined') return;
-    if ((typeof(tradeSpec) === 'object') &&
-      (tradeSpec.bs) &&
-      (tradeSpec.goods) &&
-      (tradeSpec.money) &&
-      (Array.isArray(tradeSpec.prices)) &&
-      (Array.isArray(tradeSpec.buyQ)) &&
-      (Array.isArray(tradeSpec.sellQ)) &&
-      (Array.isArray(tradeSpec.buyId)) &&
-      (Array.isArray(tradeSpec.sellId))) {
-      if (tradeSpec.bs === 'b') {
-        if (tradeSpec.buyId.length !== 1)
-          throw new Error("Pool.trade expected tradeSpec.buyId.length===1, got:" + tradeSpec.buyId.length);
-        if (tradeSpec.buyQ[0] !== sum(tradeSpec.sellQ))
+    const { bs, goods, money, prices, buyQ, sellQ, buyId, sellId } = tradeSpec;
+    if (
+      (bs) &&
+      (goods) &&
+      (money) &&
+      (Array.isArray(prices)) &&
+      (Array.isArray(buyQ)) &&
+      (Array.isArray(sellQ)) &&
+      (Array.isArray(buyId)) &&
+      (Array.isArray(sellId))) {
+      if (bs === 'b') {
+        if (buyId.length !== 1)
+          throw new Error("Pool.trade expected tradeSpec.buyId.length===1, got:" + buyId.length);
+        if (buyQ[0] !== sum(sellQ))
           throw new Error("Pool.trade invalid buy -- tradeSpec buyQ[0] != sum(sellQ)");
         buyerTransfer = {};
-        buyerTransfer[tradeSpec.goods] = tradeSpec.buyQ[0];
-        buyerTransfer[tradeSpec.money] = -dot(tradeSpec.sellQ, tradeSpec.prices);
-        this.agentsById[tradeSpec.buyId[0]].transfer(buyerTransfer, { isTrade: 1, isBuy: 1 });
-        for (i = 0, l = tradeSpec.prices.length;i < l;++i) {
+        buyerTransfer[goods] = buyQ[0];
+        buyerTransfer[money] = -dot(sellQ, prices);
+        this.agentsById[buyId[0]].transfer(buyerTransfer, { isTrade: 1, isBuy: 1 });
+        for (i = 0, l = prices.length;i < l;++i) {
           sellerTransfer = {};
-          sellerTransfer[tradeSpec.goods] = -tradeSpec.sellQ[i];
-          sellerTransfer[tradeSpec.money] = tradeSpec.prices[i] * tradeSpec.sellQ[i];
-          this.agentsById[tradeSpec.sellId[i]].transfer(sellerTransfer, { isTrade: 1, isSellAccepted: 1 });
+          sellerTransfer[goods] = -sellQ[i];
+          sellerTransfer[money] = prices[i] * sellQ[i];
+          this.agentsById[sellId[i]].transfer(sellerTransfer, { isTrade: 1, isSellAccepted: 1 });
         }
-      } else if (tradeSpec.bs === 's') {
-        if (tradeSpec.sellId.length !== 1)
-          throw new Error("Pool.trade expected tradeSpec.sellId.length===1. got:" + tradeSpec.sellId.length);
-        if (tradeSpec.sellQ[0] !== sum(tradeSpec.buyQ))
+      } else if (bs === 's') {
+        if (sellId.length !== 1)
+          throw new Error("Pool.trade expected tradeSpec.sellId.length===1. got:" + sellId.length);
+        if (sellQ[0] !== sum(buyQ))
           throw new Error("Pool.trade invalid sell -- tradeSpec sellQ[0] != sum(buyQ)");
         sellerTransfer = {};
-        sellerTransfer[tradeSpec.goods] = -tradeSpec.sellQ[0];
-        sellerTransfer[tradeSpec.money] = dot(tradeSpec.buyQ, tradeSpec.prices);
-        this.agentsById[tradeSpec.sellId[0]].transfer(sellerTransfer, { isTrade: 1, isSell: 1 });
-        for (i = 0, l = tradeSpec.prices.length;i < l;++i) {
+        sellerTransfer[goods] = -sellQ[0];
+        sellerTransfer[money] = dot(buyQ, prices);
+        this.agentsById[sellId[0]].transfer(sellerTransfer, { isTrade: 1, isSell: 1 });
+        for (i = 0, l = prices.length;i < l;++i) {
           buyerTransfer = {};
-          buyerTransfer[tradeSpec.goods] = tradeSpec.buyQ[i];
-          buyerTransfer[tradeSpec.money] = -tradeSpec.prices[i] * tradeSpec.buyQ[i];
-          this.agentsById[tradeSpec.buyId[i]].transfer(buyerTransfer, { isTrade: 1, isBuyAccepted: 1 });
+          buyerTransfer[goods] = buyQ[i];
+          buyerTransfer[money] = -prices[i] * buyQ[i];
+          this.agentsById[buyId[i]].transfer(buyerTransfer, { isTrade: 1, isBuyAccepted: 1 });
         }
       } else {
-        throw new Error("Pool.trade tradeSpec.bs must be b or s, got:"+tradeSpec.bs);
+        throw new Error("Pool.trade tradeSpec.bs must be b or s, got:"+bs);
       }
     } else {
       throw new Error("Pool.trade tradeSpec object not in correct format");
