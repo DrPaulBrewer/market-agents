@@ -1182,7 +1182,7 @@ describe('new KaplanSniperAgent', function () {
           });
   });
 
-  it('.askPrice(MC) equals currentBid===60 iff juicyBidPrice>=60 and MC<=60', function () {
+  it('.askPrice(MC) equals currentBid===60 iff juicyBidPrice<=60 and MC<=60', function () {
     let shouldBe60;
     for (let marginalCost = 1;marginalCost < 100;++marginalCost)
       for (let juicyBidPrice = 1;juicyBidPrice < 100;++juicyBidPrice) {
