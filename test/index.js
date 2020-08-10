@@ -1248,7 +1248,7 @@ describe('new MedianSniperAgent', function () {
       }
   });
 
-  it('.askPrice(MC) equals currentBid===60 iff previousMedian>=60 and MC<=60', function () {
+  it('.askPrice(MC) equals currentBid===60 iff previousMedian<=60 and MC<=60', function () {
     let shouldBe60;
     for (let marginalCost = 1;marginalCost < 100;++marginalCost)
       for (let previousMedian = 1;previousMedian < 100;++previousMedian) {
@@ -1268,156 +1268,173 @@ describe('new MedianSniperAgent', function () {
 });
 
 function noNegativeProfitSniperTest(SniperType){
-  for(let marginalCost=21;marginalCost<100;marginalCost++){
-    testSniperAgent({
-      SniperType,
-      marketInfo: {
-        currentBidPrice: 20,
-        currentAskPrice: 80,
-        lastTradePrice: 55
-      },
-      call: "askPrice",
-      param: marginalCost,
-      correctValue: undefined
-    });
-    testSniperAgent({
-      SniperType,
-      marketInfo: {
-        lastTradePrice: 10,
-        currentBidPrice: 15,
-        currentAskPrice: 90
-      },
-      call: "askPrice",
-      param: marginalCost,
-      correctValue: undefined
-    });
-  }
-  for(let marginalValue=1;marginalValue<70;marginalValue++){
-    testSniperAgent({
-      SniperType,
-      marketInfo: {
-        currentBidPrice: 70,
-        currentAskPrice: 80,
-        lastTradePrice: 75
-      },
-      call: "bidPrice",
-      param: marginalValue,
-      correctValue: undefined
-    });
-    testSniperAgent({
-      SniperType,
-      marketInfo: {
-        lastTradePrice: 80,
-        currentBidPrice: 70,
-        currentAskPrice: 71
-      },
-      call: "bidPrice",
-      param: marginalValue,
-      correctValue: undefined
-    });
-  }
+  it('should not accept a bid that is below MC', function(){
+    for(let marginalCost=21;marginalCost<100;marginalCost++){
+      testSniperAgent({
+        SniperType,
+        marketInfo: {
+          currentBidPrice: 20,
+          currentAskPrice: 80,
+          lastTradePrice: 55
+        },
+        call: "askPrice",
+        param: marginalCost,
+        correctValue: undefined
+      });
+      testSniperAgent({
+        SniperType,
+        marketInfo: {
+          lastTradePrice: 10,
+          currentBidPrice: 15,
+          currentAskPrice: 90
+        },
+        call: "askPrice",
+        param: marginalCost,
+        correctValue: undefined
+      });
+    }
+  });
+  it('should not accept an ask that is above MV', function(){
+    for(let marginalValue=1;marginalValue<70;marginalValue++){
+      testSniperAgent({
+        SniperType,
+        marketInfo: {
+          currentBidPrice: 70,
+          currentAskPrice: 80,
+          lastTradePrice: 75
+        },
+        call: "bidPrice",
+        param: marginalValue,
+        correctValue: undefined
+      });
+      testSniperAgent({
+        SniperType,
+        marketInfo: {
+          lastTradePrice: 80,
+          currentBidPrice: 70,
+          currentAskPrice: 71
+        },
+        call: "bidPrice",
+        param: marginalValue,
+        correctValue: undefined
+      });
+    }
+  });
 }
 
 describe('new AcceptSniperAgent', function(){
   generalSniperTests(AcceptSniperAgent);
   noNegativeProfitSniperTest(AcceptSniperAgent);
-  for(let marginalValue=61;marginalValue<100;marginalValue++)
-    testSniperAgent({
-      SniperType: AcceptSniperAgent,
-      marketInfo: {
-        currentBidPrice: 40,
-        currentAskPrice: 60
-      },
-      call: "bidPrice",
-      param: marginalValue,
-      correctValue: 60
-    });
-  for(let marginalCost=1;marginalCost<40;marginalCost++)
-    testSniperAgent({
-      SniperType: AcceptSniperAgent,
-      marketInfo: {
-        currentBidPrice: 40,
-        currentAskPrice: 60
-      },
-      call: "askPrice",
-      param: marginalCost,
-      correctValue: 40
+  it('should accept an ask that is below marginal value', function(){
+    for(let marginalValue=61;marginalValue<100;marginalValue++)
+      testSniperAgent({
+        SniperType: AcceptSniperAgent,
+        marketInfo: {
+          currentBidPrice: 40,
+          currentAskPrice: 60
+        },
+        call: "bidPrice",
+        param: marginalValue,
+        correctValue: 60
+      });
+  });
+  it('should accept a bid that is above marginal cost', function(){
+    for(let marginalCost=1;marginalCost<40;marginalCost++)
+      testSniperAgent({
+        SniperType: AcceptSniperAgent,
+        marketInfo: {
+          currentBidPrice: 40,
+          currentAskPrice: 60
+        },
+        call: "askPrice",
+        param: marginalCost,
+        correctValue: 40
+      });
     });
 });
 
 describe('new RandomAcceptSniperAgent', function(){
   generalSniperTests(RandomAcceptSniperAgent);
-  for(let i=0;i<100;++i) noNegativeProfitSniperTest(RandomAcceptSniperAgent);
+  noNegativeProfitSniperTest(RandomAcceptSniperAgent);
+  // could be useful: additional testing regarding the random acceptance distribution
 });
 
 describe('new FallingAskSniperAgent', function(){
   generalSniperTests(FallingAskSniperAgent);
   noNegativeProfitSniperTest(FallingAskSniperAgent);
-  for(let marginalCost=1;marginalCost<40;marginalCost++)
-    for(let lastTradePrice=30;lastTradePrice<70;lastTradePrice++){
-      const shouldAsk = (lastTradePrice>60);
-      testSniperAgent({
-        SniperType: FallingAskSniperAgent,
-        marketInfo: {
-          lastTradePrice,
-          currentBidPrice: 40,
-          currentAskPrice: 60
-        },
-        call: "askPrice",
-        param: marginalCost,
-        correctValue: (shouldAsk? 40: undefined)
-      });
-    }
-  for(let marginalValue=61;marginalValue<100;marginalValue++)
-    for(let lastTradePrice=30;lastTradePrice<70;lastTradePrice++){
-      const shouldBid = (lastTradePrice>60);
-      testSniperAgent({
-        SniperType: FallingAskSniperAgent,
-        marketInfo: {
-          lastTradePrice,
-          currentBidPrice: 40,
-          currentAskPrice: 60
-        },
-        call: "bidPrice",
-        param: marginalValue,
-        correctValue: (shouldBid? 60: undefined)
-      });
-    }
+  it('should accept the current bid when currentAskPrice<lastTradePrice and MC<=currentBidPrice', function(){
+    for(let marginalCost=1;marginalCost<50;marginalCost++)
+      for(let lastTradePrice=30;lastTradePrice<70;lastTradePrice++){
+        const shouldAsk = (lastTradePrice>60) && (marginalCost<=40);
+        testSniperAgent({
+          SniperType: FallingAskSniperAgent,
+          marketInfo: {
+            lastTradePrice,
+            currentBidPrice: 40,
+            currentAskPrice: 60
+          },
+          call: "askPrice",
+          param: marginalCost,
+          correctValue: (shouldAsk? 40: undefined)
+        });
+      }
+  });
+  it('should accept the current ask price when currentAskPrice<lastTradePrice and MV>=currentAskPrice', function(){
+    for(let marginalValue=50;marginalValue<100;marginalValue++)
+      for(let lastTradePrice=30;lastTradePrice<70;lastTradePrice++){
+        const shouldBid = (lastTradePrice>60) && (marginalValue>=60);
+        testSniperAgent({
+          SniperType: FallingAskSniperAgent,
+          marketInfo: {
+            lastTradePrice,
+            currentBidPrice: 40,
+            currentAskPrice: 60
+          },
+          call: "bidPrice",
+          param: marginalValue,
+          correctValue: (shouldBid? 60: undefined)
+        });
+      }
+    });
 });
 
 describe('new RisingBidSniperAgent', function(){
   generalSniperTests(RisingBidSniperAgent);
   noNegativeProfitSniperTest(RisingBidSniperAgent);
-  for(let marginalCost=1;marginalCost<40;marginalCost++)
-    for(let lastTradePrice=30;lastTradePrice<70;lastTradePrice++){
-      const shouldAsk = (lastTradePrice<40);
-      testSniperAgent({
-        SniperType: RisingBidSniperAgent,
-        marketInfo: {
-          lastTradePrice,
-          currentBidPrice: 40,
-          currentAskPrice: 60
-        },
-        call: "askPrice",
-        param: marginalCost,
-        correctValue: (shouldAsk? 40: undefined)
-      });
-    }
-  for(let marginalValue=61;marginalValue<100;marginalValue++)
-    for(let lastTradePrice=30;lastTradePrice<70;lastTradePrice++){
-      const shouldBid = (lastTradePrice<40);
-      testSniperAgent({
-        SniperType: RisingBidSniperAgent,
-        marketInfo: {
-          lastTradePrice,
-          currentBidPrice: 40,
-          currentAskPrice: 60
-        },
-        call: "bidPrice",
-        param: marginalValue,
-        correctValue: (shouldBid? 60: undefined)
-      });
-    }
+  it('should accept the current bid price when lastTradePrice<currentBidPrice and MC<=currentBidPrice', function(){
+    for(let marginalCost=1;marginalCost<50;marginalCost++)
+      for(let lastTradePrice=30;lastTradePrice<70;lastTradePrice++){
+        const shouldAsk = (lastTradePrice<40) && (marginalCost<=40);
+        testSniperAgent({
+          SniperType: RisingBidSniperAgent,
+          marketInfo: {
+            lastTradePrice,
+            currentBidPrice: 40,
+            currentAskPrice: 60
+          },
+          call: "askPrice",
+          param: marginalCost,
+          correctValue: (shouldAsk? 40: undefined)
+        });
+      }
+  });
+  it('should accept the current ask price when lastTradePrice<currentBidPrice and MV>=currentAskPrice', function(){
+    for(let marginalValue=50;marginalValue<100;marginalValue++)
+      for(let lastTradePrice=30;lastTradePrice<70;lastTradePrice++){
+        const shouldBid = (lastTradePrice<40) && (marginalValue>=60);
+        testSniperAgent({
+          SniperType: RisingBidSniperAgent,
+          marketInfo: {
+            lastTradePrice,
+            currentBidPrice: 40,
+            currentAskPrice: 60
+          },
+          call: "bidPrice",
+          param: marginalValue,
+          correctValue: (shouldBid? 60: undefined)
+        });
+      }
+    });
 });
 
 describe('new Pool', function () {
