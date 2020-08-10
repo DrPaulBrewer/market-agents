@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.Pool = exports.RisingBidSniperAgent = exports.FallingAskSniperAgent = exports.RandomAcceptSniperAgent = exports.AcceptSniperAgent = exports.MedianSniperAgent = exports.KaplanSniperAgent = exports.Sniper = exports.MidpointAgent = exports.OneupmanshipAgent = exports.UnitAgent = exports.ZIAgent = exports.HoarderAgent = exports.TruthfulAgent = exports.DoNothingAgent = exports.Trader = exports.Agent = void 0;
+exports.Pool = exports.RisingBidSniperAgent = exports.FallingAskSniperAgent = exports.RandomAcceptSniperAgent = exports.AcceptSniperAgent = exports.MedianSniperAgent = exports.KaplanSniperAgent = exports.Sniper = exports.MidpointAgent = exports.OneupmanshipAgent = exports.UnitAgent = exports.ZIAgent = exports.HoarderAgent = exports.DPPAgent = exports.TruthfulAgent = exports.DoNothingAgent = exports.Trader = exports.Agent = void 0;
 
 var _clone = _interopRequireDefault(require("clone"));
 
@@ -175,7 +175,6 @@ class Agent extends _events.EventEmitter {
   }
   /**
    * percent of period used
-   *
    * @return {number} proportion of period time used as a number from 0.0, at beginning of period, to 1.0 at end of period.
    *
    */
@@ -185,6 +184,21 @@ class Agent extends _events.EventEmitter {
     if (this.period.startTime !== undefined && this.period.endTime > 0 && this.wakeTime !== undefined) {
       return (this.wakeTime - this.period.startTime) / (this.period.endTime - this.period.startTime);
     }
+  }
+  /**
+   * decay an initial value into a final value over the time provided in the current period
+   * @param {number} initialValue initial value, greater than 0
+   * @param {number} finalValue final value, greater than 0
+   * @return {number} result current value
+   */
+
+
+  decay(initialValue, finalValue) {
+    const lambda = this.pctPeriod();
+    if (lambda === undefined || initialValue <= 0 || finalValue <= 0) return undefined;
+    const myLog = lambda * Math.log(finalValue) + (1 - lambda) * Math.log(initialValue);
+    const result = Math.exp(myLog);
+    return this.integer ? Math.round(result) : result;
   }
   /**
    * guess at number of random Poisson wakes remaining in period
@@ -507,6 +521,41 @@ class TruthfulAgent extends Trader {
 }
 
 exports.TruthfulAgent = TruthfulAgent;
+
+class DPPAgent extends Trader {
+  /**
+   * creates Decaying Potential Profit robot agent that prices items with a time-based exponentially decaying profit
+   *
+   * @param {Object} [options] passed to Trader and Agent constructors
+   *
+   */
+  constructor(options) {
+    super(Object.assign({}, {
+      description: 'DPP Agent prices in a time-based decaying profit',
+      color: "maroon"
+    }, options));
+  }
+
+  bidPrice(marginalValue) {
+    if (typeof marginalValue !== 'number') return undefined;
+    if (marginalValue < this.minPrice) return undefined; // set arbitrary lower price of 0.001 if minPrice otherwise too small
+
+    const iv = this.minPrice <= 0 ? 0.001 : this.minPrice;
+    const fv = marginalValue;
+    return this.decay(iv, fv);
+  }
+
+  askPrice(marginalCost) {
+    if (typeof marginalCost !== 'number') return undefined;
+    if (marginalCost > this.maxPrice) return undefined;
+    const iv = this.maxPrice;
+    const fv = marginalCost <= 0 ? 0.001 : marginalCost;
+    return this.decay(iv, fv);
+  }
+
+}
+
+exports.DPPAgent = DPPAgent;
 
 class HoarderAgent extends Trader {
   /**

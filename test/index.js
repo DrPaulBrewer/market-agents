@@ -14,6 +14,7 @@ const {
   MidpointAgent,
   DoNothingAgent,
   TruthfulAgent,
+  DPPAgent,
   HoarderAgent,
   KaplanSniperAgent,
   MedianSniperAgent,
@@ -966,6 +967,129 @@ describe('new TruthfulAgent', function () {
   });
   it('should ask 55.25 if marginalCost is 55.25 and integer is false', function () {
     new TruthfulAgent({ integer: false }).askPrice(55.25).should.equal(55.25);
+  });
+});
+
+describe('new DPPAgent', function(){
+  it('should bid 10 if marginalValue is 10000, minPrice is 1, 25% of period is used, and integer is true', function(){
+    const a = new DPPAgent({
+      minPrice:1,
+      maxPrice:1000000,
+      period: {startTime:1000,endTime:2000},
+      integer: true
+    });
+    a.wakeTime = 1250;  // must set here -- would be overridden by nextWake() if set in the constructor
+    a.bidPrice(10000).should.equal(10);
+  });
+  it('should bid approx. 10 if marginalValue is 10000, minPrice is 1, 25% of period is used, and integer is false', function(){
+    const a = new DPPAgent({
+      minPrice:1,
+      maxPrice:1000000,
+      period: {startTime:1000,endTime:2000},
+      integer: false
+    });
+    a.wakeTime = 1250;  // must set here -- would be overridden by nextWake() if set in the constructor
+    a.bidPrice(10000).should.be.approximately(10,0.001);
+  });
+  it('should bid 100 if marginalValue is 10000, minPrice is 1, 50% of period is used, and integer is true', function(){
+    const a = new DPPAgent({
+      minPrice:1,
+      maxPrice:1000000,
+      period: {startTime:1000,endTime:2000},
+      integer: true
+    });
+    a.wakeTime = 1500;  // must set here -- would be overridden by nextWake() if set in the constructor
+    a.bidPrice(10000).should.equal(100);
+  });
+  it('should bid approx. 100 if marginalValue is 10000, minPrice is 1, 50% of period is used, and integer is false', function(){
+    const a = new DPPAgent({
+      minPrice:1,
+      maxPrice:1000000,
+      period: {startTime:1000,endTime:2000},
+      integer: false
+    });
+    a.wakeTime = 1500;  // must set here -- would be overridden by nextWake() if set in the constructor
+    a.bidPrice(10000).should.be.approximately(100,0.001);
+  });
+  it('should bid 1000 if marginalValue is 10000, minPrice is 1, 75% of period is used, and integer is true', function(){
+    const a = new DPPAgent({
+      minPrice:1,
+      maxPrice:1000000,
+      period: {startTime:1000,endTime:2000},
+      integer: true
+    });
+    a.wakeTime = 1750;  // must set here -- would be overridden by nextWake() if set in the constructor
+    a.bidPrice(10000).should.equal(1000);
+  });
+  it('should bid approx. 1000 if marginalValue is 10000, minPrice is 1, 75% of period is used, and integer is false', function(){
+    const a = new DPPAgent({
+      minPrice:1,
+      maxPrice:1000000,
+      period: {startTime:1000,endTime:2000},
+      integer: false
+    });
+    a.wakeTime = 1750;  // must set here -- would be overridden by nextWake() if set in the constructor
+    a.bidPrice(10000).should.be.approximately(1000,0.001);
+  });
+  it('should ask 1000 if marginalCost is 1, maxPrice is 10000, 25% of period is used, and integer is true', function(){
+    const a = new DPPAgent({
+      minPrice:1,
+      maxPrice:10000,
+      period: {startTime:1000,endTime:2000},
+      integer: true
+    });
+    a.wakeTime = 1250;  // must set here -- would be overridden by nextWake() if set in the constructor
+    a.askPrice(1).should.equal(1000);
+  });
+  it('should ask approx. 1000 if marginalCost is 1, maxPrice is 10000, 25% of period is used, and integer is false', function(){
+    const a = new DPPAgent({
+      minPrice:1,
+      maxPrice:10000,
+      period: {startTime:1000,endTime:2000},
+      integer: false
+    });
+    a.wakeTime = 1250;  // must set here -- would be overridden by nextWake() if set in the constructor
+    a.askPrice(1).should.be.approximately(1000,0.001);
+  });
+  it('should ask 100 if marginalCost is 1, maxPrice is 10000, 50% of period is used, and integer is true', function(){
+    const a = new DPPAgent({
+      minPrice:1,
+      maxPrice:10000,
+      period: {startTime:1000,endTime:2000},
+      integer: true
+    });
+    a.wakeTime = 1500;  // must set here -- would be overridden by nextWake() if set in the constructor
+    a.askPrice(1).should.equal(100);
+  });
+  it('should ask approx. 100 if marginalCost is 1, maxPrice is 10000, 50% of period is used, and integer is false', function(){
+    const a = new DPPAgent({
+      minPrice:1,
+      maxPrice:10000,
+      period: {startTime:1000,endTime:2000},
+      integer: false
+    });
+    a.wakeTime = 1500;  // must set here -- would be overridden by nextWake() if set in the constructor
+    a.askPrice(1).should.be.approximately(100,0.001);
+  });
+  it('should ask 10 if marginalCost is 1, maxPrice is 10000, 75% of period is used, and integer is true', function(){
+    const a = new DPPAgent({
+      minPrice:1,
+      maxPrice:10000,
+      period: {startTime:1000,endTime:2000},
+      integer: true
+    });
+    a.wakeTime = 1750;  // must set here -- would be overridden by nextWake() if set in the constructor
+    a.askPrice(1).should.equal(10);
+  });
+  it('should ask approx. 10 if marginalCost is 1, maxPrice is 10000, 75% of period is used, and integer is false', function(){
+    const a = new DPPAgent({
+      minPrice:1,
+      maxPrice:10000,
+      period: {startTime:1000,endTime:2000},
+      integer: false
+    });
+    a.wakeTime = 1750;  // must set here -- would be overridden by nextWake() if set in the constructor
+    a.askPrice(1).should.be.approximately(10,0.001);
   });
 });
 
