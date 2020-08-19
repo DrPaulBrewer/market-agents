@@ -663,7 +663,7 @@ describe('new UnitAgent', function () {
       });
     });
 
-  it('this.bidPrice and this.askPrice should throw on valid input if this.getPreviousPrice function does not exist', function () {
+  it('this.bidPrice and this.askPrice should throw on valid input if market.lastTradePrice function does not exist', function () {
     function callBidPriceWithNoGetPreviousPrice() {
       let a = new UnitAgent({ minPrice: 10, maxPrice: 90 });
       a.bidPrice(50);
