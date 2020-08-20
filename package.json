@@ -46,6 +46,7 @@
   "dependencies": {
     "clone": "^2.1.2",
     "prob.js": "^1.0.6",
-    "random-js": "^2.1.0"
+    "random-js": "^2.1.0",
+    "trade-timing-strategy": "^0.4.0"
   }
 }

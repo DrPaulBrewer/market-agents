@@ -3,13 +3,15 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.Pool = exports.RisingBidSniperAgent = exports.FallingAskSniperAgent = exports.RandomAcceptSniperAgent = exports.AcceptSniperAgent = exports.MedianSniperAgent = exports.KaplanSniperAgent = exports.Sniper = exports.MidpointAgent = exports.OneupmanshipAgent = exports.UnitAgent = exports.ZIAgent = exports.HoarderAgent = exports.DPPAgent = exports.TruthfulAgent = exports.DoNothingAgent = exports.Trader = exports.Agent = void 0;
+exports.Pool = exports.RisingBidSniperAgent = exports.FallingAskSniperAgent = exports.RandomAcceptSniperAgent = exports.AcceptSniperAgent = exports.MedianSniperAgent = exports.KaplanSniperAgent = exports.Sniper = exports.MidpointAgent = exports.OneupmanshipAgent = exports.TTAgent = exports.UnitAgent = exports.ZIAgent = exports.HoarderAgent = exports.DPPAgent = exports.TruthfulAgent = exports.DoNothingAgent = exports.Trader = exports.Agent = void 0;
 
 var _clone = _interopRequireDefault(require("clone"));
 
 var _events = require("events");
 
 var ProbJS = _interopRequireWildcard(require("prob.js"));
+
+var _tradeTimingStrategy = require("trade-timing-strategy");
 
 function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function _getRequireWildcardCache() { return cache; }; return cache; }
 
@@ -764,13 +766,82 @@ class UnitAgent extends ZIAgent {
   }
 
 }
+
+exports.UnitAgent = UnitAgent;
+
+class TTAgent extends ZIAgent {
+  constructor(options) {
+    const defaults = {
+      description: "Paul Brewer's TT agent that optimizes over a collated database of trades; degrades to ZI when no data/currentBid/currentAsk",
+      color: 'orange'
+    };
+    super(Object.assign({}, defaults, options));
+    const agent = this; // allow tts creation to be overridden in options
+    // if it does not exist, create it and hook it up to necessary period and trade data
+
+    if (!agent.tts) {
+      agent.tts = new _tradeTimingStrategy.TradeTimingStrategy();
+      agent.tts.connected = false;
+      agent.on('pre-period', function () {
+        agent.tts.newPeriod();
+
+        if (!agent.tts.connected) {
+          agent.tts.connected = true;
+          agent.markets[0].on('trade', function (tradeSpec) {
+            const {
+              prices
+            } = tradeSpec;
+            if (Array.isArray(prices)) prices.forEach(p => {
+              agent.tts.newTrade(p);
+            });
+          });
+        }
+      });
+    }
+  }
+
+  bidPrice(marginalValue, market) {
+    if (typeof marginalValue !== 'number') return undefined;
+    const currentBid = market.currentBidPrice();
+    const currentAsk = market.currentAskPrice();
+    const smooth = currentBid || currentAsk ? 0.001 : 0;
+    const horizon = Math.round((1 - this.pctPeriod()) * (this.tts.tradeCollator.length - 2));
+    const ttsBid = this.tts.suggestedBid(marginalValue, {
+      currentBid,
+      currentAsk,
+      smooth,
+      horizon
+    });
+    if (ttsBid === undefined) return super.bidPrice(marginalValue); // revert to ZI if insufficient data
+
+    return this.integer ? Math.floor(ttsBid) : ttsBid;
+  }
+
+  askPrice(marginalCost, market) {
+    if (typeof marginalCost !== 'number') return undefined;
+    const currentBid = market.currentBidPrice();
+    const currentAsk = market.currentAskPrice();
+    const smooth = currentBid || currentAsk ? 0.001 : 0;
+    const horizon = Math.round((1 - this.pctPeriod()) * (this.tts.tradeCollator.length - 2));
+    const ttsAsk = this.tts.suggestedAsk(marginalCost, {
+      currentBid,
+      currentAsk,
+      smooth,
+      horizon
+    });
+    if (ttsAsk === undefined) return super.askPrice(marginalCost); // revert to ZI if insufficient data
+
+    return this.integer ? Math.ceil(ttsAsk) : ttsAsk;
+  }
+
+}
 /**
  * OneupmanshipAgent is a robotic version of that annoying market participant who starts at extremely high or low price, and always bid $1 more, or ask $1 less than any competition
  *
  */
 
 
-exports.UnitAgent = UnitAgent;
+exports.TTAgent = TTAgent;
 
 class OneupmanshipAgent extends Trader {
   /**

@@ -8,6 +8,7 @@ import * as MarketAgents from "../src/index.js";
 const {
   Agent,
   ZIAgent,
+  TTAgent,
   Pool,
   UnitAgent,
   OneupmanshipAgent,
@@ -811,6 +812,113 @@ describe('new UnitAgent', function () {
     bin[34].should.equal(0);
     bin[35].should.equal(0);
   });
+});
+
+describe('new TTAgent', function () {
+
+  it('should be a subclass of ZIAgent', function () {
+    let myAgent = new TTAgent();
+    myAgent.should.be.instanceOf(ZIAgent);
+  });
+
+  it('should have properties id, description, inventory, wakeTime, rate, nextWake, period with proper types',
+    function () {
+      let myAgent = new TTAgent();
+      myAgent.should.be.type('object');
+      myAgent.should.have.properties('id', 'description', 'inventory', 'wakeTime', 'rate', 'nextWake', 'period');
+      myAgent.id.should.be.type('number');
+      myAgent.description.should.be.type('string');
+      myAgent.inventory.should.be.type('object');
+      myAgent.wakeTime.should.be.type('number');
+      myAgent.rate.should.be.type('number');
+      myAgent.nextWake.should.be.type('function');
+      myAgent.period.should.be.type('object');
+    });
+
+  it('should have properties markets, values, costs, minPrice, maxPrice with proper types', function () {
+    let a = new TTAgent();
+    a.should.have.properties('markets', 'values', 'costs', 'minPrice', 'maxPrice');
+    a.markets.should.be.type('object');
+    a.values.should.be.type('object');
+    a.costs.should.be.type('object');
+    a.minPrice.should.be.type('number');
+    a.maxPrice.should.be.type('number');
+  });
+
+  it('should not call this.bid() or this.ask() on this.wake() if values and costs not configured', function () {
+    let a = new TTAgent();
+    let wakes = 0,
+      bids = 0,
+      asks = 0;
+    a.on('wake', function () { wakes++; });
+    a.bid = function () { bids++; };
+    a.ask = function () { asks++; };
+    a.wake();
+    wakes.should.equal(1);
+    bids.should.equal(0);
+    asks.should.equal(0);
+  });
+
+  it('this.bidPrice(50) is between 1 and 50 inclusive if no currentBid/currentAsk', function(){
+    let a = new TTAgent({minPrice:1, maxPrice:100, integer: true});
+    const market = {
+      currentBidPrice(){},  // eslint-disable-line no-empty-function
+      currentAskPrice(){}   // eslint-disable-line no-empty-function
+    };
+    for(let i=0;i<1000;++i)
+      a.bidPrice(50, market).should.be.within(1,50);
+  });
+
+  it('this.askPrice(50) is between 50 and 100 inclusive if no currentBid/currentAsk', function(){
+    let a = new TTAgent({minPrice:1, maxPrice:100, integer: true});
+    const market = {
+      currentBidPrice(){},  // eslint-disable-line no-empty-function
+      currentAskPrice(){}   // eslint-disable-line no-empty-function
+    };
+    for(let i=0;i<1000;++i)
+      a.askPrice(50, market).should.be.within(50,100);
+  });
+
+  it('specifying currentBid,currentAsk will produce bids/asks consistent with optimizing over flat prior', function(){
+    let a = new TTAgent({minPrice:1,maxPrice:1000, integer:true});
+    a.tts.newPeriod();
+    const market = {
+      currentBidPrice(){ return 200;},
+      currentAskPrice(){ return 300;}
+    };
+    for(let i=1;i<100;++i){
+      a.bidPrice(i,market).should.be.within(0,i); // fallback to ZI
+      a.askPrice(i,market).should.equal(200);
+    }
+    for(let i=100;i<200;i+=2){
+      a.bidPrice(i,market).should.be.within(0,i);
+      const profitFromAcceptingBid = 200-i;
+      const optimalAsk = (i+300)/2;
+      const probAskAccepted = (300-optimalAsk)/101; // 101 because 101 values including bid of 200 and ask of 300
+      const eProfitNewAsk = (optimalAsk-i)*probAskAccepted;
+      const expected = (profitFromAcceptingBid>=Math.floor(eProfitNewAsk))? 200: optimalAsk;
+      a.askPrice(i,market).should.equal(expected);
+    }
+    // 200 has zero profit for buyer, so reverts to zi
+    a.bidPrice(200,market).should.be.below(200);
+    for(let i=202;i<300;i+=2){
+      a.bidPrice(i,market).should.equal((i+200)/2);
+      a.askPrice(i,market).should.equal((i+300)/2);
+    }
+    for(let i=300;i<374;i+=2){
+      a.bidPrice(i,market).should.equal((i+200)/2);
+      a.askPrice(i,market).should.be.within(i,1000);
+    }
+    for(let i=374;i<400;i+=2){
+      a.bidPrice(i,market).should.equal(300);
+      a.askPrice(i,market).should.be.within(i,1000);
+    }
+    for(let i=400;i<1000;++i){
+      a.bidPrice(i,market).should.equal(300);
+      a.askPrice(i,market).should.be.within(i,1000);
+    }
+  });
+
 });
 
 describe('new OneupmanshipAgent', function () {

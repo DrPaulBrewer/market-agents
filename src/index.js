@@ -1,6 +1,7 @@
 import clone from 'clone';
 import { EventEmitter } from 'events';
 import * as ProbJS from 'prob.js';
+import { TradeTimingStrategy } from 'trade-timing-strategy';
 
 let privateNextId = 1;
 
@@ -723,6 +724,54 @@ export class UnitAgent extends ZIAgent {
       p = super.askPrice(marginalCost);
     if ((p < marginalCost) || (p > this.maxPrice) || (p < this.minPrice)) return undefined;
     return (p && this.integer) ? Math.floor(p) : p;
+  }
+}
+
+export class TTAgent extends ZIAgent {
+  constructor(options){
+    const defaults = {
+      description: "Paul Brewer's TT agent that optimizes over a collated database of trades; degrades to ZI when no data/currentBid/currentAsk",
+      color: 'orange'
+    };
+    super(Object.assign({}, defaults, options));
+    const agent = this;
+    // allow tts creation to be overridden in options
+    // if it does not exist, create it and hook it up to necessary period and trade data
+    if (!agent.tts){
+      agent.tts = new TradeTimingStrategy();
+      agent.tts.connected = false;
+      agent.on('pre-period', function(){
+        agent.tts.newPeriod();
+        if (!agent.tts.connected){
+          agent.tts.connected = true;
+          agent.markets[0].on('trade', function(tradeSpec){
+            const { prices } = tradeSpec;
+            if (Array.isArray(prices))
+              prices.forEach((p)=>{agent.tts.newTrade(p);});
+          });
+        }
+      });
+    }
+  }
+  bidPrice(marginalValue,market){
+    if (typeof(marginalValue)!=='number') return undefined;
+    const currentBid = market.currentBidPrice();
+    const currentAsk = market.currentAskPrice();
+    const smooth = (currentBid || currentAsk)? 0.001 : 0;
+    const horizon = Math.round((1-this.pctPeriod())*(this.tts.tradeCollator.length-2));
+    const ttsBid = this.tts.suggestedBid(marginalValue,{currentBid,currentAsk,smooth,horizon});
+    if (ttsBid===undefined) return super.bidPrice(marginalValue); // revert to ZI if insufficient data
+    return (this.integer)? Math.floor(ttsBid): ttsBid;
+  }
+  askPrice(marginalCost, market) {
+    if (typeof(marginalCost) !== 'number') return undefined;
+    const currentBid = market.currentBidPrice();
+    const currentAsk = market.currentAskPrice();
+    const smooth = (currentBid || currentAsk)? 0.001 : 0;
+    const horizon = Math.round((1-this.pctPeriod())*(this.tts.tradeCollator.length-2));
+    const ttsAsk = this.tts.suggestedAsk(marginalCost,{currentBid,currentAsk,smooth,horizon});
+    if (ttsAsk===undefined) return super.askPrice(marginalCost); // revert to ZI if insufficient data
+    return (this.integer)? Math.ceil(ttsAsk): ttsAsk;
   }
 }
 
