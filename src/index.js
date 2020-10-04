@@ -408,7 +408,7 @@ export class Trader extends Agent {
 
   // eslint-disable-next-line no-unused-vars
   askPrice(marginalCost, market) {
-    throw new Error("called placeholder for abstract method .bidPrice(marginalValue, market) -- you must implement this method");
+    throw new Error("called placeholder for abstract method .askPrice(marginalValue, market) -- you must implement this method");
   }
 
   /**
@@ -426,16 +426,18 @@ export class Trader extends Agent {
         if (this.ignoreBudgetConstraint)
           unitValue = this.maxPrice;
         let myPrice = this.bidPrice(unitValue, market); // calculate my buy price proposal
-        if (myPrice)
+        if (myPrice){
           this.bid(market, myPrice); // send my price proposal
+        }
       }
       let unitCost = this.unitCostFunction(market.goods, this.inventory);
       if (unitCost > 0) {
         if (this.ignoreBudgetConstraint)
           unitCost = this.minPrice;
         let myPrice = this.askPrice(unitCost, market); // calculate my sell price proposal
-        if (myPrice)
+        if (myPrice){
           this.ask(market, myPrice); // send my price proposal
+        }
       }
     }
   }
