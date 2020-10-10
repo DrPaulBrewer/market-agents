@@ -10,10 +10,10 @@ market-agents
 
 Provides EventEmitter Agent framework for robot trading in economic and financial simulations
 
-## Documentation
+## Programmer's Documentation
 
-The [ESDoc hosted documentation for market-agents](https://doc.esdoc.org/github.com/DrPaulBrewer/market-agents/) may be preferable as it should
-include both this information and documentation automatically generated from the source code and source code comments.
+The [JSDoc documentation for market-agents](https://drpaulbrewer.github.io/market-agents) is automatically generated from the source code
+of this module. 
 
 ## Installation
 
@@ -26,10 +26,6 @@ include both this information and documentation automatically generated from the
     const MarketAgents = require('market-agents'); // CJS
     // unpack some constructors
     const { Agent, ZIAgent, Pool } = MarketAgents;
-
-## Agent classes, methods, etc.
-
-See the [ESDoc hosted documentation for market-agents](https://doc.esdoc.org/github.com/DrPaulBrewer/market-agents/)
 
 ## Agent Event Reference
 
