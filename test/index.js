@@ -25,6 +25,37 @@ const {
   RisingBidSniperAgent
 } = MarketAgents;
 
+function testInclusiveUniformity({range, multiple=10000, sigma=5, integer=true, f}={}){
+  const [rangeL, rangeH] = range;
+  if (
+    (rangeL!==Math.floor(rangeL)) ||
+    (rangeH!==Math.floor(rangeH))
+  ) throw new RangeError("range [L,H] must be integers");
+  const totalBins = rangeH-rangeL+1;
+  const bins = new Array(totalBins).fill(0);
+  const totalCalls = totalBins*multiple;
+  for(let i=0;i<totalCalls;i++){
+    // if integer:true then we will be testing in the assert that f is an integer
+    // if integer:false then we will assume f is non-integer and bin by Math.floor
+    const x = (integer)? f(): Math.floor(f());
+    assert.strictEqual(x,Math.floor(x),"expected an integer");
+    x.should.be.within(rangeL,rangeH);
+    bins[x-rangeL]++;
+  }
+  let sumsq = 0;
+  for(let i=0;i<totalBins;++i){
+    assert.ok(bins[i]>0, "bin "+i+" for "+(rangeL+i)+" empty");
+    const e = bins[i] - multiple;
+    sumsq += (e*e);
+  }
+  const chisqsum = sumsq/multiple;
+  const degreesOfFreedom = totalBins-1;
+  // use Fisher's 1922 normality approximation see Wikipedia: Chi-square_distribution
+  const norm = Math.sqrt(2*chisqsum)-Math.sqrt(2*degreesOfFreedom-1);
+  norm.should.be.within(-sigma,sigma);
+  return norm;
+}
+
 /**  @test {MarketAgents} */
 
 describe('MarketAgents', function () {
@@ -557,50 +588,20 @@ describe('new ZIAgent', function () {
     });
 
 
-  it('sample of 101000 integer this.bidPrice(v=100) chi-square test for uniformity on [0,100] inclusive with every bin hit', function () {
+  it('integer this.bidPrice(v=100) chi-square test for uniformity on [0,100] inclusive with every bin hit', function () {
     let zi = new ZIAgent({ integer: true });
-    let i, l, p;
-    let bins = new Array(101).fill(0);
-    let sumsq = 0;
-    let chisq100 = 0;
-    let e = 0;
-    let norm = 0;
-    for (i = 0, l = 101000;i < l;i++) {
-      p = zi.bidPrice(100);
-      p.should.be.within(0, 100);
-      bins[p]++;
-    }
-    for (i = 0, l = 101;i < l;++i) {
-      assert.ok(bins[i] > 0, "bid bin " + i + " empty");
-      e = bins[i] - 1000;
-      sumsq += e * e;
-    }
-    chisq100 = sumsq / 1000.0;
-    norm = (chisq100 - 100) / Math.sqrt(2 * 100);
-    norm.should.be.within(-5, 5);
+    testInclusiveUniformity({
+      range: [0,100],
+      f: ()=>(zi.bidPrice(100))
+    });
   });
 
-  it('sample of 101000 integer this.askPrice(c=50) chi-square test for uniformity on [50,maxPrice=150] inclusive with every bin hit', function () {
+  it('integer this.askPrice(c=50) chi-square test for uniformity on [50,maxPrice=150] inclusive with every bin hit', function () {
     let zi = new ZIAgent({ integer: true, maxPrice: 150 });
-    let i, l, p;
-    let bins = new Array(101).fill(0);
-    let sumsq = 0;
-    let chisq100 = 0;
-    let e = 0;
-    let norm = 0;
-    for (i = 0, l = 101000;i < l;i++) {
-      p = zi.askPrice(50);
-      p.should.be.within(50, 150);
-      bins[p - 50]++;
-    }
-    for (i = 0, l = 101;i < l;++i) {
-      assert.ok(bins[i] > 0, "ask bin " + i + " empty");
-      e = bins[i] - 1000;
-      sumsq += e * e;
-    }
-    chisq100 = sumsq / 1000.0;
-    norm = (chisq100 - 100) / Math.sqrt(2 * 100);
-    norm.should.be.within(-5, 5);
+    testInclusiveUniformity({
+      range: [50,150],
+      f: ()=>(zi.askPrice(50))
+    });
   });
 });
 
@@ -717,33 +718,22 @@ describe('new UnitAgent', function () {
     let a = new UnitAgent({ minPrice: 10, maxPrice: 90, integer: true });
     let market = {};
     market.lastTradePrice = function () { return 33; };
-    let i, l, p;
-    let bin = Array(100).fill(0);
-    for (i = 0, l = 30000;i < l;++i) {
-      p = a.bidPrice(50, market);
-      bin[Math.floor(p)]++;
-    }
-    bin[31].should.equal(0);
-    bin[32].should.be.within(9500, 10500);
-    bin[33].should.be.within(9500, 10500);
-    bin[34].should.be.within(9500, 10500);
-    bin[35].should.equal(0);
+    testInclusiveUniformity({
+      range: [32,34],
+      multiple: 10000,
+      f: ()=>(a.bidPrice(50,market))
+    });
   });
 
   it('this.bidPrice(50) is 32-33, 33-34 approx 1/2 of time if .integer===false, market.lastTradePrice()===33', function () {
     let a = new UnitAgent({ minPrice: 10, maxPrice: 90 });
     let market = { lastTradePrice() { return 33; } };
-    let i, l, p;
-    let bin = Array(100).fill(0);
-    for (i = 0, l = 20000;i < l;++i) {
-      p = a.bidPrice(50, market);
-      bin[Math.floor(p)]++;
-    }
-    bin[31].should.equal(0);
-    bin[32].should.be.within(9500, 10500);
-    bin[33].should.be.within(9500, 10500);
-    bin[34].should.equal(0);
-    bin[35].should.equal(0);
+    testInclusiveUniformity({
+      range: [32,33],
+      integer: false,
+      multiple: 10000,
+      f: ()=>(a.bidPrice(50, market))
+    });
   });
 
   it('this.bidPrice(33) is 32-33, undefined approx 1/2 of time if .integer===false, market.lastTradePrice()===33', function () {
@@ -784,33 +774,22 @@ describe('new UnitAgent', function () {
   it('this.askPrice(25) is 32,33,34 approx 1/3 of time if ,integer===true, market.lastTradePrice()===33', function () {
     let a = new UnitAgent({ minPrice: 10, maxPrice: 90, integer: true });
     let market = { lastTradePrice() { return 33; } };
-    let i, l, p;
-    let bin = Array(100).fill(0);
-    for (i = 0, l = 30000;i < l;++i) {
-      p = a.askPrice(25, market);
-      bin[Math.floor(p)]++;
-    }
-    bin[31].should.equal(0);
-    bin[32].should.be.within(9500, 10500);
-    bin[33].should.be.within(9500, 10500);
-    bin[34].should.be.within(9500, 10500);
-    bin[35].should.equal(0);
+    testInclusiveUniformity({
+      range: [32,34],
+      multiple: 10000,
+      f: ()=>(a.askPrice(25,market))
+    });
   });
 
   it('this.askPrice(25) is 32-33, 33-34 approx 1/2 of time if ,integer===false, market.lastTradePrice()===33', function () {
     let a = new UnitAgent({ minPrice: 10, maxPrice: 90 });
     let market = { lastTradePrice() { return 33; } };
-    let i, l, p;
-    let bin = Array(100).fill(0);
-    for (i = 0, l = 20000;i < l;++i) {
-      p = a.askPrice(25, market);
-      bin[Math.floor(p)]++;
-    }
-    bin[31].should.equal(0);
-    bin[32].should.be.within(9500, 10500);
-    bin[33].should.be.within(9500, 10500);
-    bin[34].should.equal(0);
-    bin[35].should.equal(0);
+    testInclusiveUniformity({
+      range: [32,33],
+      multiple: 10000,
+      integer: false,
+      f: ()=>(a.askPrice(25,market))
+    });
   });
 });
 
