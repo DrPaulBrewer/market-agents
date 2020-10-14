@@ -118,7 +118,7 @@ describe('new Agent', function () {
     assert.ok(wakes === 100);
   });
 
-  it('test 100 wakes, agent with rate 2 should use between 1/4 and 3/4 the time of agent with rate 1', function () {
+  it('test 10000 wakes, agent with rate 2 should use between 1/4 and 3/4 the time of agent with rate 1', function () {
     let agent1 = new Agent();
     let agent2 = new Agent({ rate: 2 });
     let i, l;
@@ -126,14 +126,32 @@ describe('new Agent', function () {
       wakes2 = 0;
     agent1.on('wake', function () { wakes1++; });
     agent2.on('wake', function () { wakes2++; });
-    for (i = 0, l = 100;i < l;++i) {
+    for (i = 0, l = 10000;i < l;++i) {
       agent1.wake();
       agent2.wake();
     }
-    assert.ok(wakes1 === 100);
-    assert.ok(wakes2 === 100);
+    assert.ok(wakes1 === 10000);
+    assert.ok(wakes2 === 10000);
     assert.ok(agent2.wakeTime > (0.25 * agent1.wakeTime), `${agent1.wakeTime} ${agent2.wakeTime}`);
     assert.ok(agent2.wakeTime < (0.75 * agent1.wakeTime), `${agent1.wakeTime} ${agent2.wakeTime}`);
+  });
+
+  it('test 10000 wakes, agent with rate 10 should use between 0.05 and 0.15 the time of agent with rate 1', function () {
+    let agent1 = new Agent();
+    let agent2 = new Agent({ rate: 10 });
+    let i, l;
+    let wakes1 = 0,
+      wakes2 = 0;
+    agent1.on('wake', function () { wakes1++; });
+    agent2.on('wake', function () { wakes2++; });
+    for (i = 0, l = 10000;i < l;++i) {
+      agent1.wake();
+      agent2.wake();
+    }
+    assert.ok(wakes1 === 10000);
+    assert.ok(wakes2 === 10000);
+    assert.ok(agent2.wakeTime > (0.05 * agent1.wakeTime), `${agent1.wakeTime} ${agent2.wakeTime}`);
+    assert.ok(agent2.wakeTime < (0.15 * agent1.wakeTime), `${agent1.wakeTime} ${agent2.wakeTime}`);
   });
 
   it('agent with rate 0, wakes at +Infinity', function(){
