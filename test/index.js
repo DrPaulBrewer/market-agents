@@ -1819,7 +1819,8 @@ describe('new Pool', function () {
     let async = (typeof(done) === 'function');
     let numberOfAgents = rates.length;
     let wakes = new Array(numberOfAgents).fill(0);
-    let expected = rates.map(function (r) { return 1000 * r; });
+    const allowedTime = 10000;
+    let expected = rates.map(function (r) { return allowedTime * r; });
 
     function checkWakes() {
       wakes.forEach(function (wakeCount, i) {
@@ -1837,7 +1838,7 @@ describe('new Pool', function () {
     }
     if (async) {
       (myPool
-        .runAsPromise(1000, 5)
+        .runAsPromise(allowedTime, 5)
         .then(function () {
           checkWakes();
           done();
@@ -1848,52 +1849,52 @@ describe('new Pool', function () {
       // previous line should return before event loop runs, so wakeCount should be 0
       wakes.forEach(function (wakeCount) { wakeCount.should.equal(0); });
     } else {
-      myPool.syncRun(1000);
+      myPool.syncRun(allowedTime);
       checkWakes();
     }
   }
 
-  it('pool with two agents, rate 1 and 1e-12, wakes about 1000 and 0 times with .syncRun(1000)', function(){
+  it('pool with two agents, rate 1 and 1e-12 .syncRun', function(){
     poolAgentRateTest([1,1e-12], Agent);
   });
 
-  it('pool with one agent, rate 1, wakes about 1000 times with .syncRun(1000) ', function () {
+  it('pool with one agent, rate 1, .syncRun', function () {
     poolAgentRateTest([1], Agent);
   });
 
-  it('pool with two agents, rate 1 and 1e-12, wakes about 1000 and 0 times (runAsPromise)', function(done){
+  it('pool with two agents, rate 1 and 1e-12  (runAsPromise)', function(done){
     poolAgentRateTest([1,1e-12], Agent, done);
   });
 
-  it('pool with one agent, rate 1, wakes about 1000 times by t=1000 (runAsPromise) ', function (done) {
+  it('pool with one agent, rate 1 (runAsPromise) ', function (done) {
     poolAgentRateTest([1], Agent, done);
   });
 
-  it('pool with ten agents, rate 1, wakes about 1000 times by t=1000 (syncRun) ', function () {
+  it('pool with ten agents, rate 1 (syncRun) ', function () {
     poolAgentRateTest(new Array(10).fill(1), Agent);
   });
 
-  it('pool with ten agents, rate 1, wakes about 1000 times each by t=1000 ', function (done) {
+  it('pool with ten agents, rate 1 ', function (done) {
     poolAgentRateTest(new Array(10).fill(1), Agent, done);
   });
 
-  it('pool with ten agents, rates [1,2,3,4,5,6,7,8,9,10] wakes about [1000,2000,...,10000] times each with .syncRun(1000) ', function () {
+  it('pool with ten agents, rates [1,2,3,4,5,6,7,8,9,10] .syncRun ', function () {
     poolAgentRateTest([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], Agent);
   });
 
-  it('pool with ten agents, rates [1,2,3,4,5,6,7,8,9,10], wakes about [1000,2000,...,10000] times each with .runAsPromise ', function (done) {
+  it('pool with ten agents, rates [1,2,3,4,5,6,7,8,9,10], .runAsPromise ', function (done) {
     poolAgentRateTest([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], Agent, done);
   });
 
-  it('pool with one zi Agent, rate 2, wakes about 2000 times with .syncRun(1000) ', function () {
+  it('pool with one zi Agent, rate 2 .syncRun ', function () {
     poolAgentRateTest([2], ZIAgent);
   });
 
-  it('pool with one zi agent, rate 2, wakes about 2000 times with .runAsPromise ', function (done) {
+  it('pool with one zi agent, rate 2, .runAsPromise ', function (done) {
     poolAgentRateTest([2], ZIAgent, done);
   });
 
-  it('pool with 100 zi agents, rates [0.01,...,1], wakes about [10,20,...,1000] times each with .syncRun(1000)', function () {
+  it('pool with 100 zi agents, rates [0.01,...,1] .syncRun(1000)', function () {
     let i, l;
     let rates = [];
     for (i = 0, l = 100;i < l;++i)
