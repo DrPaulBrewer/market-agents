@@ -442,6 +442,29 @@ export class Trader extends Agent {
     }
   }
 
+  uniformRandom(a,b){
+    if (typeof(a)!=='number') throw new TypeError('a '+a+' not a number');
+    if (typeof(b)!=='number') throw new TypeError('b '+b+' not a number');
+    if (a===b) return a;
+    if (a>b) throw new RangeError('a '+a+' should be less than b '+b);
+    const offset = (this.integer)? 1: 0;
+    const uRandom = ProbJS.uniform(a,b+offset);
+    let p;
+    if (this.integer) {
+
+      /* because Floor rounds down, 1 has been added to b to be in the range of possible prices */
+      /* guard against rare edge case with do/while */
+
+      do {
+        p = Math.floor(uRandom());
+      } while (p > b);
+
+    } else {
+      p = uRandom();
+    }
+    return p;
+  }
+
 }
 
 export class DoNothingAgent extends Trader {
@@ -518,7 +541,6 @@ export class DPPAgent extends Trader {
     const fv = (marginalCost<=0)? 0.001: marginalCost;
     return this.decay(iv,fv);
   }
-
 }
 
 export class HoarderAgent extends Trader {
@@ -582,22 +604,8 @@ export class ZIAgent extends Trader {
 
   bidPrice(marginalValue) {
     if (typeof(marginalValue) !== 'number') return undefined;
-    let p;
-    if (marginalValue === this.minPrice) return marginalValue;
     if (marginalValue < this.minPrice) return undefined;
-    if (this.integer) {
-
-      /* because Floor rounds down, add 1 to value to be in the range of possible prices */
-      /* guard against rare edge case with do/while */
-
-      do {
-        p = Math.floor(ProbJS.uniform(this.minPrice, marginalValue + 1)());
-      } while (p > marginalValue);
-
-    } else {
-      p = ProbJS.uniform(this.minPrice, marginalValue)();
-    }
-    return p;
+    return this.uniformRandom(this.minPrice, marginalValue);
   }
 
   /**
@@ -611,22 +619,8 @@ export class ZIAgent extends Trader {
 
   askPrice(marginalCost) {
     if (typeof(marginalCost) !== 'number') return undefined;
-    let p;
-    if (marginalCost === this.maxPrice) return marginalCost;
     if (marginalCost > this.maxPrice) return undefined;
-    if (this.integer) {
-
-      /* because Floor rounds down, add 1 to value to be in the range of possible prices */
-      /* guard against rare edge case with do/while */
-
-      do {
-        p = Math.floor(ProbJS.uniform(marginalCost, this.maxPrice + 1)());
-      } while (p > this.maxPrice);
-
-    } else {
-      p = ProbJS.uniform(marginalCost, this.maxPrice)();
-    }
-    return p;
+    return this.uniformRandom(marginalCost, this.maxPrice);
   }
 }
 
@@ -649,6 +643,24 @@ export class ZIAgent extends Trader {
        color: 'chartreuse'  // color about halfway between green (ZI) and gold (MidpointAgent)
      };
      super(Object.assign({},defaults,options));
+   }
+
+   bidPrice(marginalValue, market){
+     if (typeof(marginalValue)!=='number') return undefined;
+     const currentBid = market.currentBidPrice();
+     if (currentBid===undefined) return super.bidPrice(marginalValue);
+     const lowerLimit = Math.max(currentBid, this.minPrice);
+     if (lowerLimit>marginalValue) return undefined;
+     return this.uniformRandom(lowerLimit, marginalValue);
+   }
+
+   askPrice(marginalCost, market){
+     if (typeof(marginalCost)!=='number') return undefined;
+     const currentAsk = market.currentAskPrice();
+     if (currentAsk===undefined) return super.askPrice(marginalCost);
+     const upperLimit = Math.min(currentAsk, this.maxPrice);
+     if (marginalCost>upperLimit) return undefined;
+     return this.uniformRandom(marginalCost, upperLimit);
    }
  }
 
