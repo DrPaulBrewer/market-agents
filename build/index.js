@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.Pool = exports.RisingBidSniperAgent = exports.FallingAskSniperAgent = exports.RandomAcceptSniperAgent = exports.AcceptSniperAgent = exports.MedianSniperAgent = exports.KaplanSniperAgent = exports.Sniper = exports.MidpointAgent = exports.OneupmanshipAgent = exports.TTAgent = exports.UnitAgent = exports.ZIAgent = exports.HoarderAgent = exports.DPPAgent = exports.TruthfulAgent = exports.DoNothingAgent = exports.Trader = exports.Agent = void 0;
+exports.Pool = exports.RisingBidSniperAgent = exports.FallingAskSniperAgent = exports.RandomAcceptSniperAgent = exports.AcceptSniperAgent = exports.MedianSniperAgent = exports.KaplanSniperAgent = exports.Sniper = exports.MidpointAgent = exports.OneupmanshipAgent = exports.TTAgent = exports.UnitAgent = exports.ZIMIAgent = exports.ZIAgent = exports.HoarderAgent = exports.DPPAgent = exports.TruthfulAgent = exports.DoNothingAgent = exports.Trader = exports.Agent = void 0;
 
 var _clone = _interopRequireDefault(require("clone"));
 
@@ -472,6 +472,29 @@ class Trader extends Agent {
     }
   }
 
+  uniformRandom(a, b) {
+    if (typeof a !== 'number') throw new TypeError('a ' + a + ' not a number');
+    if (typeof b !== 'number') throw new TypeError('b ' + b + ' not a number');
+    if (a === b) return a;
+    if (a > b) throw new RangeError('a ' + a + ' should be less than b ' + b);
+    const offset = this.integer ? 1 : 0;
+    const uRandom = ProbJS.uniform(a, b + offset);
+    let p;
+
+    if (this.integer) {
+      /* because Floor rounds down, 1 has been added to b to be in the range of possible prices */
+
+      /* guard against rare edge case with do/while */
+      do {
+        p = Math.floor(uRandom());
+      } while (p > b);
+    } else {
+      p = uRandom();
+    }
+
+    return p;
+  }
+
 }
 
 exports.Trader = Trader;
@@ -628,22 +651,8 @@ class ZIAgent extends Trader {
 
   bidPrice(marginalValue) {
     if (typeof marginalValue !== 'number') return undefined;
-    let p;
-    if (marginalValue === this.minPrice) return marginalValue;
     if (marginalValue < this.minPrice) return undefined;
-
-    if (this.integer) {
-      /* because Floor rounds down, add 1 to value to be in the range of possible prices */
-
-      /* guard against rare edge case with do/while */
-      do {
-        p = Math.floor(ProbJS.uniform(this.minPrice, marginalValue + 1)());
-      } while (p > marginalValue);
-    } else {
-      p = ProbJS.uniform(this.minPrice, marginalValue)();
-    }
-
-    return p;
+    return this.uniformRandom(this.minPrice, marginalValue);
   }
   /**
    * calculate price this agent is willing to accept as a uniform random number ~ U[marginalCost, maxPrice] inclusive.
@@ -657,27 +666,55 @@ class ZIAgent extends Trader {
 
   askPrice(marginalCost) {
     if (typeof marginalCost !== 'number') return undefined;
-    let p;
-    if (marginalCost === this.maxPrice) return marginalCost;
     if (marginalCost > this.maxPrice) return undefined;
+    return this.uniformRandom(marginalCost, this.maxPrice);
+  }
 
-    if (this.integer) {
-      /* because Floor rounds down, add 1 to value to be in the range of possible prices */
+}
+/**
+ * ZIMI agent: uses ZIAgent algorithm if there is no current Bid or Ask price.  Afterward, matches or improves current bid or current ask randomly.
+ *
+ */
 
-      /* guard against rare edge case with do/while */
-      do {
-        p = Math.floor(ProbJS.uniform(marginalCost, this.maxPrice + 1)());
-      } while (p > this.maxPrice);
-    } else {
-      p = ProbJS.uniform(marginalCost, this.maxPrice)();
-    }
 
-    return p;
+exports.ZIAgent = ZIAgent;
+
+class ZIMIAgent extends ZIAgent {
+  /**
+  * creates "ZIMI" robot agent, a ZI that matches or improves on current bid or current ask
+  *
+  * @param {Object} [options] passed to ZIAgent, Trader, Agent constructors
+  */
+  constructor(options) {
+    const defaults = {
+      description: "ZIMI agent that bids/asks randomly to match or improve current Bid or Ask",
+      color: 'chartreuse' // color about halfway between green (ZI) and gold (MidpointAgent)
+
+    };
+    super(Object.assign({}, defaults, options));
+  }
+
+  bidPrice(marginalValue, market) {
+    if (typeof marginalValue !== 'number') return undefined;
+    const currentBid = market.currentBidPrice();
+    if (currentBid === undefined) return super.bidPrice(marginalValue);
+    const lowerLimit = Math.max(currentBid, this.minPrice);
+    if (lowerLimit > marginalValue) return undefined;
+    return this.uniformRandom(lowerLimit, marginalValue);
+  }
+
+  askPrice(marginalCost, market) {
+    if (typeof marginalCost !== 'number') return undefined;
+    const currentAsk = market.currentAskPrice();
+    if (currentAsk === undefined) return super.askPrice(marginalCost);
+    const upperLimit = Math.min(currentAsk, this.maxPrice);
+    if (marginalCost > upperLimit) return undefined;
+    return this.uniformRandom(marginalCost, upperLimit);
   }
 
 }
 
-exports.ZIAgent = ZIAgent;
+exports.ZIMIAgent = ZIMIAgent;
 const um1p2 = ProbJS.uniform(-1, 2);
 const um1p1 = ProbJS.uniform(-1, 1);
 /**

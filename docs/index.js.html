@@ -470,6 +470,29 @@ export class Trader extends Agent {
     }
   }
 
+  uniformRandom(a,b){
+    if (typeof(a)!=='number') throw new TypeError('a '+a+' not a number');
+    if (typeof(b)!=='number') throw new TypeError('b '+b+' not a number');
+    if (a===b) return a;
+    if (a>b) throw new RangeError('a '+a+' should be less than b '+b);
+    const offset = (this.integer)? 1: 0;
+    const uRandom = ProbJS.uniform(a,b+offset);
+    let p;
+    if (this.integer) {
+
+      /* because Floor rounds down, 1 has been added to b to be in the range of possible prices */
+      /* guard against rare edge case with do/while */
+
+      do {
+        p = Math.floor(uRandom());
+      } while (p > b);
+
+    } else {
+      p = uRandom();
+    }
+    return p;
+  }
+
 }
 
 export class DoNothingAgent extends Trader {
@@ -546,7 +569,6 @@ export class DPPAgent extends Trader {
     const fv = (marginalCost&lt;=0)? 0.001: marginalCost;
     return this.decay(iv,fv);
   }
-
 }
 
 export class HoarderAgent extends Trader {
@@ -610,22 +632,8 @@ export class ZIAgent extends Trader {
 
   bidPrice(marginalValue) {
     if (typeof(marginalValue) !== 'number') return undefined;
-    let p;
-    if (marginalValue === this.minPrice) return marginalValue;
     if (marginalValue &lt; this.minPrice) return undefined;
-    if (this.integer) {
-
-      /* because Floor rounds down, add 1 to value to be in the range of possible prices */
-      /* guard against rare edge case with do/while */
-
-      do {
-        p = Math.floor(ProbJS.uniform(this.minPrice, marginalValue + 1)());
-      } while (p > marginalValue);
-
-    } else {
-      p = ProbJS.uniform(this.minPrice, marginalValue)();
-    }
-    return p;
+    return this.uniformRandom(this.minPrice, marginalValue);
   }
 
   /**
@@ -639,24 +647,50 @@ export class ZIAgent extends Trader {
 
   askPrice(marginalCost) {
     if (typeof(marginalCost) !== 'number') return undefined;
-    let p;
-    if (marginalCost === this.maxPrice) return marginalCost;
     if (marginalCost > this.maxPrice) return undefined;
-    if (this.integer) {
-
-      /* because Floor rounds down, add 1 to value to be in the range of possible prices */
-      /* guard against rare edge case with do/while */
-
-      do {
-        p = Math.floor(ProbJS.uniform(marginalCost, this.maxPrice + 1)());
-      } while (p > this.maxPrice);
-
-    } else {
-      p = ProbJS.uniform(marginalCost, this.maxPrice)();
-    }
-    return p;
+    return this.uniformRandom(marginalCost, this.maxPrice);
   }
 }
+
+/**
+ * ZIMI agent: uses ZIAgent algorithm if there is no current Bid or Ask price.  Afterward, matches or improves current bid or current ask randomly.
+ *
+ */
+
+ export class ZIMIAgent extends ZIAgent {
+
+   /**
+   * creates "ZIMI" robot agent, a ZI that matches or improves on current bid or current ask
+   *
+   * @param {Object} [options] passed to ZIAgent, Trader, Agent constructors
+   */
+
+   constructor(options){
+     const defaults = {
+       description: "ZIMI agent that bids/asks randomly to match or improve current Bid or Ask",
+       color: 'chartreuse'  // color about halfway between green (ZI) and gold (MidpointAgent)
+     };
+     super(Object.assign({},defaults,options));
+   }
+
+   bidPrice(marginalValue, market){
+     if (typeof(marginalValue)!=='number') return undefined;
+     const currentBid = market.currentBidPrice();
+     if (currentBid===undefined) return super.bidPrice(marginalValue);
+     const lowerLimit = Math.max(currentBid, this.minPrice);
+     if (lowerLimit>marginalValue) return undefined;
+     return this.uniformRandom(lowerLimit, marginalValue);
+   }
+
+   askPrice(marginalCost, market){
+     if (typeof(marginalCost)!=='number') return undefined;
+     const currentAsk = market.currentAskPrice();
+     if (currentAsk===undefined) return super.askPrice(marginalCost);
+     const upperLimit = Math.min(currentAsk, this.maxPrice);
+     if (marginalCost>upperLimit) return undefined;
+     return this.uniformRandom(marginalCost, upperLimit);
+   }
+ }
 
 const um1p2 = ProbJS.uniform(-1, 2);
 const um1p1 = ProbJS.uniform(-1, 1);
@@ -1448,13 +1482,13 @@ export class Pool {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AcceptSniperAgent_AcceptSniperAgent.html">AcceptSniperAgent</a></li><li><a href="Agent.html">Agent</a></li><li><a href="DoNothingAgent_DoNothingAgent.html">DoNothingAgent</a></li><li><a href="DPPAgent_DPPAgent.html">DPPAgent</a></li><li><a href="HoarderAgent_HoarderAgent.html">HoarderAgent</a></li><li><a href="KaplanSniperAgent.html">KaplanSniperAgent</a></li><li><a href="MedianSniperAgent_MedianSniperAgent.html">MedianSniperAgent</a></li><li><a href="MidpointAgent.html">MidpointAgent</a></li><li><a href="OneupmanshipAgent.html">OneupmanshipAgent</a></li><li><a href="Pool.html">Pool</a></li><li><a href="RandomAcceptSniperAgent_RandomAcceptSniperAgent.html">RandomAcceptSniperAgent</a></li><li><a href="Trader.html">Trader</a></li><li><a href="TruthfulAgent_TruthfulAgent.html">TruthfulAgent</a></li><li><a href="UnitAgent.html">UnitAgent</a></li><li><a href="ZIAgent.html">ZIAgent</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AcceptSniperAgent_AcceptSniperAgent.html">AcceptSniperAgent</a></li><li><a href="Agent.html">Agent</a></li><li><a href="DoNothingAgent_DoNothingAgent.html">DoNothingAgent</a></li><li><a href="DPPAgent_DPPAgent.html">DPPAgent</a></li><li><a href="HoarderAgent_HoarderAgent.html">HoarderAgent</a></li><li><a href="KaplanSniperAgent.html">KaplanSniperAgent</a></li><li><a href="MedianSniperAgent_MedianSniperAgent.html">MedianSniperAgent</a></li><li><a href="MidpointAgent.html">MidpointAgent</a></li><li><a href="OneupmanshipAgent.html">OneupmanshipAgent</a></li><li><a href="Pool.html">Pool</a></li><li><a href="RandomAcceptSniperAgent_RandomAcceptSniperAgent.html">RandomAcceptSniperAgent</a></li><li><a href="Trader.html">Trader</a></li><li><a href="TruthfulAgent_TruthfulAgent.html">TruthfulAgent</a></li><li><a href="UnitAgent.html">UnitAgent</a></li><li><a href="ZIAgent.html">ZIAgent</a></li><li><a href="ZIMIAgent.html">ZIMIAgent</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a> on Wed Oct 14 2020 13:38:13 GMT-0400 (Eastern Daylight Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a> on Fri Oct 16 2020 14:54:57 GMT-0400 (Eastern Daylight Time)
 </footer>
 
 <script> prettyPrint(); </script>

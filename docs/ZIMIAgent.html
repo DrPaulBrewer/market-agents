@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Class: RandomAcceptSniperAgent</title>
+    <title>JSDoc: Class: ZIMIAgent</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Class: RandomAcceptSniperAgent</h1>
+    <h1 class="page-title">Class: ZIMIAgent</h1>
 
     
 
@@ -28,7 +28,9 @@
 
 <header>
     
-        <h2><span class="attribs"><span class="type-signature"></span></span>RandomAcceptSniperAgent<span class="signature">(options<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h2>
+        <h2><span class="attribs"><span class="type-signature"></span></span>ZIMIAgent<span class="signature">(options<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h2>
+        
+            <div class="class-description">ZIMI agent: uses ZIAgent algorithm if there is no current Bid or Ask price.  Afterward, matches or improves current bid or current ask randomly.</div>
         
     
 </header>
@@ -39,9 +41,11 @@
         
 
     
+    <h2>Constructor</h2>
+    
 
     
-    <h4 class="name" id="RandomAcceptSniperAgent"><span class="type-signature"></span>new RandomAcceptSniperAgent<span class="signature">(options<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="ZIMIAgent"><span class="type-signature"></span>new ZIMIAgent<span class="signature">(options<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
     
 
     
@@ -49,7 +53,7 @@
 
 
 <div class="description">
-    Create RandomAcceptSniperAgent from Sniper
+    creates "ZIMI" robot agent, a ZI that matches or improves on current bid or current ask
 </div>
 
 
@@ -113,7 +117,7 @@
 
             
 
-            <td class="description last">to Trader and Agent constructors</td>
+            <td class="description last">passed to ZIAgent, Trader, Agent constructors</td>
         </tr>
 
     
@@ -154,7 +158,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line1109">line 1109</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line632">line 632</a>
     </li></ul></dd>
     
 
@@ -191,6 +195,13 @@
 
     
 
+    
+        <h3 class="subsection-title">Classes</h3>
+
+        <dl>
+            <dt><a href="ZIMIAgent.html">ZIMIAgent</a></dt>
+            <dd></dd>
+        </dl>
     
 
     
