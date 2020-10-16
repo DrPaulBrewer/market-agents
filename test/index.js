@@ -8,6 +8,7 @@ import * as MarketAgents from "../src/index.js";
 const {
   Agent,
   ZIAgent,
+  ZIMIAgent,
   TTAgent,
   Pool,
   UnitAgent,
@@ -619,6 +620,113 @@ describe('new ZIAgent', function () {
     testInclusiveUniformity({
       range: [50,150],
       f: ()=>(zi.askPrice(50))
+    });
+  });
+});
+
+describe('new ZIMIAgent', function(){
+  let zimi;
+  const emptyMarket = {
+      currentBidPrice(){ return undefined; },
+      currentAskPrice(){ return undefined; }
+  };
+  const activeMarket = {
+    currentBidPrice(){ return 100; },
+    currentAskPrice(){ return 200; }
+  };
+  before(function(){
+    zimi = new ZIMIAgent({minPrice: 1, maxPrice: 500});
+  });
+  it('should be a subclass of ZIAgent', function(){
+    zimi.should.be.instanceOf(ZIAgent);
+  });
+  it('should throw an error if market.currentBidPrice not-a-function',function(){
+    const market = {
+      currentAskPrice(){ return 101; }
+    };
+    function bad(){
+      zimi.bidPrice(500, market);
+    }
+    bad.should.throw();
+  });
+  it('should throw an error if market.currentAskPrice not-a-function', function(){
+    const market = {
+      currentBidPrice(){ return 50; }
+    };
+    function bad(){
+      zimi.askPrice(10,market);
+    }
+    bad.should.throw();
+  });
+  it('should bid uniformly on [L,v] like ZI in empty market', function(){
+    const L = zimi.minPrice;
+    zimi.integer = false;
+    const v = 250;
+    testInclusiveUniformity({
+      range: [L,v-1],
+      multiple: 10000,
+      integer: false,
+      f: ()=>(zimi.bidPrice(v, emptyMarket))
+    });
+    zimi.integer = true;
+    testInclusiveUniformity({
+      range: [L,v],
+      multiple: 10000,
+      f: ()=>(zimi.bidPrice(v, emptyMarket))
+    });
+  });
+  it('should ask uniformly on [c,H] like ZI in empty market', function(){
+    const H = zimi.maxPrice;
+    const c = Math.ceil(H/4);
+    zimi.integer = false;
+    testInclusiveUniformity({
+      range: [c,H-1],
+      multiple: 10000,
+      integer: false,
+      f: ()=>(zimi.askPrice(c, emptyMarket))
+    });
+    zimi.integer = true;
+    testInclusiveUniformity({
+      range: [c,H],
+      multiple: 10000,
+      f: ()=>(zimi.askPrice(c,emptyMarket))
+    });
+  });
+  it('should bid uniformly on [bid,v] in active market', function(){
+    const bid = activeMarket.currentBidPrice();
+    assert(bid!==zimi.minPrice);
+    zimi.integer = false;
+    const v = 250;
+    testInclusiveUniformity({
+      range: [bid,v-1],
+      multiple: 10000,
+      integer: false,
+      f: ()=>(zimi.bidPrice(v, activeMarket))
+    });
+    zimi.integer = true;
+    testInclusiveUniformity({
+      range: [bid,v],
+      multiple: 10000,
+      f: ()=>(zimi.bidPrice(v, activeMarket))
+    });
+  });
+  it('should ask uniformly on [c,ask] in active market', function(){
+    const ask = activeMarket.currentAskPrice();
+    const H = zimi.maxPrice;
+    assert(ask!==H);
+    const c = Math.ceil(H/4);
+    zimi.integer = false;
+    testInclusiveUniformity({
+      range: [c,ask-1],
+      multiple: 10000,
+      integer: false,
+      f: ()=>(zimi.askPrice(c, activeMarket))
+    });
+    zimi.integer = true;
+    testInclusiveUniformity({
+      range: [c,ask],
+      multiple: 10000,
+      f: ()=>(zimi.askPrice(c,activeMarket))
     });
   });
 });

@@ -630,6 +630,28 @@ export class ZIAgent extends Trader {
   }
 }
 
+/**
+ * ZIMI agent: uses ZIAgent algorithm if there is no current Bid or Ask price.  Afterward, matches or improves current bid or current ask randomly.
+ *
+ */
+
+ export class ZIMIAgent extends ZIAgent {
+
+   /**
+   * creates "ZIMI" robot agent, a ZI that matches or improves on current bid or current ask
+   *
+   * @param {Object} [options] passed to ZIAgent, Trader, Agent constructors
+   */
+
+   constructor(options){
+     const defaults = {
+       description: "ZIMI agent that bids/asks randomly to match or improve current Bid or Ask",
+       color: 'chartreuse'  // color about halfway between green (ZI) and gold (MidpointAgent)
+     };
+     super(Object.assign({},defaults,options));
+   }
+ }
+
 const um1p2 = ProbJS.uniform(-1, 2);
 const um1p1 = ProbJS.uniform(-1, 1);
 
