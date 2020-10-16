@@ -884,11 +884,11 @@ describe('new TTAgent', function () {
       currentAskPrice(){ return 300;}
     };
     for(let i=1;i<100;++i){
-      a.bidPrice(i,market).should.be.within(0,i); // fallback to ZI
+      a.bidPrice(i,market).should.be.within(1,i); // fallback to ZI
       a.askPrice(i,market).should.equal(200);
     }
     for(let i=100;i<200;i+=2){
-      a.bidPrice(i,market).should.be.within(0,i);
+      a.bidPrice(i,market).should.be.within(1,i);
       const profitFromAcceptingBid = 200-i;
       const optimalAsk = (i+300)/2;
       const probAskAccepted = (300-optimalAsk)/101; // 101 because 101 values including bid of 200 and ask of 300
@@ -897,7 +897,7 @@ describe('new TTAgent', function () {
       a.askPrice(i,market).should.equal(expected);
     }
     // 200 has zero profit for buyer, so reverts to zi
-    a.bidPrice(200,market).should.be.below(200);
+    a.bidPrice(200,market).should.be.within(1,200);
     for(let i=202;i<300;i+=2){
       a.bidPrice(i,market).should.equal((i+200)/2);
       a.askPrice(i,market).should.equal((i+300)/2);
