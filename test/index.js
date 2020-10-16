@@ -8,7 +8,7 @@ import * as MarketAgents from "../src/index.js";
 const {
   Agent,
   ZIAgent,
-  ZIMIAgent,
+  ZIJumpAgent,
   TTAgent,
   Pool,
   UnitAgent,
@@ -624,8 +624,8 @@ describe('new ZIAgent', function () {
   });
 });
 
-describe('new ZIMIAgent', function(){
-  let zimi;
+describe('new ZIJumpAgent', function(){
+  let zijump;
   const emptyMarket = {
       currentBidPrice(){ return undefined; },
       currentAskPrice(){ return undefined; }
@@ -635,17 +635,17 @@ describe('new ZIMIAgent', function(){
     currentAskPrice(){ return 200; }
   };
   before(function(){
-    zimi = new ZIMIAgent({minPrice: 1, maxPrice: 500});
+    zijump = new ZIJumpAgent({minPrice: 1, maxPrice: 500});
   });
   it('should be a subclass of ZIAgent', function(){
-    zimi.should.be.instanceOf(ZIAgent);
+    zijump.should.be.instanceOf(ZIAgent);
   });
   it('should throw an error if market.currentBidPrice not-a-function',function(){
     const market = {
       currentAskPrice(){ return 101; }
     };
     function bad(){
-      zimi.bidPrice(500, market);
+      zijump.bidPrice(500, market);
     }
     bad.should.throw();
   });
@@ -654,79 +654,79 @@ describe('new ZIMIAgent', function(){
       currentBidPrice(){ return 50; }
     };
     function bad(){
-      zimi.askPrice(10,market);
+      zijump.askPrice(10,market);
     }
     bad.should.throw();
   });
   it('should bid uniformly on [L,v] like ZI in empty market', function(){
-    const L = zimi.minPrice;
-    zimi.integer = false;
+    const L = zijump.minPrice;
+    zijump.integer = false;
     const v = 250;
     testInclusiveUniformity({
       range: [L,v-1],
       multiple: 10000,
       integer: false,
-      f: ()=>(zimi.bidPrice(v, emptyMarket))
+      f: ()=>(zijump.bidPrice(v, emptyMarket))
     });
-    zimi.integer = true;
+    zijump.integer = true;
     testInclusiveUniformity({
       range: [L,v],
       multiple: 10000,
-      f: ()=>(zimi.bidPrice(v, emptyMarket))
+      f: ()=>(zijump.bidPrice(v, emptyMarket))
     });
   });
   it('should ask uniformly on [c,H] like ZI in empty market', function(){
-    const H = zimi.maxPrice;
+    const H = zijump.maxPrice;
     const c = Math.ceil(H/4);
-    zimi.integer = false;
+    zijump.integer = false;
     testInclusiveUniformity({
       range: [c,H-1],
       multiple: 10000,
       integer: false,
-      f: ()=>(zimi.askPrice(c, emptyMarket))
+      f: ()=>(zijump.askPrice(c, emptyMarket))
     });
-    zimi.integer = true;
+    zijump.integer = true;
     testInclusiveUniformity({
       range: [c,H],
       multiple: 10000,
-      f: ()=>(zimi.askPrice(c,emptyMarket))
+      f: ()=>(zijump.askPrice(c,emptyMarket))
     });
   });
   it('should bid uniformly on [bid,v] in active market', function(){
     const bid = activeMarket.currentBidPrice();
-    assert(bid!==zimi.minPrice);
-    zimi.integer = false;
+    assert(bid!==zijump.minPrice);
+    zijump.integer = false;
     const v = 250;
     testInclusiveUniformity({
       range: [bid,v-1],
       multiple: 10000,
       integer: false,
-      f: ()=>(zimi.bidPrice(v, activeMarket))
+      f: ()=>(zijump.bidPrice(v, activeMarket))
     });
-    zimi.integer = true;
+    zijump.integer = true;
     testInclusiveUniformity({
       range: [bid,v],
       multiple: 10000,
-      f: ()=>(zimi.bidPrice(v, activeMarket))
+      f: ()=>(zijump.bidPrice(v, activeMarket))
     });
   });
   it('should ask uniformly on [c,ask] in active market', function(){
     const ask = activeMarket.currentAskPrice();
-    const H = zimi.maxPrice;
+    const H = zijump.maxPrice;
     assert(ask!==H);
     const c = Math.ceil(H/4);
-    zimi.integer = false;
+    zijump.integer = false;
     testInclusiveUniformity({
       range: [c,ask-1],
       multiple: 10000,
       integer: false,
-      f: ()=>(zimi.askPrice(c, activeMarket))
+      f: ()=>(zijump.askPrice(c, activeMarket))
     });
-    zimi.integer = true;
+    zijump.integer = true;
     testInclusiveUniformity({
       range: [c,ask],
       multiple: 10000,
-      f: ()=>(zimi.askPrice(c,activeMarket))
+      f: ()=>(zijump.askPrice(c,activeMarket))
     });
   });
 });
