@@ -9,6 +9,7 @@ const {
   Agent,
   ZIAgent,
   ZIJumpAgent,
+  ZISpreadAgent,
   TTAgent,
   Pool,
   UnitAgent,
@@ -730,6 +731,78 @@ describe('new ZIJumpAgent', function(){
     });
   });
 });
+
+describe('new ZISpreadAgent', function(){
+  let zispread;
+  before(function(){
+    zispread = new ZISpreadAgent({minPrice: 1, maxPrice: 500, integer:true});
+  });
+  it('should throw an error if market.currentBidPrice not-a-function',function(){
+    const market = {
+      currentAskPrice(){ return 101; }
+    };
+    function bad1(){
+      zispread.bidPrice(500, market);
+    }
+    function bad2(){
+      zispread.askPrice(1, market);
+    }
+    bad1.should.throw();
+    bad2.should.throw();
+  });
+  it('should throw an error if market.currentAskPrice not-a-function', function(){
+    const market = {
+      currentBidPrice(){ return 50; }
+    };
+    function bad1(){
+      zispread.bidPrice(500, market);
+    }
+    function bad2(){
+      zispread.askPrice(1, market);
+    }
+    bad1.should.throw();
+    bad2.should.throw();
+  });
+  const tests = [
+    [['bidPrice',450,undefined,undefined],[1,450]],
+    [['askPrice',50,undefined,undefined],[50,500]],
+    [['bidPrice',400,100,undefined],[100,400]],
+    [['askPrice',50,100,undefined],[100,500]],
+    [['bidPrice',400,450,undefined],undefined],
+    [['askPrice',50,20,undefined],[50,500]],
+    [['bidPrice',400,undefined,250],[1,250]],
+    [['askPrice',100,undefined,250],[100,250]],
+    [['bidPrice',400,undefined,450],[1,400]],
+    [['askPrice',100,undefined,50],undefined],
+    [['bidPrice',400,100,300],[100,300]],
+    [['askPrice',50,100,300],[100,300]],
+    [['bidPrice',200,100,300],[100,200]],
+    [['askPrice',200,100,300],[200,300]],
+    [['bidPrice',50,100,300],undefined],
+    [['askPrice',400,100,300],undefined]
+  ];
+  tests.forEach(([test,expected])=>{
+    const [method,param,currentBid,currentAsk] = test;
+    const market = {
+      currentBidPrice(){return currentBid;},
+      currentAskPrice(){return currentAsk;}
+    };
+    if (expected===undefined){
+      it(`zispread.${method}(${param}) ${currentBid}x${currentAsk} -> undefined`, function(){
+        assert.strictEqual(zispread[method](param,market),undefined);
+      });
+    } else {
+      it(`zispread.${method}(${param}) ${currentBid}x${currentAsk} -> U${JSON.stringify(expected)}`, function(){
+        testInclusiveUniformity({
+          range: expected,
+          multiple: 1000,
+          f: ()=>(zispread[method](param,market))
+        });
+      });
+    }
+  });
+});
+
 
 describe('new UnitAgent', function () {
 

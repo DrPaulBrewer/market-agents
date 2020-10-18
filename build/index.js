@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.Pool = exports.RisingBidSniperAgent = exports.FallingAskSniperAgent = exports.RandomAcceptSniperAgent = exports.AcceptSniperAgent = exports.MedianSniperAgent = exports.KaplanSniperAgent = exports.Sniper = exports.MidpointAgent = exports.OneupmanshipAgent = exports.TTAgent = exports.UnitAgent = exports.ZIJumpAgent = exports.ZIAgent = exports.HoarderAgent = exports.DPPAgent = exports.TruthfulAgent = exports.DoNothingAgent = exports.Trader = exports.Agent = void 0;
+exports.Pool = exports.RisingBidSniperAgent = exports.FallingAskSniperAgent = exports.RandomAcceptSniperAgent = exports.AcceptSniperAgent = exports.MedianSniperAgent = exports.KaplanSniperAgent = exports.Sniper = exports.MidpointAgent = exports.OneupmanshipAgent = exports.TTAgent = exports.UnitAgent = exports.ZISpreadAgent = exports.ZIJumpAgent = exports.ZIAgent = exports.HoarderAgent = exports.DPPAgent = exports.TruthfulAgent = exports.DoNothingAgent = exports.Trader = exports.Agent = void 0;
 
 var _clone = _interopRequireDefault(require("clone"));
 
@@ -713,8 +713,61 @@ class ZIJumpAgent extends ZIAgent {
   }
 
 }
+/**
+ * ZISpread agent: equivalent to ZIAgent if there is no current Bid or Ask price.
+ * prices are distributed U[currentBid,currentAsk] if V>=currentAsk or C<=currentBid
+ * U[currentBid,V] if currentBid<=V<=currentAsk
+ * U[c,currentAsk] if currentBid<=c<=currenAsk
+ * undefined if V<currentBid
+ * undefined if c>currentAsk
+ *
+ */
+
 
 exports.ZIJumpAgent = ZIJumpAgent;
+
+class ZISpreadAgent extends Trader {
+  /**
+  * creates "ZISpread" robot agent
+  *
+  * @param {Object} [options] passed to Trader, Agent constructors
+  */
+  constructor(options) {
+    const defaults = {
+      description: "ZISpread agent that bids/asks randomly within the intersection of bid-ask spread and budget ",
+      color: 'chartreuse' // color about halfway between green (ZI) and  goldenrod (MidpointAgent)
+
+    };
+    super(Object.assign({}, defaults, options));
+  }
+
+  bidPrice(marginalValue, market) {
+    if (typeof marginalValue !== 'number') return undefined;
+    const currentBid = market.currentBidPrice();
+    const currentAsk = market.currentAskPrice();
+    let lower = this.minPrice;
+    let upper = marginalValue;
+    if (currentBid > lower) lower = currentBid;
+    if (currentAsk > 0 && currentAsk < upper) upper = currentAsk;
+    if (lower > upper) return undefined;
+    return this.uniformRandom(lower, upper);
+  }
+
+  askPrice(marginalCost, market) {
+    if (typeof marginalCost !== 'number') return undefined;
+    const currentBid = market.currentBidPrice();
+    const currentAsk = market.currentAskPrice();
+    let lower = marginalCost;
+    let upper = this.maxPrice;
+    if (currentBid > lower) lower = currentBid;
+    if (currentAsk > 0 && currentAsk < upper) upper = currentAsk;
+    if (lower > upper) return undefined;
+    return this.uniformRandom(lower, upper);
+  }
+
+}
+
+exports.ZISpreadAgent = ZISpreadAgent;
 const um1p2 = ProbJS.uniform(-1, 2);
 const um1p1 = ProbJS.uniform(-1, 1);
 /**
