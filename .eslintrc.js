@@ -7,7 +7,7 @@ module.exports = {
     },
     "extends": "eslint:recommended",
     "parserOptions": {
-       "ecmaVersion": 2020,
+       "ecmaVersion": 6,
        "sourceType": "module"
     },
     "rules": {
@@ -37,7 +37,7 @@ module.exports = {
             "never"
         ],
         "consistent-return": "off",
-        "consistent-this": "off",
+        "consistent-this": "error",
         "curly": "off",
         "default-case": "error",
         "dot-location": "off",
@@ -157,6 +157,7 @@ module.exports = {
         "no-unmodified-loop-condition": "error",
         "no-unneeded-ternary": "error",
         "no-unused-expressions": "error",
+        "no-unused-vars": "error",
         "no-use-before-define": "error",
         "no-useless-call": "error",
         "no-useless-computed-key": "error",

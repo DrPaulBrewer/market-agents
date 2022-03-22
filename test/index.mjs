@@ -1,9 +1,8 @@
 /* eslint-env node, mocha */
 
-import "@babel/polyfill";
 import assert from 'assert';
 import "should";
-import * as MarketAgents from "../src/index.js";
+import * as MarketAgents from "../src/index.mjs";
 
 const {
   Agent,
@@ -63,13 +62,15 @@ function testInclusiveUniformity({range, multiple=10000, sigma=5, integer=true, 
 describe('MarketAgents', function () {
 
   it('should be an object', function () {
-    MarketAgents.should.be.type('object');
+    assert.ok(typeof(MarketAgents)==='object');
   });
 
   let props = ['Agent', 'ZIAgent', 'UnitAgent', 'MidpointAgent', 'KaplanSniperAgent', 'MedianSniperAgent', 'Pool'];
 
-  it('should have properties ' + props.join(" "), function () {
-    MarketAgents.should.have.properties(props);
+  props.forEach(function(prop){
+    it('should have [constructor] function  '+prop, function(){
+      assert.ok(typeof(MarketAgents[prop])==='function');
+    });
   });
 
 });

@@ -1,71 +1,49 @@
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.Pool = exports.RisingBidSniperAgent = exports.FallingAskSniperAgent = exports.RandomAcceptSniperAgent = exports.AcceptSniperAgent = exports.MedianSniperAgent = exports.KaplanSniperAgent = exports.Sniper = exports.MidpointAgent = exports.OneupmanshipAgent = exports.TTAgent = exports.UnitAgent = exports.ZISpreadAgent = exports.ZIJumpAgent = exports.ZIAgent = exports.HoarderAgent = exports.DPPAgent = exports.TruthfulAgent = exports.DoNothingAgent = exports.Trader = exports.Agent = void 0;
-
-var _clone = _interopRequireDefault(require("clone"));
-
-var _events = require("events");
-
-var ProbJS = _interopRequireWildcard(require("prob.js"));
-
-var _tradeTimingStrategy = require("trade-timing-strategy");
-
-function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function _getRequireWildcardCache() { return cache; }; return cache; }
-
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+import clone from 'clone';
+import { EventEmitter } from 'events';
+import ProbJS from 'prob.js';
+import {TradeTimingStrategy} from 'trade-timing-strategy';
 
 let privateNextId = 1;
 
-function nextId() {
-  return privateNextId++;
-}
+function nextId() { return privateNextId++; }
 
 function sum(a) {
-  let i,
-      l,
-      total = 0;
-
-  for (i = 0, l = a.length; i < l; ++i) total += +a[i];
-
+  let i, l, total = 0;
+  for (i = 0, l = a.length;i<l;++i)
+    total += +a[i];
   return total;
 }
+
 /* ignore this function in test coverage stats */
-
 /* istanbul ignore next */
-
-
 function dot(a, b) {
-  let i,
-      l,
-      total = 0;
-  if (a.length !== b.length) throw new Error("market-agents: vector dimensions do not match in dot(a,b)");
-
-  for (i = 0, l = a.length; i < l; ++i) if (a[i] && b[i]) total += a[i] * b[i];
-
+  let i, l, total = 0;
+  if (a.length !== b.length)
+    throw new Error("market-agents: vector dimensions do not match in dot(a,b)");
+  for (i = 0, l = a.length;i < l;++i)
+    if (a[i] && b[i])
+      total += (a[i] * b[i]);
   return total;
 }
+
 
 function poissonWake() {
-  if (this.rate <= 0) return +Infinity; // if the rate is zero or negative the agent never acts
-
-  const delta = ProbJS.exponential(this.rate)(); // undefined is a valid this.wakeTime
-
-  const result = this.wakeTime + delta; // block NaN and negative values
-
-  if (result > 0) return result;
+  if (this.rate<=0) return +Infinity; // if the rate is zero or negative the agent never acts
+  const delta = ProbJS.exponential(this.rate)();
+  // undefined is a valid this.wakeTime
+  const result = this.wakeTime + delta;
+  // block NaN and negative values
+  if (result > 0)
+    return result;
 }
+
 /**
  * Agent with Poisson-distributed opportunities to act, with period managment,  optional inventory, unit values and costs, and end-of-period production and consumption to satisfy trades
  *
  */
 
+export class Agent extends EventEmitter {
 
-class Agent extends _events.EventEmitter {
   /**
    * creates an Agent with clone of specified options and initializes with .init().
    *   Option properties are stored directly on the created agent's this.
@@ -81,6 +59,7 @@ class Agent extends _events.EventEmitter {
    * @param {function():number} [options.nextWake=poissonWake] calculates next Agent wake-up time
    *
    */
+
   constructor(options) {
     super();
     const defaults = {
@@ -99,31 +78,32 @@ class Agent extends _events.EventEmitter {
       },
       nextWake: poissonWake
     };
-    Object.assign(this, defaults, (0, _clone.default)(options, false));
+    Object.assign(this, defaults, clone(options, false));
     this.init();
   }
+
   /**
    * initialize an agent to new settings
    * @param {Object} [newSettings] see constructor
    *
    */
 
-
   init(newSettings) {
-    if (typeof newSettings === 'object') {
+    if (typeof(newSettings) === 'object') {
       // work with a shallow copy of the newSettings so
       // the code can delete the inventory setting without side effects
-      let mySettings = Object.assign({}, newSettings); // copy new values to inventory.  do not reset other inventory values
-
-      Object.assign(this.inventory, mySettings.inventory); // reset non-inventory as specified, completely overwriting previous
+      let mySettings = Object.assign({}, newSettings);
+      // copy new values to inventory.  do not reset other inventory values
+      Object.assign(this.inventory, mySettings.inventory);
+      // reset non-inventory as specified, completely overwriting previous
       // to execute this reset, first: delete the inventory settings, then apply the remainder
-
       delete mySettings.inventory;
       Object.assign(this, mySettings);
-    } // if this.money is defined but is not in inventory, zero the inventory of this.money
+    }
+    // if this.money is defined but is not in inventory, zero the inventory of this.money
+    if (this.money && !(this.inventory[this.money]))
+      this.inventory[this.money] = 0;
 
-
-    if (this.money && !this.inventory[this.money]) this.inventory[this.money] = 0;
     /**
      * time, in JS ms since epoch, of agent wake
      * @type {number} this.wakeTime
@@ -131,6 +111,7 @@ class Agent extends _events.EventEmitter {
 
     this.wakeTime = this.nextWake();
   }
+
   /**
    * re-initialize agent to the beginning of a new simulation period
    *
@@ -147,34 +128,36 @@ class Agent extends _events.EventEmitter {
    * myAgent.initPeriod(2);
    */
 
-
   initPeriod(period) {
     // period might look like this
     // period = {number:5, startTime:50000, init: {inventory:{X:0, Y:0}, values:{X:[300,200,100,0,0,0,0]}}}
     // or period could be simply a number
-    if (typeof period === 'object') this.period = (0, _clone.default)(period, false);else if (typeof period === 'number') this.period.number = period;
-
+    if (typeof(period) === 'object')
+      this.period = clone(period, false);
+    else if (typeof(period) === 'number')
+      this.period.number = period;
     if (this.period.equalDuration && this.period.duration) {
       this.period.startTime = this.period.number * this.period.duration;
       this.period.endTime = (1 + this.period.number) * this.period.duration;
     }
-
-    if (typeof this.period.startTime === 'number') this.wakeTime = this.period.startTime;
+    if (typeof(this.period.startTime) === 'number')
+      this.wakeTime = this.period.startTime;
     this.init(this.period.init);
     this.emit('pre-period');
   }
+
   /**
    * ends current period, causing agent to undertake end-of-period tasks such as production and redemption of units
    *
    * @emits {post-period} when period ends, always, but after first completing any production/redemption
    */
 
-
   endPeriod() {
-    if (typeof this.produce === 'function') this.produce();
-    if (typeof this.redeem === 'function') this.redeem();
+    if (typeof(this.produce) === 'function') this.produce();
+    if (typeof(this.redeem) === 'function') this.redeem();
     this.emit('post-period');
   }
+
   /**
    * percent of period used
    * @return {number} proportion of period time used as a number from 0.0, at beginning of period, to 1.0 at end of period.
@@ -183,10 +166,11 @@ class Agent extends _events.EventEmitter {
 
 
   pctPeriod() {
-    if (this.period.startTime !== undefined && this.period.endTime > 0 && this.wakeTime !== undefined) {
+    if ((this.period.startTime !== undefined) && (this.period.endTime > 0) && (this.wakeTime !== undefined)) {
       return (this.wakeTime - this.period.startTime) / (this.period.endTime - this.period.startTime);
     }
   }
+
   /**
    * decay an initial value into a final value over the time provided in the current period
    * @param {number} initialValue initial value, greater than 0
@@ -194,14 +178,14 @@ class Agent extends _events.EventEmitter {
    * @return {number} result current value
    */
 
-
-  decay(initialValue, finalValue) {
+  decay(initialValue,finalValue){
     const lambda = this.pctPeriod();
-    if (lambda === undefined || initialValue <= 0 || finalValue <= 0) return undefined;
-    const myLog = lambda * Math.log(finalValue) + (1 - lambda) * Math.log(initialValue);
+    if ((lambda===undefined) || (initialValue<=0) || (finalValue<=0)) return undefined;
+    const myLog = (lambda*Math.log(finalValue))+((1-lambda)*Math.log(initialValue));
     const result = Math.exp(myLog);
-    return this.integer ? Math.round(result) : result;
+    return (this.integer)? Math.round(result): result;
   }
+
   /**
    * guess at number of random Poisson wakes remaining in period
    *
@@ -209,12 +193,12 @@ class Agent extends _events.EventEmitter {
    *
    */
 
-
   poissonWakesRemainingInPeriod() {
-    if (this.rate > 0 && this.wakeTime !== undefined && this.period.endTime > 0) {
+    if ((this.rate > 0) && (this.wakeTime !== undefined) && (this.period.endTime > 0)) {
       return (this.period.endTime - this.wakeTime) * this.rate;
     }
   }
+
   /**
    * wakes agent so it can act, emitting wake, and sets next wakeTime from this.nextWake() unless period.endTime exceeded
    *
@@ -222,17 +206,19 @@ class Agent extends _events.EventEmitter {
    * @emits {wake(info)} immediately
    */
 
-
   wake(info) {
     this.emit('wake', info);
     const nextTime = this.nextWake();
-
     if (this.period.endTime) {
-      if (nextTime < this.period.endTime) this.wakeTime = nextTime;else this.wakeTime = undefined;
+      if (nextTime < this.period.endTime)
+        this.wakeTime = nextTime;
+      else
+        this.wakeTime = undefined;
     } else {
       this.wakeTime = nextTime;
     }
   }
+
   /**
    * increases or decreases agent's inventories of one or more goods and/or money
    *
@@ -242,19 +228,20 @@ class Agent extends _events.EventEmitter {
    * @emits {post-transfer(myTransfers, memo)} after transfer takes place
    */
 
-
   transfer(myTransfers, memo) {
     if (myTransfers) {
       this.emit('pre-transfer', myTransfers, memo);
       const goods = Object.keys(myTransfers);
-
-      for (let i = 0, l = goods.length; i < l; ++i) {
-        if (this.inventory[goods[i]]) this.inventory[goods[i]] += myTransfers[goods[i]];else this.inventory[goods[i]] = myTransfers[goods[i]];
+      for (let i = 0, l = goods.length;i < l;++i) {
+        if (this.inventory[goods[i]])
+          this.inventory[goods[i]] += myTransfers[goods[i]];
+        else
+          this.inventory[goods[i]] = myTransfers[goods[i]];
       }
-
       this.emit('post-transfer', myTransfers, memo);
     }
   }
+
   /**
    * agent's marginal cost of producing next unit
    *
@@ -263,14 +250,13 @@ class Agent extends _events.EventEmitter {
    * @return {number} marginal unit cost of next unit, at given (negative) hypothetical inventory, using agent's configured costs
    */
 
-
   unitCostFunction(good, hypotheticalInventory) {
     const costs = this.costs[good];
-
-    if (Array.isArray(costs) && hypotheticalInventory[good] <= 0) {
+    if ((Array.isArray(costs)) && (hypotheticalInventory[good] <= 0)) {
       return costs[-hypotheticalInventory[good]];
     }
   }
+
   /**
    * agent's marginal value for redeeming next unit
    *
@@ -279,14 +265,13 @@ class Agent extends _events.EventEmitter {
    * @return {number} marginal unit value of next unit, at given (positive) hypothetical inventory, using agent's configured values
    */
 
-
   unitValueFunction(good, hypotheticalInventory) {
     const vals = this.values[good];
-
-    if (Array.isArray(vals) && hypotheticalInventory[good] >= 0) {
+    if ((Array.isArray(vals)) && (hypotheticalInventory[good] >= 0)) {
       return vals[hypotheticalInventory[good]];
     }
   }
+
   /**
    * redeems units in positive inventory with configured values, usually called automatically at end-of-period.
    * transfer uses memo object {isRedeem:1}
@@ -295,29 +280,24 @@ class Agent extends _events.EventEmitter {
    * @emits {post-redeem(transferAmounts)} after calling .transfer
    */
 
-
   redeem() {
     if (this.values) {
       const trans = {};
       const goods = Object.keys(this.values);
       trans[this.money] = 0;
-
-      for (let i = 0, l = goods.length; i < l; ++i) {
+      for (let i = 0, l = goods.length;i < l;++i) {
         let g = goods[i];
-
         if (this.inventory[g] > 0) {
           trans[g] = -this.inventory[g];
           trans[this.money] += sum(this.values[g].slice(0, this.inventory[g]));
         }
       }
-
       this.emit('pre-redeem', trans);
-      this.transfer(trans, {
-        isRedeem: 1
-      });
+      this.transfer(trans, { isRedeem: 1 });
       this.emit('post-redeem', trans);
     }
   }
+
   /**
    * produces units in negative inventory with configured costs, usually called automatically at end-of-period.
    * transfer uses memo object {isProduce:1}
@@ -326,31 +306,25 @@ class Agent extends _events.EventEmitter {
    * @emits {post-redeem(transferAmounts)} after calling .transfer
    */
 
-
   produce() {
     if (this.costs) {
       const trans = {};
       const goods = Object.keys(this.costs);
       trans[this.money] = 0;
-
-      for (let i = 0, l = goods.length; i < l; ++i) {
+      for (let i = 0, l = goods.length;i < l;++i) {
         let g = goods[i];
-
         if (this.inventory[g] < 0) {
           trans[this.money] -= sum(this.costs[g].slice(0, -this.inventory[g]));
           trans[g] = -this.inventory[g];
         }
       }
-
       this.emit('pre-produce', trans);
-      this.transfer(trans, {
-        isProduce: 1
-      });
+      this.transfer(trans, { isProduce: 1 });
       this.emit('post-produce', trans);
     }
   }
-
 }
+
 /**
  * agent that places trades in one or more markets based on marginal costs or values
  *
@@ -358,10 +332,8 @@ class Agent extends _events.EventEmitter {
  *
  */
 
+export class Trader extends Agent {
 
-exports.Agent = Agent;
-
-class Trader extends Agent {
   /**
    * @param {Object} [options] passed to Agent constructor(); Trader specific properties detailed below
    * @param {Array<Object>} [options.markets=[]] list of market objects where this agent acts on wake
@@ -371,6 +343,7 @@ class Trader extends Agent {
    * @listens {wake} to trigger sendBidsAndAsks()
    *
    */
+
   constructor(options) {
     const defaults = {
       description: 'Trader',
@@ -381,18 +354,19 @@ class Trader extends Agent {
     super(Object.assign({}, defaults, options));
     this.on('wake', this.sendBidsAndAsks);
   }
+
   /** send a limit order to buy one unit to the indicated market at myPrice. Placeholder throws error. Must be overridden and implemented in other code.
    * @abstract
    * @param {Object} market
    * @param {number} myPrice
    * @throws {Error} when calling placeholder
    */
+
   // eslint-disable-next-line no-unused-vars
-
-
   bid(market, myPrice) {
     throw new Error("called placeholder for abstract method .bid(market,myPrice) -- you must implement this method");
   }
+
   /**
    * send a limit order to sell one unit to the indicated market at myPrice. Placeholder throws error. Must be overridden and implemented in other code.
    * @abstract
@@ -400,12 +374,12 @@ class Trader extends Agent {
    * @param {number} myPrice
    * @throws {Error} when calling placeholder
    */
+
   // eslint-disable-next-line no-unused-vars
-
-
   ask(market, myPrice) {
     throw new Error("called placeholder for abstract method .ask(market,myPrice) -- you must implement this method");
   }
+
   /**
    * calculate price this agent is willing to pay.  Placeholder throws error.  Must be overridden and implemented in other code.
    *
@@ -415,12 +389,12 @@ class Trader extends Agent {
    * @return {number|undefined} agent's buy price or undefined if not willing to buy
    * @throws {Error} when calling placeholder
    */
+
   // eslint-disable-next-line no-unused-vars
-
-
   bidPrice(marginalValue, market) {
     throw new Error("called placeholder for abstract method .bidPrice(marginalValue, market) -- you must implement this method");
   }
+
   /**
    * calculate price this agent is willing to accept. Placeholder throws error. Must be overridden and implemented in other code.
    *
@@ -431,12 +405,12 @@ class Trader extends Agent {
    * @return {number|undefined} agent's sell price or undefined if not willing to sell
    * @throws {Error} when calling placeholder
    */
+
   // eslint-disable-next-line no-unused-vars
-
-
   askPrice(marginalCost, market) {
     throw new Error("called placeholder for abstract method .askPrice(marginalValue, market) -- you must implement this method");
   }
+
   /**
    * For each market in agent's configured markets, calculates agent's price strategy for buy or sell prices and then sends limit orders for 1 unit at those prices.
    * Normally you do not need to explicltly call this function: the wake listener set in the constructor of Trader and subclasses calls sendBidsAndAsks() automatcally on each wake event.
@@ -444,71 +418,64 @@ class Trader extends Agent {
    *
    */
 
-
   sendBidsAndAsks() {
-    for (let i = 0, l = this.markets.length; i < l; ++i) {
+    for (let i = 0, l = this.markets.length;i < l;++i) {
       let market = this.markets[i];
       let unitValue = this.unitValueFunction(market.goods, this.inventory);
-
       if (unitValue > 0) {
-        if (this.ignoreBudgetConstraint) unitValue = this.maxPrice;
+        if (this.ignoreBudgetConstraint)
+          unitValue = this.maxPrice;
         let myPrice = this.bidPrice(unitValue, market); // calculate my buy price proposal
-
-        if (myPrice) {
+        if (myPrice){
           this.bid(market, myPrice); // send my price proposal
         }
       }
-
       let unitCost = this.unitCostFunction(market.goods, this.inventory);
-
       if (unitCost > 0) {
-        if (this.ignoreBudgetConstraint) unitCost = this.minPrice;
+        if (this.ignoreBudgetConstraint)
+          unitCost = this.minPrice;
         let myPrice = this.askPrice(unitCost, market); // calculate my sell price proposal
-
-        if (myPrice) {
+        if (myPrice){
           this.ask(market, myPrice); // send my price proposal
         }
       }
     }
   }
 
-  uniformRandom(a, b) {
-    if (typeof a !== 'number') throw new TypeError('a ' + a + ' not a number');
-    if (typeof b !== 'number') throw new TypeError('b ' + b + ' not a number');
-    if (a === b) return a;
-    if (a > b) throw new RangeError('a ' + a + ' should be less than b ' + b);
-    const offset = this.integer ? 1 : 0;
-    const uRandom = ProbJS.uniform(a, b + offset);
+  uniformRandom(a,b){
+    if (typeof(a)!=='number') throw new TypeError('a '+a+' not a number');
+    if (typeof(b)!=='number') throw new TypeError('b '+b+' not a number');
+    if (a===b) return a;
+    if (a>b) throw new RangeError('a '+a+' should be less than b '+b);
+    const offset = (this.integer)? 1: 0;
+    const uRandom = ProbJS.uniform(a,b+offset);
     let p;
-
     if (this.integer) {
-      /* because Floor rounds down, 1 has been added to b to be in the range of possible prices */
 
+      /* because Floor rounds down, 1 has been added to b to be in the range of possible prices */
       /* guard against rare edge case with do/while */
+
       do {
         p = Math.floor(uRandom());
       } while (p > b);
+
     } else {
       p = uRandom();
     }
-
     return p;
   }
 
 }
 
-exports.Trader = Trader;
+export class DoNothingAgent extends Trader {
 
-class DoNothingAgent extends Trader {
   /**
    * creates do-nothing agent that never sends any bids or asks
    * @param {Object} [options] passed to Trader and Agent constructors
    */
+
   constructor(options) {
-    super(Object.assign({}, {
-      description: 'DoNothing agent never bids or asks',
-      color: "black"
-    }, options));
+    super(Object.assign({}, { description: 'DoNothing agent never bids or asks', color:"black" }, options));
   }
 
   bidPrice() {
@@ -518,98 +485,88 @@ class DoNothingAgent extends Trader {
   askPrice() {
     return undefined;
   }
-
 }
 
-exports.DoNothingAgent = DoNothingAgent;
+export class TruthfulAgent extends Trader {
 
-class TruthfulAgent extends Trader {
   /**
    * creates "Truthful" robot agent that always sends bids at marginalValue or asks at marginalCost
    *
    * @param {Object} [options] passed to Trader and Agent constructors
    *
    */
+
   constructor(options) {
-    super(Object.assign({}, {
-      description: 'Truthful Agent bids=value or asks=cost',
-      color: "rosybrown"
-    }, options));
+    super(Object.assign({}, { description: 'Truthful Agent bids=value or asks=cost', color:"rosybrown" }, options));
   }
 
   bidPrice(marginalValue) {
-    if (typeof marginalValue !== 'number') return undefined;
-    return this.integer ? Math.floor(marginalValue) : marginalValue;
+    if (typeof(marginalValue) !== 'number') return undefined;
+    return (this.integer) ? Math.floor(marginalValue) : marginalValue;
   }
 
   askPrice(marginalCost) {
-    if (typeof marginalCost !== 'number') return undefined;
-    return this.integer ? Math.ceil(marginalCost) : marginalCost;
+    if (typeof(marginalCost) !== 'number') return undefined;
+    return (this.integer) ? Math.ceil(marginalCost) : marginalCost;
   }
 
 }
 
-exports.TruthfulAgent = TruthfulAgent;
+export class DPPAgent extends Trader {
 
-class DPPAgent extends Trader {
   /**
    * creates Decaying Potential Profit robot agent that prices items with a time-based exponentially decaying profit
    *
    * @param {Object} [options] passed to Trader and Agent constructors
    *
    */
-  constructor(options) {
-    super(Object.assign({}, {
-      description: 'DPP Agent prices in a time-based decaying profit',
-      color: "maroon"
-    }, options));
+
+  constructor(options){
+    super(Object.assign({}, { description: 'DPP Agent prices in a time-based decaying profit', color:"maroon" }, options));
   }
 
-  bidPrice(marginalValue) {
-    if (typeof marginalValue !== 'number') return undefined;
-    if (marginalValue < this.minPrice) return undefined; // set arbitrary lower price of 0.001 if minPrice otherwise too small
-
-    const iv = this.minPrice <= 0 ? 0.001 : this.minPrice;
+  bidPrice(marginalValue){
+    if (typeof(marginalValue)!=='number') return undefined;
+    if (marginalValue<this.minPrice) return undefined;
+    // set arbitrary lower price of 0.001 if minPrice otherwise too small
+    const iv = (this.minPrice<=0)? 0.001: this.minPrice;
     const fv = marginalValue;
-    return this.decay(iv, fv);
+    return this.decay(iv,fv);
   }
 
-  askPrice(marginalCost) {
-    if (typeof marginalCost !== 'number') return undefined;
-    if (marginalCost > this.maxPrice) return undefined;
+  askPrice(marginalCost){
+    if (typeof(marginalCost)!=='number') return undefined;
+    if (marginalCost>this.maxPrice) return undefined;
     const iv = this.maxPrice;
-    const fv = marginalCost <= 0 ? 0.001 : marginalCost;
-    return this.decay(iv, fv);
+    const fv = (marginalCost<=0)? 0.001: marginalCost;
+    return this.decay(iv,fv);
   }
-
 }
 
-exports.DPPAgent = DPPAgent;
+export class HoarderAgent extends Trader {
 
-class HoarderAgent extends Trader {
   /**
    * creates "Hoarder" robot agent that always buys 1 unit at the current asking price.
    * Hoarder agent never sells units, and disregards marginalValue, and so will sometimes overpay relative to value.
    * Hoarder does not interact with an empty market.
    *
    */
+
   constructor(options) {
-    super(Object.assign({}, {
-      description: 'Hoarder Agent always bids the current asking price and never asks',
-      color: "hotpink"
-    }, options));
+    super(Object.assign({}, { description: 'Hoarder Agent always bids the current asking price and never asks', color:"hotpink" }, options));
   }
 
   bidPrice(marginalValue, market) {
     const currentAskPrice = market.currentAskPrice();
-    if (currentAskPrice > 0) return currentAskPrice; // Hoarder will send order to buy 1 unit at the current asking price
+    if (currentAskPrice > 0)
+      return currentAskPrice; // Hoarder will send order to buy 1 unit at the current asking price
   }
 
   askPrice() {
     return undefined; // Hoarder never sells
   }
-
 }
+
 /**
  * a reimplementation of Gode and Sunder's "Zero Intelligence" robots, as described in the economics research literature.
  *
@@ -623,22 +580,19 @@ class HoarderAgent extends Trader {
  *
  */
 
+export class ZIAgent extends Trader {
 
-exports.HoarderAgent = HoarderAgent;
-
-class ZIAgent extends Trader {
   /**
    * creates "Zero Intelligence" robot agent similar to those described in Gode and Sunder (1993)
    *
    * @param {Object} [options] passed to Trader and Agent constructors()
    * @param {boolean} [options.integer] true instructs pricing routines to use positive integer prices, false allows positive real number prices
    */
+
   constructor(options) {
-    super(Object.assign({}, {
-      description: 'Gode and Sunder Style ZI Agent',
-      color: "green"
-    }, options));
+    super(Object.assign({}, { description: 'Gode and Sunder Style ZI Agent', color:"green" }, options));
   }
+
   /**
    * calculate price this agent is willing to pay as a uniform random number ~ U[minPrice, marginalValue] inclusive.
    * If this.integer is true, the returned price will be an integer.
@@ -648,12 +602,12 @@ class ZIAgent extends Trader {
    * @return {number|undefined} randomized buy price or undefined if marginalValue non-numeric or less than this.minPrice
    */
 
-
   bidPrice(marginalValue) {
-    if (typeof marginalValue !== 'number') return undefined;
+    if (typeof(marginalValue) !== 'number') return undefined;
     if (marginalValue < this.minPrice) return undefined;
     return this.uniformRandom(this.minPrice, marginalValue);
   }
+
   /**
    * calculate price this agent is willing to accept as a uniform random number ~ U[marginalCost, maxPrice] inclusive.
    * If this.integer is true, the returned price will be an integer.
@@ -663,113 +617,106 @@ class ZIAgent extends Trader {
    * @return {number|undefined} randomized sell price or undefined if marginalCost non-numeric or greater than this.maxPrice
    */
 
-
   askPrice(marginalCost) {
-    if (typeof marginalCost !== 'number') return undefined;
+    if (typeof(marginalCost) !== 'number') return undefined;
     if (marginalCost > this.maxPrice) return undefined;
     return this.uniformRandom(marginalCost, this.maxPrice);
   }
-
 }
+
 /**
  * ZIJump agent: uses ZIAgent algorithm if there is no current Bid or Ask price.  Afterward, randomizes over [currentBid,V] or [c,currentAsk].
  *
  */
 
+ export class ZIJumpAgent extends ZIAgent {
 
-exports.ZIAgent = ZIAgent;
+   /**
+   * creates "ZIJump" robot agent, a ZI that matches or improves on current bid or current ask
+   *
+   * @param {Object} [options] passed to ZIAgent, Trader, Agent constructors
+   */
 
-class ZIJumpAgent extends ZIAgent {
-  /**
-  * creates "ZIJump" robot agent, a ZI that matches or improves on current bid or current ask
+   constructor(options){
+     const defaults = {
+       description: "ZIJump agent that bids/asks randomly to match or improve current Bid or Ask",
+       color: 'coffee'  // color about halfway between green (ZI) and orangered (OneupmanshipAgent)
+     };
+     super(Object.assign({},defaults,options));
+   }
+
+   bidPrice(marginalValue, market){
+     if (typeof(marginalValue)!=='number') return undefined;
+     const currentBid = market.currentBidPrice();
+     if (currentBid===undefined) return super.bidPrice(marginalValue);
+     const lowerLimit = Math.max(currentBid, this.minPrice);
+     if (lowerLimit>marginalValue) return undefined;
+     return this.uniformRandom(lowerLimit, marginalValue);
+   }
+
+   askPrice(marginalCost, market){
+     if (typeof(marginalCost)!=='number') return undefined;
+     const currentAsk = market.currentAskPrice();
+     if (currentAsk===undefined) return super.askPrice(marginalCost);
+     const upperLimit = Math.min(currentAsk, this.maxPrice);
+     if (marginalCost>upperLimit) return undefined;
+     return this.uniformRandom(marginalCost, upperLimit);
+   }
+ }
+
+ /**
+  * ZISpread agent: equivalent to ZIAgent if there is no current Bid or Ask price.
+  * prices are distributed U[currentBid,currentAsk] if V>=currentAsk or C<=currentBid
+  * U[currentBid,V] if currentBid<=V<=currentAsk
+  * U[c,currentAsk] if currentBid<=c<=currenAsk
+  * undefined if V<currentBid
+  * undefined if c>currentAsk
   *
-  * @param {Object} [options] passed to ZIAgent, Trader, Agent constructors
   */
-  constructor(options) {
-    const defaults = {
-      description: "ZIJump agent that bids/asks randomly to match or improve current Bid or Ask",
-      color: 'coffee' // color about halfway between green (ZI) and orangered (OneupmanshipAgent)
 
-    };
-    super(Object.assign({}, defaults, options));
-  }
+export class ZISpreadAgent extends Trader {
 
-  bidPrice(marginalValue, market) {
-    if (typeof marginalValue !== 'number') return undefined;
-    const currentBid = market.currentBidPrice();
-    if (currentBid === undefined) return super.bidPrice(marginalValue);
-    const lowerLimit = Math.max(currentBid, this.minPrice);
-    if (lowerLimit > marginalValue) return undefined;
-    return this.uniformRandom(lowerLimit, marginalValue);
-  }
-
-  askPrice(marginalCost, market) {
-    if (typeof marginalCost !== 'number') return undefined;
-    const currentAsk = market.currentAskPrice();
-    if (currentAsk === undefined) return super.askPrice(marginalCost);
-    const upperLimit = Math.min(currentAsk, this.maxPrice);
-    if (marginalCost > upperLimit) return undefined;
-    return this.uniformRandom(marginalCost, upperLimit);
-  }
-
-}
-/**
- * ZISpread agent: equivalent to ZIAgent if there is no current Bid or Ask price.
- * prices are distributed U[currentBid,currentAsk] if V>=currentAsk or C<=currentBid
- * U[currentBid,V] if currentBid<=V<=currentAsk
- * U[c,currentAsk] if currentBid<=c<=currenAsk
- * undefined if V<currentBid
- * undefined if c>currentAsk
- *
- */
-
-
-exports.ZIJumpAgent = ZIJumpAgent;
-
-class ZISpreadAgent extends Trader {
   /**
   * creates "ZISpread" robot agent
   *
   * @param {Object} [options] passed to Trader, Agent constructors
   */
-  constructor(options) {
+
+  constructor(options){
     const defaults = {
       description: "ZISpread agent that bids/asks randomly within the intersection of bid-ask spread and budget ",
-      color: 'chartreuse' // color about halfway between green (ZI) and  goldenrod (MidpointAgent)
-
+      color: 'chartreuse'  // color about halfway between green (ZI) and  goldenrod (MidpointAgent)
     };
-    super(Object.assign({}, defaults, options));
+    super(Object.assign({},defaults,options));
   }
-
-  bidPrice(marginalValue, market) {
-    if (typeof marginalValue !== 'number') return undefined;
+  bidPrice(marginalValue, market){
+    if (typeof(marginalValue)!=='number') return undefined;
     const currentBid = market.currentBidPrice();
     const currentAsk = market.currentAskPrice();
     let lower = this.minPrice;
     let upper = marginalValue;
-    if (currentBid > lower) lower = currentBid;
-    if (currentAsk > 0 && currentAsk < upper) upper = currentAsk;
-    if (lower > upper) return undefined;
-    return this.uniformRandom(lower, upper);
+    if (currentBid>lower) lower = currentBid;
+    if ((currentAsk>0) && (currentAsk<upper)) upper=currentAsk;
+    if (lower>upper) return undefined;
+    return this.uniformRandom(lower,upper);
   }
 
-  askPrice(marginalCost, market) {
-    if (typeof marginalCost !== 'number') return undefined;
+  askPrice(marginalCost, market){
+    if (typeof(marginalCost)!=='number') return undefined;
     const currentBid = market.currentBidPrice();
     const currentAsk = market.currentAskPrice();
     let lower = marginalCost;
     let upper = this.maxPrice;
-    if (currentBid > lower) lower = currentBid;
-    if (currentAsk > 0 && currentAsk < upper) upper = currentAsk;
-    if (lower > upper) return undefined;
-    return this.uniformRandom(lower, upper);
+    if (currentBid>lower) lower = currentBid;
+    if ((currentAsk>0) && (currentAsk<upper)) upper=currentAsk;
+    if (lower>upper) return undefined;
+    return this.uniformRandom(lower,upper);
   }
-
 }
 
-exports.ZISpreadAgent = ZISpreadAgent;
 const um1p2 = ProbJS.uniform(-1, 2);
 const um1p1 = ProbJS.uniform(-1, 1);
+
 /**
  * Unit agent: uses ZIAgent algorithm if there is no previous market price, afterward, bids/asks randomly within 1 price unit of previous price
  *
@@ -782,12 +729,14 @@ const um1p1 = ProbJS.uniform(-1, 1);
  *
  */
 
-class UnitAgent extends ZIAgent {
+export class UnitAgent extends ZIAgent {
+
   /**
    * creates "Unit" robot agent similar to those described in Brewer(2008)
    *
    * @param {Object} [options] passed to Trader and Agent constructors()
    */
+
   constructor(options) {
     const defaults = {
       description: "Paul Brewer's UNIT agent that bids/asks within 1 price unit of previous price",
@@ -795,27 +744,26 @@ class UnitAgent extends ZIAgent {
     };
     super(Object.assign({}, defaults, options));
   }
+
   /**
    * calculates random change from previous transaction price
    * @return {number} a uniform random number on [-1,1]; or, if this.integer is set, picked randomly from the set {-1,0,1}
    */
 
-
   randomDelta() {
     let delta;
-
     if (this.integer) {
       do {
         delta = Math.floor(um1p2());
-      } while (delta <= -2 || delta >= 2.0);
+      } while ((delta <= -2) || (delta >= 2.0));
     } else {
       do {
         delta = um1p1();
-      } while (delta < -1 || delta > 1);
+      } while ((delta < -1) || (delta > 1));
     }
-
     return delta;
   }
+
   /**
    * Calculate price this agent is willing to pay.
    * The returned price is within one price unit of the previous market trade price, or uses the ZIAgent random algorithm if there is no previous market trade price.
@@ -828,15 +776,18 @@ class UnitAgent extends ZIAgent {
    * @return {number|undefined} agent's buy price or undefined
    */
 
-
   bidPrice(marginalValue, market) {
     let p;
-    if (typeof marginalValue !== 'number') return undefined;
+    if (typeof(marginalValue) !== 'number') return undefined;
     const previous = market.lastTradePrice();
-    if (previous) p = previous + this.randomDelta();else p = super.bidPrice(marginalValue);
-    if (p > marginalValue || p > this.maxPrice || p < this.minPrice) return undefined;
-    return p && this.integer ? Math.floor(p) : p;
+    if (previous)
+      p = previous + this.randomDelta();
+    else
+      p = super.bidPrice(marginalValue);
+    if ((p > marginalValue) || (p > this.maxPrice) || (p < this.minPrice)) return undefined;
+    return (p && this.integer) ? Math.floor(p) : p;
   }
+
   /**
    * Calculate price this agent is willing to accept.
    * The returned price is within one price unit of the previous market trade price, or uses the ZIAgent random algorithm if there is no previous market trade price.
@@ -849,100 +800,80 @@ class UnitAgent extends ZIAgent {
    * @return {number|undefined} agent's buy price or undefined
    */
 
-
   askPrice(marginalCost, market) {
-    if (typeof marginalCost !== 'number') return undefined;
+    if (typeof(marginalCost) !== 'number') return undefined;
     let p;
     const previous = market.lastTradePrice();
-    if (previous) p = previous + this.randomDelta();else p = super.askPrice(marginalCost);
-    if (p < marginalCost || p > this.maxPrice || p < this.minPrice) return undefined;
-    return p && this.integer ? Math.floor(p) : p;
+    if (previous)
+      p = previous + this.randomDelta();
+    else
+      p = super.askPrice(marginalCost);
+    if ((p < marginalCost) || (p > this.maxPrice) || (p < this.minPrice)) return undefined;
+    return (p && this.integer) ? Math.floor(p) : p;
   }
-
 }
 
-exports.UnitAgent = UnitAgent;
-
-class TTAgent extends ZIAgent {
-  constructor(options) {
+export class TTAgent extends ZIAgent {
+  constructor(options){
     const defaults = {
       description: "Paul Brewer's TT agent that optimizes over a collated database of trades; degrades to ZI when no data/currentBid/currentAsk",
       color: 'orange'
     };
     super(Object.assign({}, defaults, options));
-    const agent = this; // allow tts creation to be overridden in options
+    const agent = this; // eslint-disable-line consistent-this
+    // allow tts creation to be overridden in options
     // if it does not exist, create it and hook it up to necessary period and trade data
-
-    if (!agent.tts) {
-      agent.tts = new _tradeTimingStrategy.TradeTimingStrategy();
+    if (!agent.tts){
+      agent.tts = new TradeTimingStrategy();
       agent.tts.connected = false;
-      agent.on('pre-period', function () {
+      agent.on('pre-period', function(){
         agent.tts.newPeriod();
-
-        if (!agent.tts.connected) {
+        if (!agent.tts.connected){
           agent.tts.connected = true;
-          agent.markets[0].on('trade', function (tradeSpec) {
-            const {
-              prices
-            } = tradeSpec;
-            if (Array.isArray(prices)) prices.forEach(p => {
-              agent.tts.newTrade(p);
-            });
+          agent.markets[0].on('trade', function(tradeSpec){
+            const { prices } = tradeSpec;
+            if (Array.isArray(prices))
+              prices.forEach((p)=>{agent.tts.newTrade(p);});
           });
         }
       });
     }
   }
-
-  bidPrice(marginalValue, market) {
-    if (typeof marginalValue !== 'number') return undefined;
+  bidPrice(marginalValue,market){
+    if (typeof(marginalValue)!=='number') return undefined;
     const currentBid = market.currentBidPrice();
     const currentAsk = market.currentAskPrice();
-    const smooth = currentBid || currentAsk ? 0.001 : 0;
-    const horizon = Math.round((1 - this.pctPeriod()) * (this.tts.tradeCollator.length - 2));
-    const ttsBid = this.tts.suggestedBid(marginalValue, {
-      currentBid,
-      currentAsk,
-      smooth,
-      horizon
-    });
-    if (ttsBid === undefined) return super.bidPrice(marginalValue); // revert to ZI if insufficient data
-
-    return this.integer ? Math.floor(ttsBid) : ttsBid;
+    const smooth = (currentBid || currentAsk)? 0.001 : 0;
+    const horizon = Math.round((1-this.pctPeriod())*(this.tts.tradeCollator.length-2));
+    const ttsBid = this.tts.suggestedBid(marginalValue,{currentBid,currentAsk,smooth,horizon});
+    if (ttsBid===undefined) return super.bidPrice(marginalValue); // revert to ZI if insufficient data
+    return (this.integer)? Math.floor(ttsBid): ttsBid;
   }
-
   askPrice(marginalCost, market) {
-    if (typeof marginalCost !== 'number') return undefined;
+    if (typeof(marginalCost) !== 'number') return undefined;
     const currentBid = market.currentBidPrice();
     const currentAsk = market.currentAskPrice();
-    const smooth = currentBid || currentAsk ? 0.001 : 0;
-    const horizon = Math.round((1 - this.pctPeriod()) * (this.tts.tradeCollator.length - 2));
-    const ttsAsk = this.tts.suggestedAsk(marginalCost, {
-      currentBid,
-      currentAsk,
-      smooth,
-      horizon
-    });
-    if (ttsAsk === undefined) return super.askPrice(marginalCost); // revert to ZI if insufficient data
-
-    return this.integer ? Math.ceil(ttsAsk) : ttsAsk;
+    const smooth = (currentBid || currentAsk)? 0.001 : 0;
+    const horizon = Math.round((1-this.pctPeriod())*(this.tts.tradeCollator.length-2));
+    const ttsAsk = this.tts.suggestedAsk(marginalCost,{currentBid,currentAsk,smooth,horizon});
+    if (ttsAsk===undefined) return super.askPrice(marginalCost); // revert to ZI if insufficient data
+    return (this.integer)? Math.ceil(ttsAsk): ttsAsk;
   }
-
 }
+
 /**
  * OneupmanshipAgent is a robotic version of that annoying market participant who starts at extremely high or low price, and always bid $1 more, or ask $1 less than any competition
  *
  */
 
+export class OneupmanshipAgent extends Trader {
 
-exports.TTAgent = TTAgent;
-
-class OneupmanshipAgent extends Trader {
   /**
    * create OneupmanshipAgent
    * @param {Object} [options] Passed to Trader and Agent constructors
    *
    */
+
   constructor(options) {
     const defaults = {
       description: "Brewer's OneupmanshipAgent that increases the market bid or decreases the market ask by one price unit, if profitable to do so according to MV or MC",
@@ -950,6 +881,7 @@ class OneupmanshipAgent extends Trader {
     };
     super(Object.assign({}, defaults, options));
   }
+
   /**
    * Calculate price this agent is willing to pay.
    * The returned price is either this.minPrice (no bidding), or market.currentBidPrice()+1, or undefined.
@@ -962,13 +894,15 @@ class OneupmanshipAgent extends Trader {
    * @return {number|undefined} agent's buy price or undefined
    */
 
-
   bidPrice(marginalValue, market) {
-    if (typeof marginalValue !== 'number') return undefined;
+    if (typeof(marginalValue) !== 'number') return undefined;
     const currentBid = market.currentBidPrice();
-    if (!currentBid) return this.minPrice;
-    if (currentBid < marginalValue - 1) return currentBid + 1;
+    if (!currentBid)
+      return this.minPrice;
+    if (currentBid < (marginalValue - 1))
+      return currentBid + 1;
   }
+
   /**
    * Calculate price this agent is willing to accept.
    * The returned price is either this.maxPrice (no asks), or market.currentAskPrice()-1, or undefined.
@@ -981,25 +915,24 @@ class OneupmanshipAgent extends Trader {
    * @return {number|undefined} agent's buy price or undefined
    */
 
-
   askPrice(marginalCost, market) {
-    if (typeof marginalCost !== 'number') return undefined;
+    if (typeof(marginalCost) !== 'number') return undefined;
     const currentAsk = market.currentAskPrice();
-    if (!currentAsk) return this.maxPrice;
-    if (currentAsk > marginalCost + 1) return currentAsk - 1;
+    if (!currentAsk)
+      return this.maxPrice;
+    if (currentAsk > (marginalCost + 1))
+      return currentAsk - 1;
   }
 
 }
+
 /**
  * MidpointAgent - An agent that bids/asks halfway between the current bid and current ask.
  *   When there is no current bid or current ask, the agent bids minPrice or asks maxPrice.
  *
  */
 
-
-exports.OneupmanshipAgent = OneupmanshipAgent;
-
-class MidpointAgent extends Trader {
+export class MidpointAgent extends Trader {
   constructor(options) {
     const defaults = {
       description: "Brewer's MidpointAgent bids/asks halfway between the bid and ask, if profitable to do according to MC or MV",
@@ -1007,6 +940,7 @@ class MidpointAgent extends Trader {
     };
     super(Object.assign({}, defaults, options));
   }
+
   /**
    * Calculate price this agent is willing to pay.
    * The returned price is either the min price, the midpoint of the bid/ask, or undefined.
@@ -1018,19 +952,20 @@ class MidpointAgent extends Trader {
    * @return {number|undefined} agent's buy price or undefined
    */
 
-
   bidPrice(marginalValue, market) {
-    if (typeof marginalValue !== 'number') return undefined;
+    if (typeof(marginalValue) !== 'number') return undefined;
     const currentBid = market.currentBidPrice();
-    if (!currentBid) return this.minPrice <= marginalValue ? this.minPrice : undefined;
+    if (!currentBid)
+      return (this.minPrice <= marginalValue) ? this.minPrice : undefined;
     const currentAsk = market.currentAskPrice();
-
     if (currentAsk) {
       const midpoint = (currentBid + currentAsk) / 2;
-      const myBid = this.integer ? Math.ceil(midpoint) : midpoint;
-      if (myBid <= marginalValue) return myBid;
+      const myBid = (this.integer) ? Math.ceil(midpoint) : midpoint;
+      if (myBid <= marginalValue)
+        return myBid;
     }
   }
+
   /**
    * Calculate price this agent is willing to accept.
    * The returned price is either the max price, the midpoint of the bid/ask, or undefined.
@@ -1043,25 +978,24 @@ class MidpointAgent extends Trader {
    * @return {number|undefined} agent's buy price or undefined
    */
 
-
   askPrice(marginalCost, market) {
-    if (typeof marginalCost !== 'number') return undefined;
+    if (typeof(marginalCost) !== 'number') return undefined;
     const currentAsk = market.currentAskPrice();
-    if (!currentAsk) return this.maxPrice >= marginalCost ? this.maxPrice : undefined;
+    if (!currentAsk)
+      return (this.maxPrice >= marginalCost) ? this.maxPrice : undefined;
     const currentBid = market.currentBidPrice();
-
     if (currentBid) {
       const midpoint = (currentBid + currentAsk) / 2;
-      const myAsk = this.integer ? Math.floor(midpoint) : midpoint;
-      if (myAsk >= marginalCost) return myAsk;
+      const myAsk = (this.integer) ? Math.floor(midpoint) : midpoint;
+      if (myAsk >= marginalCost)
+        return myAsk;
     }
   }
 
 }
 
-exports.MidpointAgent = MidpointAgent;
 
-class Sniper extends Trader {
+export class Sniper extends Trader {
   constructor(options) {
     const defaults = {
       buyOnCloseTime: 0,
@@ -1079,26 +1013,25 @@ class Sniper extends Trader {
   }
 
   bidPrice(marginalValue, market) {
-    if (typeof marginalValue !== 'number') return undefined;
+    if (typeof(marginalValue) !== 'number') return undefined;
     const currentAsk = market.currentAskPrice();
-
     if (currentAsk <= marginalValue) {
       if (this.buyNow(marginalValue, market)) return currentAsk;
-      if (this.buyOnCloseTime > 0 && this.wakeTime >= this.buyOnCloseTime) return currentAsk;
+      if ((this.buyOnCloseTime > 0) && (this.wakeTime >= this.buyOnCloseTime)) return currentAsk;
     }
   }
 
   askPrice(marginalCost, market) {
-    if (typeof marginalCost !== 'number') return undefined;
+    if (typeof(marginalCost) !== 'number') return undefined;
     const currentBid = market.currentBidPrice();
-
     if (currentBid >= marginalCost) {
       if (this.sellNow(marginalCost, market)) return currentBid;
-      if (this.sellOnCloseTime > 0 && this.wakeTime >= this.sellOnCloseTime) return currentBid;
+      if ((this.sellOnCloseTime > 0) && (this.wakeTime >= this.sellOnCloseTime)) return currentBid;
     }
   }
 
 }
+
 /**
  * a reimplementation of a Kaplan Sniper Agent (JavaScript implementation by Paul Brewer)
  *
@@ -1110,16 +1043,15 @@ class Sniper extends Trader {
  *      for discussion of Kaplan's Sniper traders on pp. 4-5
  */
 
+export class KaplanSniperAgent extends Sniper {
 
-exports.Sniper = Sniper;
-
-class KaplanSniperAgent extends Sniper {
   /**
    * Create KaplanSniperAgent
    *
    * @param {Object} [options] options passed to Trader and Agent constructors
    * @param {number} [options.desiredSpread=10] desiredSpread for sniping; agent will accept trade if ||market.currentAskPrice()-market.currentBidPrice()||<=desiredSpread
    */
+
   constructor(options) {
     const defaults = {
       description: "Kaplan's snipers, trade on 'juicy' price, or low spread, or end of period",
@@ -1129,6 +1061,7 @@ class KaplanSniperAgent extends Sniper {
     };
     super(Object.assign({}, defaults, options));
   }
+
   /**
    * Calculates price this agent is willing to pay.
    * The returned price always equals either undefined or the price of market.currentAsk(), triggering an immediate trade.
@@ -1140,41 +1073,38 @@ class KaplanSniperAgent extends Sniper {
    *
    */
 
-
   isLowSpread(market) {
     const currentBid = market.currentBidPrice();
     const currentAsk = market.currentAskPrice();
-    return currentAsk > 0 && currentBid > 0 && currentAsk - currentBid <= this.desiredSpread;
+    return ((currentAsk > 0) && (currentBid > 0) && ((currentAsk - currentBid) <= this.desiredSpread));
   }
 
   buyNow(marginalValue, market) {
-    const isJuicyPrice = market.currentAskPrice() <= market.previousPeriod('lowPrice');
+    const isJuicyPrice = (market.currentAskPrice() <= market.previousPeriod('lowPrice'));
     if (isJuicyPrice) return true;
     if (this.isLowSpread(market)) return true;
     /* istanbul ignore else */
-
     if (this.poissonWakesRemainingInPeriod() <= this.nearEndOfPeriod) return true;
   }
 
   sellNow(marginalCost, market) {
-    const isJuicyPrice = market.currentBidPrice() >= market.previousPeriod('highPrice');
+    const isJuicyPrice = (market.currentBidPrice() >= market.previousPeriod('highPrice'));
     if (isJuicyPrice) return true;
     if (this.isLowSpread(market)) return true;
     /* istanbul ignore else */
-
     if (this.poissonWakesRemainingInPeriod() <= this.nearEndOfPeriod) return true;
   }
 
 }
 
-exports.KaplanSniperAgent = KaplanSniperAgent;
+export class MedianSniperAgent extends Sniper {
 
-class MedianSniperAgent extends Sniper {
   /**
    * Create MedianSniperAgent
    *
    * @param {Object} [options] options passed to Trader and Agent constructors
    */
+
   constructor(options) {
     const defaults = {
       description: "Median snipers, trade on price better than previous period median, or at end of period",
@@ -1187,219 +1117,209 @@ class MedianSniperAgent extends Sniper {
   buyNow(marginalValue, market) {
     if (market.currentAskPrice() <= market.previousPeriod('medianPrice')) return true;
     /* istanbul ignore else */
-
     if (this.poissonWakesRemainingInPeriod() <= this.nearEndOfPeriod) return true;
   }
 
   sellNow(marginalCost, market) {
     if (market.currentBidPrice() >= market.previousPeriod('medianPrice')) return true;
     /* istanbul ignore else */
-
     if (this.poissonWakesRemainingInPeriod() <= this.nearEndOfPeriod) return true;
   }
-
 }
 
-exports.MedianSniperAgent = MedianSniperAgent;
+export class AcceptSniperAgent extends Sniper {
 
-class AcceptSniperAgent extends Sniper {
   /**
     * Create AcceptSniperAgent from Sniper
     * @param {Object} [options] to Trader and Agent constructors
     */
-  constructor(options) {
+
+  constructor(options){
     const defaults = {
       description: "AcceptSniperAgent, accepts any bid/ask from other side of market that meets no-loss constraint but does not make bids/asks",
       color: 'purple'
     };
-    super(Object.assign({}, defaults, options));
+    super(Object.assign({},defaults,options));
   }
 
-  buyNow() {
-    return true;
-  }
+  buyNow(){ return true; }
 
-  sellNow() {
-    return true;
-  }
+  sellNow(){ return true; }
 
 }
 
-exports.AcceptSniperAgent = AcceptSniperAgent;
 
-class RandomAcceptSniperAgent extends Sniper {
+export class RandomAcceptSniperAgent extends Sniper {
+
   /**
     * Create RandomAcceptSniperAgent from Sniper
     * @param {Object} [options] to Trader and Agent constructors
     */
-  constructor(options) {
+
+  constructor(options){
     const defaults = {
       description: "RandomAcceptSniperAgent, at a probability between 0-1 (also determined randomly, once, at initialization) randomly accepts any bid/ask from other side of market that meets no-loss constraint. Does not make bids/asks",
       color: 'darkred'
     };
-    super(Object.assign({}, defaults, options));
-    this.acceptRate = ProbJS.uniform(0.0, 1.0);
+    super(Object.assign({},defaults,options));
+    this.acceptRate = ProbJS.uniform(0.0,1.0);
   }
 
-  accept() {
-    const r = ProbJS.uniform(0.0, 1.0);
-    if (r <= this.acceptRate) return true;
+  accept(){
+    const r = ProbJS.uniform(0.0,1.0);
+    if (r<=this.acceptRate) return true;
     return false;
   }
 
-  buyNow() {
+  buyNow(){
     return this.accept();
   }
 
-  sellNow() {
+  sellNow(){
     return this.accept();
   }
-
 }
 
-exports.RandomAcceptSniperAgent = RandomAcceptSniperAgent;
+export class FallingAskSniperAgent extends Sniper {
 
-class FallingAskSniperAgent extends Sniper {
-  constructor(options) {
+  constructor(options){
     const defaults = {
       description: 'Sniper waits for Ask below previous trade price',
       color: 'saddlebrown'
     };
-    super(Object.assign({}, defaults, options));
+    super(Object.assign({},defaults,options));
   }
 
-  isFallingAsk(market) {
+  isFallingAsk(market){
     const last = market.lastTradePrice();
     const ask = market.currentAskPrice();
-    return last > 0 && ask > 0 && ask < last;
+    return ((last>0) && (ask>0) && (ask<last));
   }
 
-  buyNow(marginalValue, market) {
+  buyNow(marginalValue,market){
     return this.isFallingAsk(market);
   }
 
-  sellNow(marginalCost, market) {
+  sellNow(marginalCost,market){
     return this.isFallingAsk(market);
   }
 
 }
 
-exports.FallingAskSniperAgent = FallingAskSniperAgent;
-
-class RisingBidSniperAgent extends Sniper {
-  constructor(options) {
+export class RisingBidSniperAgent extends Sniper {
+  constructor(options){
     const defaults = {
       description: 'Sniper waits for Bid above previous trade price',
       color: 'darkslategrey'
     };
-    super(Object.assign({}, defaults, options));
+    super(Object.assign({},defaults,options));
   }
 
-  isRisingBid(market) {
+  isRisingBid(market){
     const last = market.lastTradePrice();
     const bid = market.currentBidPrice();
-    return last > 0 && bid > 0 && bid > last;
+    return ((last>0) && (bid>0) && (bid>last));
   }
 
-  buyNow(marginalValue, market) {
+  buyNow(marginalValue,market){
     return this.isRisingBid(market);
   }
 
-  sellNow(marginalCost, market) {
+  sellNow(marginalCost,market){
     return this.isRisingBid(market);
   }
 
 }
+
 /**
  * Pool for managing a collection of agents.
  * Agents may belong to multiple pools.
  *
  */
 
-
-exports.RisingBidSniperAgent = RisingBidSniperAgent;
-
-class Pool {
+export class Pool {
   constructor() {
     this.agents = [];
     this.agentsById = {};
   }
+
   /**
    * Add an agent to the Pool
    * @param {Object} agent to add to pool.  Should be instanceof Agent, including subclasses.
    */
 
-
   push(agent) {
-    if (!(agent instanceof Agent)) throw new Error("Pool.push(agent), agent is not an instance of Agent or descendents");
-
+    if (!(agent instanceof Agent))
+      throw new Error("Pool.push(agent), agent is not an instance of Agent or descendents");
     if (this.agentsById[agent.id]) {
       throw new Error("Pool.push(agent), conflict: new agent has id of existing agent");
     }
-
     this.agents.push(agent);
     this.agentsById[agent.id] = agent;
   }
+
   /**
    * finds agent from Pool with lowest wakeTime
    * @return {Object}
    */
 
-
   next() {
-    if (this.nextCache !== undefined) return this.nextCache;
+    if (this.nextCache!==undefined) return this.nextCache;
     let tMin = 1e20,
-        i = 0,
-        l = this.agents.length,
-        A = this.agents,
-        t = 0,
-        result = 0,
-        endPeriod;
-
-    for (; i < l; i++) {
+      i = 0,
+      l = this.agents.length,
+      A = this.agents,
+      t = 0,
+      result = 0,
+      endPeriod;
+    for (; i < l;i++) {
       t = A[i].wakeTime;
       endPeriod = A[i].period && A[i].period.endTime;
-
-      if (t > 0 && t < tMin && (endPeriod === undefined || endPeriod > 0 && t < endPeriod)) {
+      if (
+        (t > 0) &&
+        (t < tMin) &&
+        (
+          (endPeriod===undefined) ||
+          ((endPeriod > 0) && (t < endPeriod))
+        )
+      ) {
         result = A[i];
         tMin = t;
       }
     }
-
     this.nextCache = result;
     return result;
   }
+
   /**
    * wakes agent in Pool with lowest wakeTime
    */
 
-
   wake() {
     const A = this.next();
     /* istanbul ignore else */
-
     if (A) {
-      A.wake(); // wipe nextCache
-
+      A.wake();
+      // wipe nextCache
       delete this.nextCache;
     }
   }
+
   /**
    * finds latest period.endTime of all agent in Pool
    * @return {number} max of agents period.endTime
    */
 
-
   endTime() {
     let endTime = 0;
-
-    for (let i = 0, l = this.agents.length; i < l; ++i) {
+    for (let i = 0, l = this.agents.length;i < l;++i) {
       let a = this.agents[i];
-      if (a.period.endTime > endTime) endTime = a.period.endTime;
+      if (a.period.endTime > endTime)
+        endTime = a.period.endTime;
     }
-
     if (endTime > 0) return endTime;
   }
+
   /**
    * Repeatedly wake agents in Pool, until simulation time "untilTime" is reached. For a synchronous equivalent, see syncRun(untilTime, limitCalls)
    *
@@ -1408,30 +1328,33 @@ class Pool {
    * @return {Promise<Object,Error>} returns promise resolving to pool, with caught errors passed to reject handler.
    */
 
-
   runAsPromise(untilTime, batch) {
-    const pool = this;
+    const pool = this; // eslint-disable-line consistent-this
     return new Promise(function (resolve, reject) {
       function loop() {
         let nextAgent = 0;
+
         /* can not test catch() block so drop from test coverage */
 
         try {
-          pool.syncRun(untilTime, batch || 1);
+          pool.syncRun(untilTime, (batch || 1));
           nextAgent = pool.next();
-        } catch (e)
-        /* istanbul ignore next */
-        {
-          // eslint-disable-line brace-style
+        } // eslint-disable-line brace-style
+
+        /* c8 ignore start */
+
+        catch (e) { // eslint-disable-line brace-style
           return reject(e);
         }
 
-        return nextAgent && nextAgent.wakeTime < untilTime ? setImmediate(loop) : resolve(pool);
-      }
+        /* c8 ignore stop */
 
+        return (nextAgent && (nextAgent.wakeTime < untilTime)) ? setImmediate(loop) : resolve(pool);
+      }
       setImmediate(loop);
     });
   }
+
   /**
    * Repeatedly wake agents in Pool, until simulation time "untilTime" or "limitCalls" agent wake calls are reached.
    * This method runs synchronously.  It returns only when finished.
@@ -1441,42 +1364,44 @@ class Pool {
    *
    */
 
-
   syncRun(untilTime, limitCalls) {
     let nextAgent = this.next();
     let calls = 0;
-
-    while (nextAgent && nextAgent.wakeTime < untilTime && !(calls >= limitCalls)) {
+    while (nextAgent && (nextAgent.wakeTime < untilTime) && (!(calls >= limitCalls))) {
       this.wake();
       nextAgent = this.next();
       calls++;
     }
   }
+
   /**
    * calls .initPeriod for all agents in the Pool
    *
    * @param {Object|number} param passed to each agent's .initPeriod()
    */
 
-
   initPeriod(param) {
     // clear the nextCache since the agent wakeTimes will be reset
-    delete this.nextCache; // passing param to all the agents is safe because Agent.initPeriod does a deep clone
-
-    if (Array.isArray(param) && param.length > 0) {
-      for (let i = 0, l = this.agents.length; i < l; i++) this.agents[i].initPeriod(param[i % param.length]);
+    delete this.nextCache;
+    // passing param to all the agents is safe because Agent.initPeriod does a deep clone
+    if (Array.isArray(param) && (param.length > 0)) {
+      for (let i = 0, l = this.agents.length;i < l;i++)
+        this.agents[i].initPeriod(param[i % (param.length)]);
     } else {
-      for (let i = 0, l = this.agents.length; i < l; i++) this.agents[i].initPeriod(param);
+      for (let i = 0, l = this.agents.length;i < l;i++)
+        this.agents[i].initPeriod(param);
     }
   }
+
   /**
    * calls .endPeriod for all agents in the Pool
    */
 
-
   endPeriod() {
-    for (let i = 0, l = this.agents.length; i < l; i++) this.agents[i].endPeriod();
+    for (let i = 0, l = this.agents.length;i < l;i++)
+      this.agents[i].endPeriod();
   }
+
   /**
    * adjusts Pool agents inventories, via agent.transfer(), in response to one or more trades
    * @param {Object} tradeSpec Object providing specifics of trades.
@@ -1491,69 +1416,57 @@ class Pool {
    * @throws {Error} when accounting identities do not balance or trade invalid
    */
 
-
   trade(tradeSpec) {
     let i, l, buyerTransfer, sellerTransfer;
-    if (typeof tradeSpec === 'undefined') return;
-    const {
-      bs,
-      goods,
-      money,
-      prices,
-      buyQ,
-      sellQ,
-      buyId,
-      sellId
-    } = tradeSpec;
-
-    if (bs && goods && money && Array.isArray(prices) && Array.isArray(buyQ) && Array.isArray(sellQ) && Array.isArray(buyId) && Array.isArray(sellId)) {
+    if (typeof(tradeSpec) === 'undefined') return;
+    const { bs, goods, money, prices, buyQ, sellQ, buyId, sellId } = tradeSpec;
+    if (
+      (bs) &&
+      (goods) &&
+      (money) &&
+      (Array.isArray(prices)) &&
+      (Array.isArray(buyQ)) &&
+      (Array.isArray(sellQ)) &&
+      (Array.isArray(buyId)) &&
+      (Array.isArray(sellId))) {
       if (bs === 'b') {
-        if (buyId.length !== 1) throw new Error("Pool.trade expected tradeSpec.buyId.length===1, got:" + buyId.length);
-        if (buyQ[0] !== sum(sellQ)) throw new Error("Pool.trade invalid buy -- tradeSpec buyQ[0] != sum(sellQ)");
+        if (buyId.length !== 1)
+          throw new Error("Pool.trade expected tradeSpec.buyId.length===1, got:" + buyId.length);
+        if (buyQ[0] !== sum(sellQ))
+          throw new Error("Pool.trade invalid buy -- tradeSpec buyQ[0] != sum(sellQ)");
         buyerTransfer = {};
         buyerTransfer[goods] = buyQ[0];
         buyerTransfer[money] = -dot(sellQ, prices);
-        this.agentsById[buyId[0]].transfer(buyerTransfer, {
-          isTrade: 1,
-          isBuy: 1
-        });
-
-        for (i = 0, l = prices.length; i < l; ++i) {
+        this.agentsById[buyId[0]].transfer(buyerTransfer, { isTrade: 1, isBuy: 1 });
+        for (i = 0, l = prices.length;i < l;++i) {
           sellerTransfer = {};
           sellerTransfer[goods] = -sellQ[i];
           sellerTransfer[money] = prices[i] * sellQ[i];
-          this.agentsById[sellId[i]].transfer(sellerTransfer, {
-            isTrade: 1,
-            isSellAccepted: 1
-          });
+          this.agentsById[sellId[i]].transfer(sellerTransfer, { isTrade: 1, isSellAccepted: 1 });
         }
       } else if (bs === 's') {
-        if (sellId.length !== 1) throw new Error("Pool.trade expected tradeSpec.sellId.length===1. got:" + sellId.length);
-        if (sellQ[0] !== sum(buyQ)) throw new Error("Pool.trade invalid sell -- tradeSpec sellQ[0] != sum(buyQ)");
+        if (sellId.length !== 1)
+          throw new Error("Pool.trade expected tradeSpec.sellId.length===1. got:" + sellId.length);
+        if (sellQ[0] !== sum(buyQ))
+          throw new Error("Pool.trade invalid sell -- tradeSpec sellQ[0] != sum(buyQ)");
         sellerTransfer = {};
         sellerTransfer[goods] = -sellQ[0];
         sellerTransfer[money] = dot(buyQ, prices);
-        this.agentsById[sellId[0]].transfer(sellerTransfer, {
-          isTrade: 1,
-          isSell: 1
-        });
-
-        for (i = 0, l = prices.length; i < l; ++i) {
+        this.agentsById[sellId[0]].transfer(sellerTransfer, { isTrade: 1, isSell: 1 });
+        for (i = 0, l = prices.length;i < l;++i) {
           buyerTransfer = {};
           buyerTransfer[goods] = buyQ[i];
           buyerTransfer[money] = -prices[i] * buyQ[i];
-          this.agentsById[buyId[i]].transfer(buyerTransfer, {
-            isTrade: 1,
-            isBuyAccepted: 1
-          });
+          this.agentsById[buyId[i]].transfer(buyerTransfer, { isTrade: 1, isBuyAccepted: 1 });
         }
       } else {
-        throw new Error("Pool.trade tradeSpec.bs must be b or s, got:" + bs);
+        throw new Error("Pool.trade tradeSpec.bs must be b or s, got:"+bs);
       }
     } else {
       throw new Error("Pool.trade tradeSpec object not in correct format");
     }
   }
+
   /**
    * distribute an aggregate setting of buyer Values or seller Costs to a pool of sellers, by giving each agent a successive value from the array without replacement
    *
@@ -1563,36 +1476,28 @@ class Pool {
    * @throws {Error} when field is invalid or aggregateArray is wrong type
    */
 
-
   distribute(field, good, aggregateArray) {
     let i, l;
     let myCopy;
-
     if (Array.isArray(aggregateArray)) {
       myCopy = aggregateArray.slice();
     } else {
-      throw new Error("Error: Pool.prototype.distribute: expected aggregate to be Array, got: " + typeof aggregateArray);
+      throw new Error("Error: Pool.prototype.distribute: expected aggregate to be Array, got: " + typeof(aggregateArray));
     }
-
-    if (field !== 'values' && field !== 'costs') throw new Error("Pool.distribute(field,good,aggArray) field should be 'values' or 'costs', got:" + field);
-
-    for (i = 0, l = this.agents.length; i < l; ++i) {
+    if ((field !== 'values') && (field !== 'costs'))
+      throw new Error("Pool.distribute(field,good,aggArray) field should be 'values' or 'costs', got:" + field);
+    for (i = 0, l = this.agents.length;i < l;++i) {
       // the if statement probably would never be satisfied -- but better to fix missing field than throw an error
-
       /* istanbul ignore next */
-      if (typeof this.agents[i][field] === 'undefined') this.agents[i][field] = {};
+      if (typeof(this.agents[i][field]) === 'undefined')
+        this.agents[i][field] = {};
       this.agents[i][field][good] = [];
     }
-
     i = 0;
     l = this.agents.length;
-
     while (myCopy.length > 0) {
       this.agents[i][field][good].push(myCopy.shift());
       i = (i + 1) % l;
     }
   }
-
 }
-
-exports.Pool = Pool;

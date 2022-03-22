@@ -10,10 +10,19 @@ market-agents
 
 Provides EventEmitter Agent framework for robot trading in economic and financial simulations
 
+## Breaking Changes for v5
+
+### Module changes
+v5 is ESM whereas versions 4 and earlier were commonjs.
+
+### removing babel dependencies
+v5 is not compiled with Babel
+
+
 ## Programmer's Documentation
 
 The [JSDoc documentation for market-agents](https://drpaulbrewer.github.io/market-agents) is automatically generated from the source code
-of this module. 
+of this module.
 
 ## Installation
 
@@ -21,7 +30,7 @@ of this module.
 
 ## Initialization
 
-    import * as MarketAgents from 'market-agents'; // ES6 
+    import * as MarketAgents from 'market-agents'; // ES6
     // or
     const MarketAgents = require('market-agents'); // CJS
     // unpack some constructors
@@ -108,7 +117,7 @@ Emtited-By: Agent.prototype.produce
 
 When: Typically at the end of a period, after a production transaction has been calculated, but before the transfer
 
-Use this for: modifying the production transfer 
+Use this for: modifying the production transfer
 
 *post-produce*
 
@@ -133,4 +142,3 @@ inherit Agent and Trader events and behavior
 Pool is not an EventEmitter of its own.  
 
 Instead, several Pool methods call methods on all agents in the Pool, triggering related Agent events.
-
